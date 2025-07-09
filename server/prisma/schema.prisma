@@ -13,3 +13,167 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique(map: "Admin_email_key")
+  password  String
+  image     String?
+  role      role     @default(ADMIN)
+  createdAt DateTime @default(now())
+
+  @@map("user")
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  phone     String
+  address   String
+  id_card   String
+  createdAt DateTime @default(now())
+
+  @@map("Customer")
+}
+
+model Product {
+  id           Int            @id @default(autoincrement())
+  name         String
+  productTypes Product_type[]
+  createdAt    DateTime       @default(now())
+
+  @@map("Product")
+}
+
+model Product_type {
+  id          Int      @id @default(autoincrement())
+  Product_Id  Int
+  name        String
+  price       String
+  measurement String
+  createdAt   DateTime @default(now())
+
+  product_Stock    Product_stock[]
+  bank_transaction Buy_transaction[]
+
+  product Product @relation(fields: [Product_Id], references: [id])
+
+  @@map("product_type")
+}
+
+model Product_stock {
+  id          Int      @id @default(autoincrement())
+  Type_Id     Int
+  amount_many Float
+  price       Float
+  quantity    Int
+  createdAt   DateTime @default(now())
+
+  product Product_type @relation(fields: [Type_Id], references: [id])
+
+  @@map("product_stock")
+}
+
+model Bank_list {
+  id          Int      @id @default(autoincrement())
+  branch      String
+  account_num String
+  owner       String
+  createdAt   DateTime @default(now())
+
+  buy_transaction        Buy_transaction[]
+  bank_transaction       Bank_transaction[]
+  bank_balance           Bank_balance[]
+  buy_credit_transaction Buy_credit_transaction[]
+
+  @@map("bank_list")
+}
+
+model Buy_transaction {
+  id             Int            @id @default(autoincrement())
+  Type_id        Int
+  Bank_Id        Int
+  price          Float
+  quantity       Int
+  payment_method payment_method
+  total_mony     Float
+  supplier_name  String
+  transaction_id String
+  createdAt      DateTime       @default(now())
+
+  product_type Product_type @relation(fields: [Type_id], references: [id])
+  bank_list    Bank_list    @relation(fields: [Bank_Id], references: [id])
+
+  @@index([price, transaction_id])
+  @@map("buy_transaction")
+}
+
+model Buy_credit {
+  id             Int      @id @default(autoincrement())
+  transaction_id String
+  total_mony     Float
+  description    String
+  issue_date     DateTime @default(now())
+  return_date    DateTime
+  status         credit
+  createdAt      DateTime @default(now())
+
+  @@index([transaction_id])
+  @@map("buy_credit")
+}
+
+model Bank_balance {
+  id        Int      @id @default(autoincrement())
+  Bank_id   Int
+  balance   Float
+  createdAt DateTime @default(now())
+
+  bank_list Bank_list @relation(fields: [Bank_id], references: [id])
+}
+
+model Bank_transaction {
+  id             Int      @id @default(autoincrement())
+  Bank_id        Int
+  in             Float
+  out            Float
+  balance        Float
+  transaction_id String
+  createdAt      DateTime @default(now())
+
+  bank_list Bank_list @relation(fields: [Bank_id], references: [id])
+
+  @@index([transaction_id])
+  @@map("bank_transaction")
+}
+
+model Buy_credit_transaction {
+  id                  Int            @id @default(autoincrement())
+  Bank_id             Int
+  transaction_id      String
+  amount_payed        Float
+  outstanding_balance Float
+  image               String
+  payment_method      payment_method
+
+  bank_list Bank_list @relation(fields: [Bank_id], references: [id])
+
+  @@index([transaction_id])
+  @@map("buy_credit_transaction")
+}
+
+enum role {
+  ADMIN
+  CASHER
+}
+
+enum payment_method {
+  CASH
+  BANK
+  CREDIT
+}
+
+enum credit {
+  ACCEPTED
+  OVERDUE
+  PAYED
+}
