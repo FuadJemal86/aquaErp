@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -18,107 +18,330 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Package, Tag, Warehouse } from "lucide-react";
+import { Package, Tag, Warehouse, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { z } from "zod";
+import api from "@/services/api";
 
-interface ProductCategory {
-  id: string;
+// Zod schemas for validation
+const ProductCategorySchema = z.object({
+  name: z.string().min(1, "Category name is required"),
+  description: z.string().optional(),
+});
+
+const ProductTypeSchema = z.object({
+  name: z.string().min(1, "Product type name is required"),
+  product_category_id: z.number().min(1, "Category is required"),
+  measurement: z.string().min(1, "Measurement is required"),
+});
+
+const InitializeStockSchema = z.object({
+  product_type_id: z.number().min(1, "Product type is required"),
+  quantity: z.number().min(1, "Quantity must be at least 1"),
+  price_per_quantity: z.number().min(0.01, "Price must be greater than 0"),
+});
+
+// TypeScript types inferred from Zod schemas
+type ProductCategory = z.infer<typeof ProductCategorySchema> & {
+  id: number;
+};
+
+type ProductType = z.infer<typeof ProductTypeSchema> & {
+  id: number;
+  Product_category: ProductCategory;
+};
+
+type Stock = z.infer<typeof InitializeStockSchema> & {
+  id: number;
+  amount_money: number;
+  price_per_quantity: number;
+  Product_type: ProductType;
+};
+
+// Form data types
+type CategoryFormData = {
   name: string;
   description: string;
-}
+};
 
-interface ProductType {
-  id: string;
+type ProductTypeFormData = {
   name: string;
-  categoryId: string;
+  product_category_id: string;
   measurement: string;
-}
+};
 
-interface Stock {
-  id: string;
-  productTypeId: string;
-  pricePerQuantity: number;
-  quantity: number;
-  totalMoney: number;
-}
+type StockFormData = {
+  product_type_id: string;
+  price_per_quantity: string;
+  quantity: string;
+};
+
+// Error types
+type FormErrors = {
+  [key: string]: string;
+};
 
 function AddProduct() {
+  // State for data from API
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [stocks, setStocks] = useState<Stock[]>([]);
 
-  // Form states for Category
-  const [categoryName, setCategoryName] = useState("");
-  const [categoryDescription, setCategoryDescription] = useState("");
+  // Loading states
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [isLoadingProductTypes, setIsLoadingProductTypes] = useState(false);
+  const [isLoadingStocks, setIsLoadingStocks] = useState(false);
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [isCreatingProductType, setIsCreatingProductType] = useState(false);
+  const [isCreatingStock, setIsCreatingStock] = useState(false);
 
-  // Form states for Product Type
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [productTypeName, setProductTypeName] = useState("");
-  const [productTypeMeasurement, setProductTypeMeasurement] = useState("");
+  // Form data states
+  const [categoryFormData, setCategoryFormData] = useState<CategoryFormData>({
+    name: "",
+    description: "",
+  });
 
-  // Form states for Stock
-  const [selectedProductType, setSelectedProductType] = useState("");
-  const [stockPricePerQuantity, setStockPricePerQuantity] = useState("");
-  const [stockQuantity, setStockQuantity] = useState("");
-  const [stockTotalMoney, setStockTotalMoney] = useState("");
+  const [productTypeFormData, setProductTypeFormData] =
+    useState<ProductTypeFormData>({
+      name: "",
+      product_category_id: "",
+      measurement: "",
+    });
 
-  const handleCreateCategory = () => {
-    if (categoryName.trim() && categoryDescription.trim()) {
-      const newCategory: ProductCategory = {
-        id: Date.now().toString(),
-        name: categoryName,
-        description: categoryDescription,
-      };
-      setCategories([...categories, newCategory]);
-      setCategoryName("");
-      setCategoryDescription("");
+  const [stockFormData, setStockFormData] = useState<StockFormData>({
+    product_type_id: "",
+    price_per_quantity: "",
+    quantity: "",
+  });
+
+  // Error states
+  const [categoryErrors, setCategoryErrors] = useState<FormErrors>({});
+  const [productTypeErrors, setProductTypeErrors] = useState<FormErrors>({});
+  const [stockErrors, setStockErrors] = useState<FormErrors>({});
+
+  // Fetch data functions
+  const fetchCategories = async () => {
+    try {
+      setIsLoadingCategories(true);
+      const response = await api.get("/admin/get-product-category");
+      setCategories(response.data);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      toast.error("Failed to fetch categories");
+    } finally {
+      setIsLoadingCategories(false);
     }
   };
 
-  const handleCreateProductType = () => {
-    if (selectedCategory && productTypeName.trim() && productTypeMeasurement) {
-      const newProductType: ProductType = {
-        id: Date.now().toString(),
-        name: productTypeName,
-        categoryId: selectedCategory,
-        measurement: productTypeMeasurement,
-      };
-      setProductTypes([...productTypes, newProductType]);
-      setSelectedCategory("");
-      setProductTypeName("");
-      setProductTypeMeasurement("");
+  const fetchProductTypes = async () => {
+    try {
+      setIsLoadingProductTypes(true);
+      const response = await api.get("/admin/get-product-type");
+      setProductTypes(response.data);
+    } catch (error) {
+      console.error("Error fetching product types:", error);
+      toast.error("Failed to fetch product types");
+    } finally {
+      setIsLoadingProductTypes(false);
     }
   };
 
-  const handleInitializeStock = () => {
-    if (selectedProductType && stockPricePerQuantity && stockQuantity) {
-      const pricePerQty = parseFloat(stockPricePerQuantity);
-      const qty = parseInt(stockQuantity);
-      const total = pricePerQty * qty;
-
-      const newStock: Stock = {
-        id: Date.now().toString(),
-        productTypeId: selectedProductType,
-        pricePerQuantity: pricePerQty,
-        quantity: qty,
-        totalMoney: total,
-      };
-      setStocks([...stocks, newStock]);
-      setSelectedProductType("");
-      setStockPricePerQuantity("");
-      setStockQuantity("");
-      setStockTotalMoney("");
+  const fetchStocks = async () => {
+    try {
+      setIsLoadingStocks(true);
+      const response = await api.get("/admin/get-product-stock");
+      setStocks(response.data);
+    } catch (error) {
+      console.error("Error fetching stocks:", error);
+      toast.error("Failed to fetch stocks");
+    } finally {
+      setIsLoadingStocks(false);
     }
   };
 
-  const getCategoryName = (categoryId: string) => {
+  // Form handlers
+  const handleCategoryFormChange = (
+    field: keyof CategoryFormData,
+    value: string
+  ) => {
+    setCategoryFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (categoryErrors[field]) {
+      setCategoryErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const handleProductTypeFormChange = (
+    field: keyof ProductTypeFormData,
+    value: string
+  ) => {
+    setProductTypeFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (productTypeErrors[field]) {
+      setProductTypeErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const handleStockFormChange = (field: keyof StockFormData, value: string) => {
+    setStockFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (stockErrors[field]) {
+      setStockErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  // Reset form functions
+  const resetCategoryForm = () => {
+    setCategoryFormData({ name: "", description: "" });
+    setCategoryErrors({});
+  };
+
+  const resetProductTypeForm = () => {
+    setProductTypeFormData({
+      name: "",
+      product_category_id: "",
+      measurement: "",
+    });
+    setProductTypeErrors({});
+  };
+
+  const resetStockForm = () => {
+    setStockFormData({
+      product_type_id: "",
+      price_per_quantity: "",
+      quantity: "",
+    });
+    setStockErrors({});
+  };
+
+  // Create category
+  const handleCreateCategory = async () => {
+    try {
+      setCategoryErrors({});
+
+      // Validate with Zod
+      const validatedData = ProductCategorySchema.parse(categoryFormData);
+
+      setIsCreatingCategory(true);
+      const response = await api.post(
+        "/admin/add-product-category",
+        validatedData
+      );
+
+      toast.success("Category created successfully");
+      resetCategoryForm();
+
+      // Refresh categories
+      await fetchCategories();
+    } catch (error: any) {
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else if (error.errors) {
+        // Zod validation errors
+        const errors: FormErrors = {};
+        error.errors.forEach((err: any) => {
+          errors[err.path[0]] = err.message;
+        });
+        setCategoryErrors(errors);
+      } else {
+        toast.error("Failed to create category");
+      }
+    } finally {
+      setIsCreatingCategory(false);
+    }
+  };
+
+  // Create product type
+  const handleCreateProductType = async () => {
+    try {
+      setProductTypeErrors({});
+
+      // Validate with Zod
+      const validatedData = ProductTypeSchema.parse({
+        ...productTypeFormData,
+        product_category_id: parseInt(productTypeFormData.product_category_id),
+      });
+
+      setIsCreatingProductType(true);
+      const response = await api.post("/admin/add-product-type", validatedData);
+
+      toast.success("Product type created successfully");
+      resetProductTypeForm();
+
+      // Refresh product types
+      await fetchProductTypes();
+    } catch (error: any) {
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else if (error.errors) {
+        // Zod validation errors
+        const errors: FormErrors = {};
+        error.errors.forEach((err: any) => {
+          errors[err.path[0]] = err.message;
+        });
+        setProductTypeErrors(errors);
+      } else {
+        toast.error("Failed to create product type");
+      }
+    } finally {
+      setIsCreatingProductType(false);
+    }
+  };
+
+  // Initialize stock
+  const handleInitializeStock = async () => {
+    try {
+      setStockErrors({});
+
+      // Validate with Zod
+      const validatedData = InitializeStockSchema.parse({
+        product_type_id: parseInt(stockFormData.product_type_id),
+        quantity: parseInt(stockFormData.quantity),
+        price_per_quantity: parseFloat(stockFormData.price_per_quantity),
+      });
+
+      setIsCreatingStock(true);
+      const response = await api.post("/admin/initialize-stock", validatedData);
+
+      toast.success("Stock initialized successfully");
+      resetStockForm();
+
+      // Refresh stocks
+      await fetchStocks();
+    } catch (error: any) {
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else if (error.errors) {
+        // Zod validation errors
+        const errors: FormErrors = {};
+        error.errors.forEach((err: any) => {
+          errors[err.path[0]] = err.message;
+        });
+        setStockErrors(errors);
+      } else {
+        toast.error("Failed to initialize stock");
+      }
+    } finally {
+      setIsCreatingStock(false);
+    }
+  };
+
+  const getCategoryName = (categoryId: number) => {
     return categories.find((cat) => cat.id === categoryId)?.name || "Unknown";
   };
 
-  const getProductTypeName = (productTypeId: string) => {
+  const getProductTypeName = (productTypeId: number) => {
     return (
       productTypes.find((type) => type.id === productTypeId)?.name || "Unknown"
     );
   };
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchCategories();
+    fetchProductTypes();
+    fetchStocks();
+  }, []);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -145,21 +368,50 @@ function AddProduct() {
               <Input
                 id="categoryName"
                 placeholder="Enter category name"
-                value={categoryName}
-                onChange={(e) => setCategoryName(e.target.value)}
+                value={categoryFormData.name}
+                onChange={(e) =>
+                  handleCategoryFormChange("name", e.target.value)
+                }
+                className={categoryErrors.name ? "border-destructive" : ""}
               />
+              {categoryErrors.name && (
+                <p className="text-sm text-destructive">
+                  {categoryErrors.name}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="categoryDescription">Description</Label>
               <Textarea
                 id="categoryDescription"
                 placeholder="Enter category description"
-                value={categoryDescription}
-                onChange={(e) => setCategoryDescription(e.target.value)}
+                value={categoryFormData.description}
+                onChange={(e) =>
+                  handleCategoryFormChange("description", e.target.value)
+                }
+                className={
+                  categoryErrors.description ? "border-destructive" : ""
+                }
               />
+              {categoryErrors.description && (
+                <p className="text-sm text-destructive">
+                  {categoryErrors.description}
+                </p>
+              )}
             </div>
-            <Button onClick={handleCreateCategory} className="w-full mt-12">
-              Create Category
+            <Button
+              onClick={handleCreateCategory}
+              className="w-full mt-12"
+              disabled={isCreatingCategory}
+            >
+              {isCreatingCategory ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Category"
+              )}
             </Button>
           </CardContent>
         </Card>
@@ -179,41 +431,86 @@ function AddProduct() {
             <div className="space-y-2">
               <Label htmlFor="categorySelect">Select Category</Label>
               <Select
-                value={selectedCategory}
-                onValueChange={setSelectedCategory}
+                value={productTypeFormData.product_category_id}
+                onValueChange={(value) =>
+                  handleProductTypeFormChange("product_category_id", value)
+                }
               >
-                <SelectTrigger>
+                <SelectTrigger
+                  className={
+                    productTypeErrors.product_category_id
+                      ? "border-destructive"
+                      : ""
+                  }
+                >
                   <SelectValue placeholder="Choose a category" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
+                    <SelectItem
+                      key={category.id}
+                      value={category.id.toString()}
+                    >
                       {category.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {productTypeErrors.product_category_id && (
+                <p className="text-sm text-destructive">
+                  {productTypeErrors.product_category_id}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="productTypeName">Product Type Name</Label>
               <Input
                 id="productTypeName"
                 placeholder="Enter product type name"
-                value={productTypeName}
-                onChange={(e) => setProductTypeName(e.target.value)}
+                value={productTypeFormData.name}
+                onChange={(e) =>
+                  handleProductTypeFormChange("name", e.target.value)
+                }
+                className={productTypeErrors.name ? "border-destructive" : ""}
               />
+              {productTypeErrors.name && (
+                <p className="text-sm text-destructive">
+                  {productTypeErrors.name}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="productTypeMeasurement">Measurement</Label>
               <Input
                 id="productTypeMeasurement"
                 placeholder="kg, pcs, etc."
-                value={productTypeMeasurement}
-                onChange={(e) => setProductTypeMeasurement(e.target.value)}
+                value={productTypeFormData.measurement}
+                onChange={(e) =>
+                  handleProductTypeFormChange("measurement", e.target.value)
+                }
+                className={
+                  productTypeErrors.measurement ? "border-destructive" : ""
+                }
               />
+              {productTypeErrors.measurement && (
+                <p className="text-sm text-destructive">
+                  {productTypeErrors.measurement}
+                </p>
+              )}
             </div>
-            <Button onClick={handleCreateProductType} className="w-full">
-              Create Product Type
+            <Button
+              onClick={handleCreateProductType}
+              className="w-full"
+              disabled={isCreatingProductType}
+            >
+              {isCreatingProductType ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Product Type"
+              )}
             </Button>
           </CardContent>
         </Card>
@@ -233,20 +530,31 @@ function AddProduct() {
             <div className="space-y-2">
               <Label htmlFor="productTypeSelect">Select Product Type</Label>
               <Select
-                value={selectedProductType}
-                onValueChange={setSelectedProductType}
+                value={stockFormData.product_type_id}
+                onValueChange={(value) =>
+                  handleStockFormChange("product_type_id", value)
+                }
               >
-                <SelectTrigger>
+                <SelectTrigger
+                  className={
+                    stockErrors.product_type_id ? "border-destructive" : ""
+                  }
+                >
                   <SelectValue placeholder="Choose a product type" />
                 </SelectTrigger>
                 <SelectContent>
                   {productTypes.map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.name} - {getCategoryName(type.categoryId)}
+                    <SelectItem key={type.id} value={type.id.toString()}>
+                      {type.name} - {type.Product_category?.name || "Unknown"}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {stockErrors.product_type_id && (
+                <p className="text-sm text-destructive">
+                  {stockErrors.product_type_id}
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
@@ -256,10 +564,21 @@ function AddProduct() {
                 <Input
                   id="stockPricePerQuantity"
                   type="number"
+                  step="0.01"
                   placeholder="0.00"
-                  value={stockPricePerQuantity}
-                  onChange={(e) => setStockPricePerQuantity(e.target.value)}
+                  value={stockFormData.price_per_quantity}
+                  onChange={(e) =>
+                    handleStockFormChange("price_per_quantity", e.target.value)
+                  }
+                  className={
+                    stockErrors.price_per_quantity ? "border-destructive" : ""
+                  }
                 />
+                {stockErrors.price_per_quantity && (
+                  <p className="text-sm text-destructive">
+                    {stockErrors.price_per_quantity}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="stockQuantity">Quantity</Label>
@@ -267,24 +586,32 @@ function AddProduct() {
                   id="stockQuantity"
                   type="number"
                   placeholder="0"
-                  value={stockQuantity}
-                  onChange={(e) => setStockQuantity(e.target.value)}
+                  value={stockFormData.quantity}
+                  onChange={(e) =>
+                    handleStockFormChange("quantity", e.target.value)
+                  }
+                  className={stockErrors.quantity ? "border-destructive" : ""}
                 />
+                {stockErrors.quantity && (
+                  <p className="text-sm text-destructive">
+                    {stockErrors.quantity}
+                  </p>
+                )}
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="stockTotalMoney">Total Money</Label>
-              <Input
-                id="stockTotalMoney"
-                type="number"
-                placeholder="0.00"
-                value={stockTotalMoney}
-                onChange={(e) => setStockTotalMoney(e.target.value)}
-                disabled
-              />
-            </div>
-            <Button onClick={handleInitializeStock} className="w-full">
-              Initialize Stock
+            <Button
+              onClick={handleInitializeStock}
+              className="w-full"
+              disabled={isCreatingStock}
+            >
+              {isCreatingStock ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Initializing...
+                </>
+              ) : (
+                "Initialize Stock"
+              )}
             </Button>
           </CardContent>
         </Card>
@@ -300,16 +627,22 @@ function AddProduct() {
             <CardTitle>Categories ({categories.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {categories.map((category) => (
-                <div key={category.id} className="p-3 border rounded-lg">
-                  <h4 className="font-medium">{category.name}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {category.description}
-                  </p>
-                </div>
-              ))}
-            </div>
+            {isLoadingCategories ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {categories.map((category) => (
+                  <div key={category.id} className="p-3 border rounded-lg">
+                    <h4 className="font-medium">{category.name}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {category.description || "No description"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -319,17 +652,23 @@ function AddProduct() {
             <CardTitle>Product Types ({productTypes.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {productTypes.map((type) => (
-                <div key={type.id} className="p-3 border rounded-lg">
-                  <h4 className="font-medium">{type.name}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Category: {getCategoryName(type.categoryId)} | Unit:{" "}
-                    {type.measurement}
-                  </p>
-                </div>
-              ))}
-            </div>
+            {isLoadingProductTypes ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {productTypes.map((type) => (
+                  <div key={type.id} className="p-3 border rounded-lg">
+                    <h4 className="font-medium">{type.name}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Category: {type.Product_category?.name || "Unknown"} |
+                      Unit: {type.measurement}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -339,19 +678,25 @@ function AddProduct() {
             <CardTitle>Stocks ({stocks.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {stocks.map((stock) => (
-                <div key={stock.id} className="p-3 border rounded-lg">
-                  <h4 className="font-medium">
-                    {getProductTypeName(stock.productTypeId)}
-                  </h4>
-                  <p className="text-sm text-muted-foreground">
-                    Price/Qty: ${stock.pricePerQuantity} | Qty: {stock.quantity}{" "}
-                    | Total: ${stock.totalMoney}
-                  </p>
-                </div>
-              ))}
-            </div>
+            {isLoadingStocks ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {stocks.map((stock) => (
+                  <div key={stock.id} className="p-3 border rounded-lg">
+                    <h4 className="font-medium">
+                      {stock.Product_type?.name || "Unknown"}
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Price/Qty: ${stock.price_per_quantity} | Qty:{" "}
+                      {stock.quantity} | Total: ${stock.amount_money}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -10,7 +10,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -38,22 +38,22 @@ model Customer {
 
   sales_credit Sales_credit[]
 
-  @@map("Customer")
+  @@map("customer")
 }
 
 model Product_category {
   id           Int            @id @default(autoincrement())
   name         String
+  description  String?
   productTypes Product_type[]
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
-  @@map("Product")
+  @@map("product_category")
 }
 
 model Product_type {
   id          Int      @id @default(autoincrement())
-  Product_Id  Int
   name        String
   measurement String
   createdAt   DateTime @default(now())
@@ -63,32 +63,33 @@ model Product_type {
   bank_transaction  Buy_transaction[]
   sales_transaction Sales_transaction[]
 
-  product Product_category @relation(fields: [Product_Id], references: [id])
+  product_category_id Int
+  Product_category    Product_category @relation(fields: [product_category_id], references: [id])
 
   @@map("product_type")
 }
 
 model Product_stock {
   id                 Int      @id @default(autoincrement())
-  Type_Id            Int
   amount_money       Float
   price_per_quantity Float
   quantity           Int
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  product_type Product_type @relation(fields: [Type_Id], references: [id])
+  product_type_id Int
+  Product_type    Product_type @relation(fields: [product_type_id], references: [id])
 
   @@map("product_stock")
 }
 
 model Bank_list {
-  id          Int      @id @default(autoincrement())
-  branch      String
-  account_num String
-  owner       String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  branch         String
+  account_number String
+  owner          String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   buy_transaction        Buy_transaction[]
   bank_transaction       Bank_transaction[]
@@ -142,6 +143,8 @@ model Bank_balance {
   updatedAt DateTime @updatedAt
 
   bank_list Bank_list @relation(fields: [Bank_id], references: [id])
+
+  @@map("bank_balance")
 }
 
 model Bank_transaction {
@@ -187,7 +190,7 @@ model Cash_transaction {
   updatedAt      DateTime @updatedAt
 
   @@index([transaction_id])
-  @@map("Cash_transaction")
+  @@map("cash_transaction")
 }
 
 model Sales_credit {

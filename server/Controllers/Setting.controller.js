@@ -1,0 +1,216 @@
+const prisma = require("../prisma/prisma");
+const {
+  Product_Category,
+  Product_Type,
+  Initialize_Stock,
+  Bank_list,
+} = require("../Model/Validation");
+
+// Add Product  catagory
+const addProductCategory = async (req, res) => {
+  try {
+    const { name, description } = req.body;
+    const { error } = Product_Category.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    // Check if the product category already exists
+    const findProductCategory = await prisma.product_category.findFirst({
+      where: { name: name },
+    });
+    if (findProductCategory) {
+      return res.status(400).json({ error: "Product category already exists" }); // 400 is bad request
+    }
+
+    // Create the product category
+    const productCategory = await prisma.product_category.create({
+      data: {
+        name: name,
+        description: description,
+      },
+    });
+    res.json({
+      message: "Product category added successfully",
+      productCategory,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Add Product Type with realtion to category id
+const addProductType = async (req, res) => {
+  try {
+    const { name, product_category_id, measurement } = req.body;
+    const { error } = Product_Type.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    // Check if the product type already exists
+    const findProductType = await prisma.product_type.findFirst({
+      where: { name: name },
+    });
+    if (findProductType) {
+      return res.status(400).json({ error: "Product type already exists" });
+    }
+
+    // Check if the product category exists
+    const findProductCategory = await prisma.product_category.findUnique({
+      where: { id: product_category_id },
+    });
+    if (!findProductCategory) {
+      return res.status(400).json({ error: "Product category not found" });
+    }
+    // Create the product type
+    const productType = await prisma.product_type.create({
+      data: {
+        name: name,
+        measurement: measurement,
+        product_category_id: product_category_id,
+      },
+    });
+    res.json({
+      message: "Product type added successfully",
+      productType,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Initialize  stock for product type
+const initializeStock = async (req, res) => {
+  try {
+    const { product_type_id, quantity, price_per_quantity } = req.body;
+    const { error } = Initialize_Stock.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    // Check if the product type exists
+    const findProductType = await prisma.product_type.findUnique({
+      where: { id: product_type_id },
+    });
+    if (!findProductType) {
+      return res.status(400).json({ error: "Product type not found" });
+    }
+
+    // Create the initialize stock
+    const initializeStock = await prisma.product_stock.create({
+      data: {
+        quantity: quantity,
+        price_per_quantity: price_per_quantity,
+        amount_money: price_per_quantity * quantity,
+        product_type_id: product_type_id,
+      },
+      include: {
+        Product_type: true,
+      },
+    });
+    res.json({
+      message: "Initialize stock added successfully",
+      initializeStock,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Create Bank list
+const createBank = async (req, res) => {
+  try {
+    const { branch, account_number, owner } = req.body;
+    const { error } = Bank_list.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    // Check if the bank list already exists
+    const findBankList = await prisma.bank_list.findFirst({
+      where: { account_number: account_number },
+    });
+    if (findBankList) {
+      return res.status(400).json({ error: "Bank Branch already exists" });
+    }
+
+    // Create the bank list
+    const bankList = await prisma.bank_list.create({
+      data: { branch, account_number, owner },
+    });
+    res.json({
+      message: "Bank Branch created successfully",
+      bankList,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Get Product category
+const getProductCategory = async (req, res) => {
+  try {
+    const productCategory = await prisma.product_category.findMany();
+    res.json(productCategory);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Get Product type
+const getProductType = async (req, res) => {
+  try {
+    const productType = await prisma.product_type.findMany({
+      include: {
+        Product_category: true,
+      },
+    });
+    res.json(productType);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Get Product stock
+const getProductStock = async (req, res) => {
+  try {
+    const productStock = await prisma.product_stock.findMany({
+      include: {
+        Product_type: true,
+      },
+    });
+    res.json(productStock);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Get Bank list
+const getBankList = async (req, res) => {
+  try {
+    const bankList = await prisma.bank_list.findMany();
+    res.json(bankList);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+module.exports = {
+  addProductCategory,
+  addProductType,
+  initializeStock,
+  getProductCategory,
+  getProductType,
+  getProductStock,
+  createBank,
+  getBankList,
+};
