@@ -1,4 +1,4 @@
-import { BadgeCheck, Bell, ChevronsUpDown, LogOut, Cog } from "lucide-react";
+import { Bell, ChevronsUpDown, Cog, LogOut } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";

@@ -1,22 +1,12 @@
 import {
   Bell,
   CreditCard,
-  LayoutDashboardIcon,
-  Settings,
-  UserCog,
-  Users,
-  History,
-  Banknote,
-  Building2,
-  List,
-  UserCircle,
-  Mail,
-  SlidersHorizontal,
-  ShoppingCart,
   FileText,
-  UserPlus,
-  ShoppingBag,
+  LayoutDashboardIcon,
   Package,
+  Settings,
+  ShoppingCart,
+  UserPlus,
 } from "lucide-react";
 import type * as React from "react";
 
@@ -30,7 +20,6 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-import { useContext } from "react";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
 import { ThemeToggle } from "./theme-toggle";
@@ -128,7 +117,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           {
             title: "Add Customer",
-            url: "/admin/add-customer",
+            url: "/admin/customers/add",
           },
           {
             title: "List of Customers",
@@ -144,11 +133,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           {
             title: "My Profile",
-            url: "/admin/my-profile",
+            url: "/admin/settings/my-profile",
           },
           {
             title: "Add User",
-            url: "/admin/add-user",
+            url: "/admin/settings/add-user",
+          },
+          {
+            title: "Add Product",
+            url: "/admin/settings/add-product",
+          },
+
+          {
+            title: "Bank Account",
+            url: "/admin/settings/bank-account",
           },
         ],
       },
