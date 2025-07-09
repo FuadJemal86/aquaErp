@@ -22,25 +22,31 @@ model User {
   image     String?
   role      role     @default(ADMIN)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("user")
 }
 
 model Customer {
   id        Int      @id @default(autoincrement())
+  full_name String
   phone     String
   address   String
   id_card   String
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sales_credit Sales_credit[]
 
   @@map("Customer")
 }
 
-model Product {
+model Product_category {
   id           Int            @id @default(autoincrement())
   name         String
   productTypes Product_type[]
   createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   @@map("Product")
 }
@@ -49,27 +55,29 @@ model Product_type {
   id          Int      @id @default(autoincrement())
   Product_Id  Int
   name        String
-  price       String
   measurement String
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  product_Stock    Product_stock[]
-  bank_transaction Buy_transaction[]
+  product_Stock     Product_stock[]
+  bank_transaction  Buy_transaction[]
+  sales_transaction Sales_transaction[]
 
-  product Product @relation(fields: [Product_Id], references: [id])
+  product Product_category @relation(fields: [Product_Id], references: [id])
 
   @@map("product_type")
 }
 
 model Product_stock {
-  id          Int      @id @default(autoincrement())
-  Type_Id     Int
-  amount_many Float
-  price       Float
-  quantity    Int
-  createdAt   DateTime @default(now())
+  id                 Int      @id @default(autoincrement())
+  Type_Id            Int
+  amount_money       Float
+  price_per_quantity Float
+  quantity           Int
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  product Product_type @relation(fields: [Type_Id], references: [id])
+  product_type Product_type @relation(fields: [Type_Id], references: [id])
 
   @@map("product_stock")
 }
@@ -80,11 +88,13 @@ model Bank_list {
   account_num String
   owner       String
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   buy_transaction        Buy_transaction[]
   bank_transaction       Bank_transaction[]
   bank_balance           Bank_balance[]
   buy_credit_transaction Buy_credit_transaction[]
+  sales_transaction      Sales_transaction[]
 
   @@map("bank_list")
 }
@@ -96,10 +106,11 @@ model Buy_transaction {
   price          Float
   quantity       Int
   payment_method payment_method
-  total_mony     Float
+  total_money    Float
   supplier_name  String
   transaction_id String
   createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   product_type Product_type @relation(fields: [Type_id], references: [id])
   bank_list    Bank_list    @relation(fields: [Bank_Id], references: [id])
@@ -111,12 +122,13 @@ model Buy_transaction {
 model Buy_credit {
   id             Int      @id @default(autoincrement())
   transaction_id String
-  total_mony     Float
+  total_money    Float
   description    String
-  issue_date     DateTime @default(now())
+  issued_date    DateTime @default(now())
   return_date    DateTime
   status         credit
   createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([transaction_id])
   @@map("buy_credit")
@@ -127,6 +139,7 @@ model Bank_balance {
   Bank_id   Int
   balance   Float
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   bank_list Bank_list @relation(fields: [Bank_id], references: [id])
 }
@@ -139,6 +152,7 @@ model Bank_transaction {
   balance        Float
   transaction_id String
   createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   bank_list Bank_list @relation(fields: [Bank_id], references: [id])
 
@@ -154,11 +168,82 @@ model Buy_credit_transaction {
   outstanding_balance Float
   image               String
   payment_method      payment_method
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
   bank_list Bank_list @relation(fields: [Bank_id], references: [id])
 
   @@index([transaction_id])
   @@map("buy_credit_transaction")
+}
+
+model Cash_transaction {
+  id             Int      @id @default(autoincrement())
+  in             Float
+  out            Float
+  transaction_id String
+  manager_id     Int
+  casher_id      Int
+  updatedAt      DateTime @updatedAt
+
+  @@index([transaction_id])
+  @@map("Cash_transaction")
+}
+
+model Sales_credit {
+  id             Int      @id @default(autoincrement())
+  Customer_id    Int
+  transaction_id String
+  total_money    Float
+  return_date    DateTime
+  issued_date    DateTime
+  status         credit
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  customer Customer @relation(fields: [Customer_id], references: [id])
+
+  @@index([transaction_id])
+  @@map("sales_credit")
+}
+
+model Sales_transaction {
+  id             Int            @id @default(autoincrement())
+  Type_id        Int
+  Bank_id        Int
+  Credit_id      Int?
+  customer_id    Int?
+  walker_id      Int?
+  manager_id     Int?
+  casher_id      Int?
+  transaction_id String
+  price          Float
+  quantity       Int
+  payment_method payment_method
+  customer_type  customer_type
+  status         sales_status
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  product_type Product_type @relation(fields: [Type_id], references: [id])
+  bank_list    Bank_list    @relation(fields: [Bank_id], references: [id])
+
+  @@index([transaction_id, price])
+  @@map("sale_transaction")
+}
+
+model Sales_credit_transaction {
+  id                  Int                  @id @default(autoincrement())
+  transaction_id      String
+  amount_payed        Float
+  payment_method      payment_sales_method
+  outstanding_balance Float
+  image               String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  @@index([transaction_id])
+  @@map("sales_status")
 }
 
 enum role {
@@ -176,4 +261,19 @@ enum credit {
   ACCEPTED
   OVERDUE
   PAYED
+}
+
+enum customer_type {
+  WALKER
+  REGULAR
+}
+
+enum sales_status {
+  DONE
+  CANCEL
+}
+
+enum payment_sales_method {
+  CASH
+  BANK
 }
