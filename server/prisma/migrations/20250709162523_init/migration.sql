@@ -4,6 +4,7 @@ CREATE TABLE `user` (
     `name` VARCHAR(191) NOT NULL,
     `email` VARCHAR(191) NOT NULL,
     `password` VARCHAR(191) NOT NULL,
+    `phone` VARCHAR(191) NOT NULL,
     `image` VARCHAR(191) NULL,
     `role` ENUM('ADMIN', 'CASHER') NOT NULL DEFAULT 'ADMIN',
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -30,6 +31,7 @@ CREATE TABLE `customer` (
 CREATE TABLE `product_category` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(191) NOT NULL,
+    `description` VARCHAR(191) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -39,11 +41,11 @@ CREATE TABLE `product_category` (
 -- CreateTable
 CREATE TABLE `product_type` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `Product_Id` INTEGER NOT NULL,
     `name` VARCHAR(191) NOT NULL,
     `measurement` VARCHAR(191) NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
+    `product_category_id` INTEGER NOT NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -51,12 +53,12 @@ CREATE TABLE `product_type` (
 -- CreateTable
 CREATE TABLE `product_stock` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `Type_Id` INTEGER NOT NULL,
     `amount_money` DOUBLE NOT NULL,
     `price_per_quantity` DOUBLE NOT NULL,
     `quantity` INTEGER NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
+    `product_type_id` INTEGER NOT NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -65,7 +67,7 @@ CREATE TABLE `product_stock` (
 CREATE TABLE `bank_list` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `branch` VARCHAR(191) NOT NULL,
-    `account_num` VARCHAR(191) NOT NULL,
+    `account_number` VARCHAR(191) NOT NULL,
     `owner` VARCHAR(191) NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
@@ -218,10 +220,10 @@ CREATE TABLE `sales_status` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- AddForeignKey
-ALTER TABLE `product_type` ADD CONSTRAINT `product_type_Product_Id_fkey` FOREIGN KEY (`Product_Id`) REFERENCES `product_category`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `product_type` ADD CONSTRAINT `product_type_product_category_id_fkey` FOREIGN KEY (`product_category_id`) REFERENCES `product_category`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `product_stock` ADD CONSTRAINT `product_stock_Type_Id_fkey` FOREIGN KEY (`Type_Id`) REFERENCES `product_type`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `product_stock` ADD CONSTRAINT `product_stock_product_type_id_fkey` FOREIGN KEY (`product_type_id`) REFERENCES `product_type`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `buy_transaction` ADD CONSTRAINT `buy_transaction_Type_id_fkey` FOREIGN KEY (`Type_id`) REFERENCES `product_type`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
