@@ -22,11 +22,12 @@ const {
 } = require("../Controllers/Customer.controller");
 const { uploadCustomerProfileMiddleware } = require("../Utils/fileUtils");
 const { buyProduct } = require("../Controllers/Buy.controller");
+const { sellProduct } = require("../Controllers/Sales.controller");
 
 router.post("/add-product-category", addProductCategory);
 router.post("/add-product-type", addProductType);
 router.post("/initialize-stock", initializeStock);
-router.post("/create-bank", createBank);
+
 router.post("/add-user", addUser);
 router.post("/add-bank-list", addAccount);
 router.post("/add-user", addUser);
@@ -55,5 +56,8 @@ router.put(
 
 // Buy Routes
 router.post("/buy-product", buyProduct);
+
+// Sales Routes
+router.post("/sell-product", sellProduct);
 
 module.exports = router;

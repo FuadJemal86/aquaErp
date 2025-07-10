@@ -1,4 +1,3 @@
-import BuyProducts from "@/Pages/AdminSide/Buy/BuyProducts/BuyProducts";
 import { lazy } from "react";
 import { Route } from "react-router-dom";
 
@@ -22,6 +21,13 @@ const AddCustomers = lazy(
 const ListCustomers = lazy(
   () => import("../Pages/AdminSide/Customers/ListCustomers")
 );
+const BuyProducts = lazy(
+  () => import("../Pages/AdminSide/Buy/BuyProducts/BuyProducts")
+);
+const SaleProducts = lazy(
+  () => import("../Pages/AdminSide/Sale/SaleProducts/SaleProducts")
+);
+
 export const adminRoutes = (
   <Route path="/admin" element={<AdminLayout></AdminLayout>}>
     <Route index element={<AdminDashboard></AdminDashboard>}></Route>
@@ -52,6 +58,10 @@ export const adminRoutes = (
     <Route
       path="/admin/buy-products"
       element={<BuyProducts></BuyProducts>}
+    ></Route>
+    <Route
+      path="/admin/sales-products"
+      element={<SaleProducts></SaleProducts>}
     ></Route>
   </Route>
 );

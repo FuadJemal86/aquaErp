@@ -71,6 +71,22 @@ const Edit_account = Joi.object({
   owner: Joi.string().required(),
 });
 
+const Sales_cart_item = Joi.object({
+  type_id: Joi.number().required(),
+  quantity: Joi.number().required(),
+  price: Joi.number().required(),
+});
+
+const Sales_product = Joi.object({
+  cart_list: Joi.array().items(Sales_cart_item).min(1).required(),
+  payment_method: Joi.string().valid("CASH", "BANK", "CREDIT").required(),
+  customer_type: Joi.string().valid("WALKER", "REGULAR").required(),
+  customer_id: Joi.number().optional(),
+  bank_id: Joi.number().optional(),
+  return_date: Joi.date().optional(),
+  description: Joi.string().optional(),
+});
+
 module.exports = {
   Product_Category,
   Product_Type,
@@ -82,4 +98,5 @@ module.exports = {
   Buy_product,
   Cart_Item,
   Edit_account,
+  Sales_product,
 };

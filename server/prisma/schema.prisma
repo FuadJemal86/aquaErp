@@ -98,11 +98,12 @@ model Bank_list {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  buy_transaction        Buy_transaction[]
-  bank_transaction       Bank_transaction[]
-  bank_balance           Bank_balance[]
-  buy_credit_transaction Buy_credit_transaction[]
-  sales_transaction      Sales_transaction[]
+  buy_transaction          Buy_transaction[]
+  bank_transaction         Bank_transaction[]
+  bank_balance             Bank_balance[]
+  buy_credit_transaction   Buy_credit_transaction[]
+  sales_transaction        Sales_transaction[]
+  Sales_credit_transaction Sales_credit_transaction[]
 
   @@map("bank_list")
 }
@@ -199,62 +200,67 @@ model Buy_credit_transaction {
 }
 
 model Cash_transaction {
-  id             Int      @id @default(autoincrement())
-  in             Float
-  out            Float
-  balance        Float
-  transaction_id String
-  manager_id     Int
-  casher_id      Int
-  isActive       Boolean  @default(true)
-  updatedAt      DateTime @updatedAt
+  id                       Int                        @id @default(autoincrement())
+  in                       Float
+  out                      Float
+  balance                  Float
+  transaction_id           String
+  manager_id               Int
+  casher_id                Int
+  isActive                 Boolean                    @default(true)
+  updatedAt                DateTime                   @updatedAt
+  Sales_credit_transaction Sales_credit_transaction[]
 
   @@index([transaction_id])
   @@map("cash_transaction")
 }
 
+model Sales_transaction {
+  id                 Int            @id @default(autoincrement())
+  type_id            Int
+  customer_id        Int?
+  walker_id          Int?
+  manager_id         Int?
+  casher_id          Int?
+  transaction_id     String
+  price_per_quantity Float
+  quantity           Int
+  payment_method     payment_method
+  customer_type      customer_type
+  status             sales_status
+  isActive           Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  bank_id   Int
+  credit_id Int?
+
+  Product_type Product_type  @relation(fields: [type_id], references: [id])
+  Bank_list    Bank_list     @relation(fields: [bank_id], references: [id])
+  Sales_credit Sales_credit? @relation(fields: [credit_id], references: [id])
+
+  @@index([transaction_id, price_per_quantity, quantity, payment_method, customer_type, status])
+  @@map("sale_transaction")
+}
+
 model Sales_credit {
   id             Int      @id @default(autoincrement())
-  Customer_id    Int
+  customer_id    Int
   transaction_id String
   total_money    Float
   return_date    DateTime
   issued_date    DateTime
+  description    String?
   status         credit
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  customer Customer @relation(fields: [Customer_id], references: [id])
+  Customer          Customer            @relation(fields: [customer_id], references: [id])
+  Sales_transaction Sales_transaction[]
 
-  @@index([transaction_id])
+  @@index([transaction_id, customer_id, total_money, return_date, issued_date, status])
   @@map("sales_credit")
-}
-
-model Sales_transaction {
-  id             Int            @id @default(autoincrement())
-  Type_id        Int
-  Bank_id        Int
-  Credit_id      Int?
-  customer_id    Int?
-  walker_id      Int?
-  manager_id     Int?
-  casher_id      Int?
-  transaction_id String
-  price          Float
-  quantity       Int
-  payment_method payment_method
-  customer_type  customer_type
-  status         sales_status
-  isActive       Boolean        @default(true)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-
-  product_type Product_type @relation(fields: [Type_id], references: [id])
-  bank_list    Bank_list    @relation(fields: [Bank_id], references: [id])
-
-  @@index([transaction_id, price])
-  @@map("sale_transaction")
 }
 
 model Sales_credit_transaction {
@@ -262,13 +268,18 @@ model Sales_credit_transaction {
   transaction_id      String
   amount_payed        Float
   payment_method      payment_sales_method
+  bank_id             Int?
+  cash_id             Int?
   outstanding_balance Float
   image               String
   isActive            Boolean              @default(true)
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
 
-  @@index([transaction_id])
+  Bank_list        Bank_list?        @relation(fields: [bank_id], references: [id])
+  Cash_transaction Cash_transaction? @relation(fields: [cash_id], references: [id])
+
+  @@index([transaction_id, amount_payed, payment_method, outstanding_balance, image])
   @@map("sales_status")
 }
 
