@@ -32,7 +32,7 @@ model Customer {
   full_name String
   phone     String
   address   String
-  id_card   String
+  id_card   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

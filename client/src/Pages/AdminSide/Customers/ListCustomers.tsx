@@ -16,73 +16,143 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit, Trash2, Search, Users, Eye } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import {
+  Edit,
+  Trash2,
+  Search,
+  Users,
+  Download,
+  MoreHorizontal,
+  FileText,
+  Calendar,
+  Phone,
+  MapPin,
+} from "lucide-react";
+import api from "@/services/api";
+import { toast } from "sonner";
 
 interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  phoneNumber: string;
+  id: number;
+  full_name: string;
+  phone: string;
   address: string;
-  company: string;
-  customerType: "INDIVIDUAL" | "BUSINESS";
-  status: "ACTIVE" | "INACTIVE";
+  id_card?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 function ListCustomers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load customers from localStorage
-    const storedCustomers = JSON.parse(
-      localStorage.getItem("customers") || "[]"
-    );
-    setCustomers(storedCustomers);
+    fetchCustomers();
   }, []);
 
-  const handleDelete = (id: string) => {
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/admin/get-all-customer");
+      setCustomers(response.data);
+    } catch (error: any) {
+      console.error("Error fetching customers:", error);
+      toast.error("Failed to fetch customers");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
     if (window.confirm("Are you sure you want to delete this customer?")) {
-      const updatedCustomers = customers.filter(
-        (customer) => customer.id !== id
-      );
-      setCustomers(updatedCustomers);
-      localStorage.setItem("customers", JSON.stringify(updatedCustomers));
+      try {
+        // Note: You'll need to implement delete endpoint in backend
+        // await api.delete(`/admin/delete-customer/${id}`);
+        toast.success("Customer deleted successfully");
+        fetchCustomers(); // Refresh the list
+      } catch (error: any) {
+        console.error("Error deleting customer:", error);
+        toast.error("Failed to delete customer");
+      }
     }
   };
 
   const handleEdit = (customer: Customer) => {
-    // For now, just show an alert. In a real app, you'd navigate to an edit page
-    alert(`Edit customer: ${customer.name}`);
+    // Navigate to edit page or open edit modal
+    toast.info(`Edit customer: ${customer.full_name}`);
   };
 
-  const handleView = (customer: Customer) => {
-    // For now, just show an alert. In a real app, you'd navigate to a view page
-    alert(`View customer: ${customer.name}`);
+  const handleDownloadIdCard = async (
+    idCardPath: string,
+    customerName: string
+  ) => {
+    try {
+      const response = await api.get(
+        `/admin/download-file?path=${encodeURIComponent(idCardPath)}`,
+        {
+          responseType: "blob",
+        }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `${customerName}_id_card.${idCardPath.split(".").pop()}`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success("ID card downloaded successfully");
+    } catch (error: any) {
+      console.error("Error downloading file:", error);
+      toast.error("Failed to download ID card");
+    }
   };
 
-  const getStatusBadgeColor = (status: string) => {
-    return status === "ACTIVE"
-      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
-  };
-
-  const getCustomerTypeBadgeColor = (type: string) => {
-    return type === "BUSINESS"
-      ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-      : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   const filteredCustomers = customers.filter(
     (customer) =>
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phoneNumber.includes(searchTerm) ||
-      customer.company.toLowerCase().includes(searchTerm.toLowerCase())
+      customer.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.phone.includes(searchTerm) ||
+      customer.address.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center gap-2 mb-6">
+          <Users className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold">Customer List</h1>
+        </div>
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-1 space-y-6">
       <div className="flex items-center gap-2 mb-6">
         <Users className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold">Customer List</h1>
@@ -125,66 +195,125 @@ function ListCustomers() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>#</TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-2">
+                        <Users className="h-3 w-3 " />
+                        Customer
+                      </div>
+                    </TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-3 w-3 text-muted-foreground" />
+                        Contact
+                      </div>
+                    </TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-3 w-3 text-muted-foreground" />
+                        Address
+                      </div>
+                    </TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-3 w-3 text-muted-foreground" />
+                        ID Card
+                      </div>
+                    </TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                        Created
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <div className="flex items-center gap-2">
+                        <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
+                        Actions
+                      </div>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCustomers.map((customer) => (
+                  {filteredCustomers.map((customer, index) => (
                     <TableRow key={customer.id}>
-                      <TableCell className="font-medium">
-                        {customer.name}
-                      </TableCell>
-                      <TableCell>{customer.email}</TableCell>
-                      <TableCell>{customer.phoneNumber}</TableCell>
-                      <TableCell>{customer.company || "N/A"}</TableCell>
+                      <TableCell>{index + 1}</TableCell>
                       <TableCell>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${getCustomerTypeBadgeColor(
-                            customer.customerType
-                          )}`}
-                        >
-                          {customer.customerType}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {customer.full_name}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
-                            customer.status
-                          )}`}
-                        >
-                          {customer.status}
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">{customer.phone}</span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 max-w-[200px]">
+                          <span
+                            className="text-sm truncate"
+                            title={customer.address}
+                          >
+                            {customer.address}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {customer.id_card ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              handleDownloadIdCard(
+                                customer.id_card!,
+                                customer.full_name
+                              )
+                            }
+                            className="flex items-center gap-2"
+                          >
+                            <Download className="h-3 w-3" />
+                            <span className="text-xs">Download</span>
+                          </Button>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">
+                            No ID Card
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">
+                            {formatDate(customer.createdAt)}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleView(customer)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(customer)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDelete(customer.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleEdit(customer)}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(customer.id)}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}

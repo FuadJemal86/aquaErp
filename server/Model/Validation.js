@@ -26,9 +26,18 @@ const Bank_list = Joi.object({
   owner: Joi.string().required(),
 });
 
+const Customer = Joi.object({
+  full_name: Joi.string().required(),
+  email: Joi.string().email().optional(),
+  phone: Joi.string().required(),
+  address: Joi.string().required(),
+  // id_card: Joi.string().optional(),
+});
+
 module.exports = {
   Product_Category,
   Product_Type,
   Initialize_Stock,
   Bank_list,
+  Customer,
 };
