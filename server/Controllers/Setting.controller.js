@@ -7,6 +7,7 @@ const {
   Add_user,
   Add_account,
   Add_account_list,
+  Edit_account,
 } = require("../Model/Validation");
 
 // Add Product  catagory
@@ -124,37 +125,6 @@ const initializeStock = async (req, res) => {
   }
 };
 
-// Create Bank list
-const createBank = async (req, res) => {
-  try {
-    const { branch, account_number, owner } = req.body;
-    const { error } = Bank_list.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
-
-    // Check if the bank list already exists
-    const findBankList = await prisma.bank_list.findFirst({
-      where: { account_number: account_number },
-    });
-    if (findBankList) {
-      return res.status(400).json({ error: "Bank Branch already exists" });
-    }
-
-    // Create the bank list
-    const bankList = await prisma.bank_list.create({
-      data: { branch, account_number, owner },
-    });
-    res.json({
-      message: "Bank Branch created successfully",
-      bankList,
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-};
-
 // Get Product category
 const getProductCategory = async (req, res) => {
   try {
@@ -199,7 +169,9 @@ const getProductStock = async (req, res) => {
 // Get Bank list
 const getBankList = async (req, res) => {
   try {
-    const bankList = await prisma.bank_list.findMany();
+    const bankList = await prisma.bank_list.findMany({
+      where: { isActive: true }
+    });
     res.json(bankList);
   } catch (error) {
     console.log(error);
@@ -251,6 +223,7 @@ const addUser = async (req, res) => {
 const getUsers = async (req, res) => {
   try {
     const allUsers = await prisma.user.findMany({
+      where: { isActive: true },
       select: {
         name: true,
         email: true,
@@ -282,7 +255,7 @@ const addAccount = async (req, res) => {
 
     // Check if account exists
     const checkAccountExist = await prisma.bank_list.findFirst({
-      where: { account_number, branch }
+      where: { isActive: true, account_number, branch }
     });
 
     if (checkAccountExist) {
@@ -319,16 +292,130 @@ const addAccount = async (req, res) => {
 const getAccounts = async (req, res) => {
   try {
     const accounts = await prisma.bank_list.findMany({
+      where: { isActive: true },
       include: {
-        bank_balance: true,
+        bank_balance: {
+          where: { isActive: true },
+        },
       },
     });
+
     res.json({ accounts });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'Failed to fetch accounts' });
   }
 };
+
+// update account
+const editBankList = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { branch, account_number, owner } = req.body;
+    const { error } = Edit_account.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+    // Check if account exists
+    const existingAccount = await prisma.bank_list.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!existingAccount) {
+      return res.status(404).json({
+        status: false,
+        error: 'Bank account not found'
+      });
+    }
+
+    // Check if updated account number + branch combination already exists (excluding current account)
+    const duplicateAccount = await prisma.bank_list.findFirst({
+      where: {
+        account_number: account_number,
+        branch: branch,
+        id: { not: parseInt(id) }
+      }
+    });
+
+    if (duplicateAccount) {
+      return res.status(400).json({
+        status: false,
+        error: 'Bank account with this number and branch already exists'
+      });
+    }
+
+    // Update bank account
+    const updatedAccount = await prisma.bank_list.update({
+      where: { id: parseInt(id) },
+      data: {
+        branch: branch,
+        account_number: account_number,
+        owner: owner.trim(),
+      }
+    });
+
+    return res.status(200).json({
+      status: true,
+      message: 'Bank account updated successfully',
+      data: updatedAccount
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      status: false,
+      error: 'Internal server error'
+    });
+  }
+};
+
+// Delete Bank Account Endpoint
+const deleteAccount = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const bankId = parseInt(id);
+
+    //  if the bank account exists
+    const existingAccount = await prisma.bank_list.findUnique({
+      where: { id: bankId }
+    });
+
+    if (!existingAccount) {
+      return res.status(404).json({
+        status: false,
+        error: 'Bank account not found'
+      });
+    }
+
+    //  Deactivate related bank balances
+    await prisma.bank_balance.updateMany({
+      where: { Bank_id: bankId },
+      data: { isActive: false }
+    });
+
+    //  Delete the bank account
+    await prisma.bank_list.update({
+      where: { id: bankId },
+      data: {
+        isActive: false
+      }
+    });
+
+    return res.status(200).json({
+      status: true,
+      message: 'Bank account deleted successfully'
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      status: false,
+      error: 'Internal server error'
+    });
+  }
+};
+
 
 
 
@@ -341,10 +428,11 @@ module.exports = {
   getProductCategory,
   getProductType,
   getProductStock,
-  createBank,
   getBankList,
   addUser,
   getUsers,
   addAccount,
   getAccounts,
+  editBankList,
+  deleteAccount
 };

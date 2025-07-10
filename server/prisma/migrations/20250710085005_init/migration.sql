@@ -7,6 +7,7 @@ CREATE TABLE `user` (
     `phone` VARCHAR(191) NOT NULL,
     `image` VARCHAR(191) NULL,
     `role` ENUM('ADMIN', 'CASHER') NOT NULL DEFAULT 'ADMIN',
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -20,7 +21,8 @@ CREATE TABLE `customer` (
     `full_name` VARCHAR(191) NOT NULL,
     `phone` VARCHAR(191) NOT NULL,
     `address` VARCHAR(191) NOT NULL,
-    `id_card` VARCHAR(191) NOT NULL,
+    `id_card` VARCHAR(191) NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -32,6 +34,7 @@ CREATE TABLE `product_category` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(191) NOT NULL,
     `description` VARCHAR(191) NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -43,6 +46,7 @@ CREATE TABLE `product_type` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(191) NOT NULL,
     `measurement` VARCHAR(191) NOT NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
     `product_category_id` INTEGER NOT NULL,
@@ -56,6 +60,7 @@ CREATE TABLE `product_stock` (
     `amount_money` DOUBLE NOT NULL,
     `price_per_quantity` DOUBLE NOT NULL,
     `quantity` INTEGER NOT NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
     `product_type_id` INTEGER NOT NULL,
@@ -69,6 +74,7 @@ CREATE TABLE `bank_list` (
     `branch` VARCHAR(191) NOT NULL,
     `account_number` VARCHAR(191) NOT NULL,
     `owner` VARCHAR(191) NOT NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -86,6 +92,7 @@ CREATE TABLE `buy_transaction` (
     `total_money` DOUBLE NOT NULL,
     `supplier_name` VARCHAR(191) NOT NULL,
     `transaction_id` VARCHAR(191) NOT NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -102,6 +109,7 @@ CREATE TABLE `buy_credit` (
     `issued_date` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `return_date` DATETIME(3) NOT NULL,
     `status` ENUM('ACCEPTED', 'OVERDUE', 'PAYED') NOT NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -114,6 +122,7 @@ CREATE TABLE `bank_balance` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `Bank_id` INTEGER NOT NULL,
     `balance` DOUBLE NOT NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -128,6 +137,7 @@ CREATE TABLE `bank_transaction` (
     `out` DOUBLE NOT NULL,
     `balance` DOUBLE NOT NULL,
     `transaction_id` VARCHAR(191) NOT NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -144,6 +154,7 @@ CREATE TABLE `buy_credit_transaction` (
     `outstanding_balance` DOUBLE NOT NULL,
     `image` VARCHAR(191) NOT NULL,
     `payment_method` ENUM('CASH', 'BANK', 'CREDIT') NOT NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -159,6 +170,7 @@ CREATE TABLE `cash_transaction` (
     `transaction_id` VARCHAR(191) NOT NULL,
     `manager_id` INTEGER NOT NULL,
     `casher_id` INTEGER NOT NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
     `updatedAt` DATETIME(3) NOT NULL,
 
     INDEX `cash_transaction_transaction_id_idx`(`transaction_id`),
@@ -174,6 +186,7 @@ CREATE TABLE `sales_credit` (
     `return_date` DATETIME(3) NOT NULL,
     `issued_date` DATETIME(3) NOT NULL,
     `status` ENUM('ACCEPTED', 'OVERDUE', 'PAYED') NOT NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -197,6 +210,7 @@ CREATE TABLE `sale_transaction` (
     `payment_method` ENUM('CASH', 'BANK', 'CREDIT') NOT NULL,
     `customer_type` ENUM('WALKER', 'REGULAR') NOT NULL,
     `status` ENUM('DONE', 'CANCEL') NOT NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -212,6 +226,7 @@ CREATE TABLE `sales_status` (
     `payment_method` ENUM('CASH', 'BANK') NOT NULL,
     `outstanding_balance` DOUBLE NOT NULL,
     `image` VARCHAR(191) NOT NULL,
+    `isActive` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
