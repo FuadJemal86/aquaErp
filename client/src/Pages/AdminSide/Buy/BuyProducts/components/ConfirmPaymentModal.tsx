@@ -62,8 +62,10 @@ function ConfirmPaymentModal({
     }
   }
   let creditReturnDate = null;
+  let creditDescription = null;
   if (paymentMethod === "CREDIT" && cartList.length > 0) {
     creditReturnDate = cartList[0].return_date || null;
+    creditDescription = cartList[0].description || null;
   }
   const formateDate = (date: string) => {
     const dateObj = new Date(date);
@@ -97,6 +99,8 @@ function ConfirmPaymentModal({
           paymentMethod === "CREDIT"
             ? formateDate(cartList[0].return_date)
             : undefined,
+        description:
+          paymentMethod === "CREDIT" ? cartList[0].description : undefined,
         cart_list: cartListData,
       };
       console.log(sendData);
@@ -107,7 +111,7 @@ function ConfirmPaymentModal({
         // Refresh page after 2 seconds
         setTimeout(() => {
           window.location.reload();
-        }, 2000);
+        }, 3000);
       } else {
         setErrorMessage(res.data.message || "An error occurred");
         toast.error(res.data.message || "An error occurred");
@@ -130,7 +134,6 @@ function ConfirmPaymentModal({
         type="success"
         title="Purchase Successful!"
         message="Your purchase has been completed successfully."
-        showLoading={true}
       />
 
       {/* Main Confirmation Modal - Only show when not showing success */}
@@ -203,6 +206,16 @@ function ConfirmPaymentModal({
                   </span>{" "}
                   <span className="text-gray-900 dark:text-gray-100">
                     {creditReturnDate}
+                  </span>
+                </div>
+              )}
+              {paymentMethod === "CREDIT" && creditDescription && (
+                <div>
+                  <span className="font-semibold text-gray-700 dark:text-gray-200">
+                    Description:
+                  </span>{" "}
+                  <span className="text-gray-900 dark:text-gray-100">
+                    {creditDescription}
                   </span>
                 </div>
               )}

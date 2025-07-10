@@ -9,6 +9,7 @@ function BuyProducts() {
   const [cartList, setCartList] = useState<any[]>([]);
   const [supplierName, setSupplierName] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
   const [categories, setCategories] = useState<any[]>([]);
   const [productTypes, setProductTypes] = useState<any[]>([]);
   const [totalAmount, setTotalAmount] = useState<number>(0);
@@ -37,6 +38,8 @@ function BuyProducts() {
   const handleAddCart = (cart: any) => {
     if (!supplierName) setSupplierName(cart.supplier_name);
     if (!paymentMethod) setPaymentMethod(cart.payment_method);
+    if (!description && cart.payment_method === "CREDIT")
+      setDescription(cart.description);
     setCartList((prev) => [
       ...prev,
       { ...cart, id: Date.now() + Math.random() },
@@ -90,6 +93,7 @@ function BuyProducts() {
             paymentMethod={paymentMethod}
             categories={categories}
             productTypes={productTypes}
+            description={description}
           />
         </div>
         <div className="space-y-6">

@@ -36,6 +36,7 @@ const cartSchema = z
     }),
     bank_id: z.string().optional(),
     return_date: z.string().optional(),
+    description: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -90,12 +91,14 @@ function AddCart({
   onAddCart,
   supplierName,
   paymentMethod,
+  description,
   categories,
   productTypes,
 }: {
   onAddCart: (cart: any) => void;
   supplierName: string;
   paymentMethod: string;
+  description: string;
   categories: any[];
   productTypes: any[];
 }) {
@@ -122,6 +125,7 @@ function AddCart({
       payment_method: "CASH",
       bank_id: "",
       return_date: "",
+      description: "",
     },
   });
 
@@ -184,12 +188,13 @@ function AddCart({
         bank_id:
           data.payment_method === "BANK" ? parseInt(data.bank_id!) : null,
         return_date: data.payment_method === "CREDIT" ? data.return_date : null,
+        description: data.payment_method === "CREDIT" ? data.description : null,
         total_money:
           parseInt(data.quantity) * parseFloat(data.price_per_quantity),
       };
       onAddCart(cartData);
-      // When resetting, preserve supplier_name and payment_method if set
-      if (supplierName || paymentMethod) {
+      // When resetting, preserve supplier_name, payment_method, and description if set
+      if (supplierName || paymentMethod || description) {
         reset({
           supplier_name: supplierName || "",
           payment_method:
@@ -200,6 +205,7 @@ function AddCart({
           price_per_quantity: "",
           bank_id: "",
           return_date: "",
+          description: description || "",
         });
       } else {
         reset();
@@ -222,7 +228,10 @@ function AddCart({
     if (paymentMethod) {
       setValue("payment_method", paymentMethod as "CREDIT" | "CASH" | "BANK");
     }
-  }, [supplierName, paymentMethod, setValue]);
+    if (description) {
+      setValue("description", description);
+    }
+  }, [supplierName, paymentMethod, description, setValue]);
 
   return (
     <Card>
@@ -442,6 +451,26 @@ function AddCart({
               </div>
             )}
           </div>
+
+          {/* Description field for CREDIT payment */}
+          {selectedPaymentMethod === "CREDIT" && (
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <Input
+                id="description"
+                placeholder="Enter description for credit payment"
+                {...register("description")}
+                className={errors.description ? "border-red-500" : ""}
+                value={description ? description : undefined}
+                disabled={!!description}
+              />
+              {errors.description && (
+                <p className="text-sm text-red-500">
+                  {errors.description.message}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Total Calculation */}
           {watch("quantity") && watch("price_per_quantity") && (

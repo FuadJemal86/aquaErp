@@ -62,6 +62,7 @@ const Buy_product = Joi.object({
   bank_id: Joi.number().optional(),
   return_date: Joi.date().optional(),
   cart_list: Joi.array().items(Cart_Item).min(1).required(),
+  description: Joi.string().optional(),
 });
 
 module.exports = {

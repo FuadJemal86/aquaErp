@@ -15,7 +15,7 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import { List, RefreshCw } from "lucide-react";
+import { List, RefreshCw, ShoppingCart } from "lucide-react";
 import ConfirmPaymentModal from "./ConfirmPaymentModal";
 
 function CartList({
@@ -40,7 +40,41 @@ function CartList({
   bankList: any[];
 }) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  if (!cartList.length) return <div>No items in cart.</div>;
+
+  if (!cartList.length) {
+    return (
+      <Card className="h-[470px] flex flex-col">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <List className="h-5 w-5" />
+              Cart List
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => window.location.reload()}
+              title="Reload"
+            >
+              <RefreshCw className="h-5 w-5" />
+            </Button>
+          </div>
+          <CardDescription>List of products in your cart</CardDescription>
+        </CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <ShoppingCart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              Your cart is empty
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              Add some products to your cart to get started
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Helper functions to get names
   const getCategoryName = (typeId: number) => {

@@ -1,6 +1,6 @@
-import React from "react";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CheckCircle, XCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface NotificationModalProps {
   open: boolean;
@@ -8,8 +8,6 @@ interface NotificationModalProps {
   title: string;
   message: string;
   onClose?: () => void;
-  showLoading?: boolean;
-  loadingText?: string;
 }
 
 function NotificationModal({
@@ -18,11 +16,7 @@ function NotificationModal({
   title,
   message,
   onClose,
-  showLoading = false,
-  loadingText = "Processing...",
 }: NotificationModalProps) {
-  if (!open) return null;
-
   const isSuccess = type === "success";
   const Icon = isSuccess ? CheckCircle : XCircle;
   const iconColor = isSuccess ? "text-green-500" : "text-red-500";
@@ -34,35 +28,78 @@ function NotificationModal({
     : "border-red-200 dark:border-red-800";
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm" />
-      <div className="relative bg-card text-card-foreground rounded-xl shadow-2xl max-w-md w-full mx-4 p-8 flex flex-col items-center animate-fade-in border border-border dark:bg-card dark:text-card-foreground">
-        <Icon className={`h-16 w-16 ${iconColor} mb-4`} />
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-card-foreground mb-2 text-center">
-          {title}
-        </h2>
-        <p className="text-gray-600 dark:text-gray-300 text-center mb-6">
-          {message}
-        </p>
-
-        {showLoading && (
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>{loadingText}</span>
-          </div>
-        )}
-
-        {onClose && (
-          <Button
-            onClick={onClose}
-            className="min-w-[100px]"
-            variant={isSuccess ? "default" : "destructive"}
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[60] flex items-center justify-center"
+        >
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.8, opacity: 0, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="relative bg-card text-card-foreground rounded-xl shadow-2xl max-w-md w-full mx-4 p-8 flex flex-col items-center border border-border dark:bg-card dark:text-card-foreground"
           >
-            {isSuccess ? "OK" : "Close"}
-          </Button>
-        )}
-      </div>
-    </div>
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{
+                type: "spring",
+                damping: 15,
+                stiffness: 200,
+                delay: 0.2,
+              }}
+              className="mb-4"
+            >
+              <Icon className={`h-16 w-16 ${iconColor}`} />
+            </motion.div>
+
+            <motion.h2
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-2xl font-bold text-gray-800 dark:text-card-foreground mb-2 text-center"
+            >
+              {title}
+            </motion.h2>
+
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="text-gray-600 dark:text-gray-300 text-center mb-6"
+            >
+              {message}
+            </motion.p>
+
+            {onClose && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <Button
+                  onClick={onClose}
+                  className="min-w-[100px]"
+                  variant={isSuccess ? "default" : "destructive"}
+                >
+                  {isSuccess ? "OK" : "Close"}
+                </Button>
+              </motion.div>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 

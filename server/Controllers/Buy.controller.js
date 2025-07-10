@@ -5,8 +5,14 @@ const prisma = require("../prisma/prisma");
 // buy product
 const buyProduct = async (req, res) => {
   try {
-    const { supplier_name, payment_method, bank_id, return_date, cart_list } =
-      req.body;
+    const {
+      supplier_name,
+      payment_method,
+      bank_id,
+      return_date,
+      cart_list,
+      description,
+    } = req.body;
 
     // Validate request body
     const validate = Buy_product.validate(req.body);
@@ -84,6 +90,7 @@ const buyProduct = async (req, res) => {
             return_date: formattedCreditReturnDate,
             status: "ACCEPTED",
             issued_date: new Date(),
+            description,
           },
         });
       } else if (payment_method === "BANK") {
