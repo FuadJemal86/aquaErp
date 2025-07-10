@@ -3,6 +3,7 @@ import AddCart from "./components/AddCart";
 import CartList from "./components/CartList";
 import { ShoppingCart } from "lucide-react";
 import api from "@/services/api";
+import { toast } from "sonner";
 
 function BuyProducts() {
   const [cartList, setCartList] = useState<any[]>([]);
@@ -52,8 +53,27 @@ function BuyProducts() {
   };
 
   // Handle buy all action
-  const handleBuyAll = () => {
-    setCartList([]);
+  const handleBuyAll = async () => {
+    const cartListData = cartList.map((cart) => ({
+      product_type_id: cart.product_type_id,
+      quantity: cart.quantity,
+      price_per_quantity: cart.price_per_quantity,
+    }));
+    const sendData = {
+      supplier_name: supplierName,
+      payment_method: paymentMethod,
+      bank_id: bankList.find((bank) => bank.id === cartList[0].bank_id)?.id,
+      return_date: cartList[0].return_date.split("T")[0],
+      cart_list: cartListData,
+    };
+    console.log(sendData);
+    const res = await api.post("/admin/buy-product", sendData);
+    if (res.status === 200) {
+      toast.success("Buy product successfully");
+      setCartList([]);
+    } else {
+      toast.error(res.data.message);
+    }
   };
 
   return (

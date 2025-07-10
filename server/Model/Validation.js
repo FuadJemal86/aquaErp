@@ -49,6 +49,21 @@ const Add_account_list = Joi.object({
   balance: Joi.number().required(),
 });
 
+const Cart_Item = Joi.object({
+  product_category_id: Joi.number().required(),
+  product_type_id: Joi.number().required(),
+  quantity: Joi.number().required(),
+  price_per_quantity: Joi.number().required(),
+});
+
+const Buy_product = Joi.object({
+  supplier_name: Joi.string().required(),
+  payment_method: Joi.string().valid("CASH", "BANK", "CREDIT").required(),
+  bank_id: Joi.number().optional(),
+  return_date: Joi.date().optional(),
+  cart_list: Joi.array().items(Cart_Item).min(1).required(),
+});
+
 module.exports = {
   Product_Category,
   Product_Type,
@@ -57,4 +72,6 @@ module.exports = {
   Customer,
   Add_user,
   Add_account_list,
+  Buy_product,
+  Cart_Item,
 };
