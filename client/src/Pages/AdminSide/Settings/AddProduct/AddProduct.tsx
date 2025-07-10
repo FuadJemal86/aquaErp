@@ -601,7 +601,7 @@ function AddProduct() {
             </div>
             <Button
               onClick={handleInitializeStock}
-              className="w-full"
+              className="w-full mt-18"
               disabled={isCreatingStock}
             >
               {isCreatingStock ? (
