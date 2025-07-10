@@ -1,16 +1,89 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import AddCart from "./components/AddCart";
 import CartList from "./components/CartList";
+import { ShoppingCart } from "lucide-react";
+import api from "@/services/api";
 
 function BuyProducts() {
+  const [cartList, setCartList] = useState<any[]>([]);
+  const [supplierName, setSupplierName] = useState<string>("");
+  const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [categories, setCategories] = useState<any[]>([]);
+  const [productTypes, setProductTypes] = useState<any[]>([]);
+  const [totalAmount, setTotalAmount] = useState<number>(0);
+  const [bankList, setBankList] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Fetch categories and product types once
+    const fetchCategories = async () => {
+      const res = await api.get("/admin/get-product-category");
+      setCategories(res.data);
+    };
+    const fetchProductTypes = async () => {
+      const res = await api.get("/admin/get-product-type");
+      setProductTypes(res.data);
+    };
+    const fetchBankList = async () => {
+      const res = await api.get("/admin/get-bank-list");
+      setBankList(res.data);
+    };
+    fetchCategories();
+    fetchProductTypes();
+    fetchBankList();
+  }, []);
+
+  // Add a new cart to the list
+  const handleAddCart = (cart: any) => {
+    if (!supplierName) setSupplierName(cart.supplier_name);
+    if (!paymentMethod) setPaymentMethod(cart.payment_method);
+    setCartList((prev) => [
+      ...prev,
+      { ...cart, id: Date.now() + Math.random() },
+    ]);
+    setTotalAmount(
+      cartList.reduce((acc, curr) => acc + curr.total_money, 0) +
+        cart.total_money
+    );
+  };
+
+  // Handle buy action (for now, just remove from list)
+  const handleBuyCart = (id: any) => {
+    setCartList((prev) => prev.filter((cart) => cart.id !== id));
+  };
+
+  // Handle buy all action
+  const handleBuyAll = () => {
+    setCartList([]);
+  };
+
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-1">
+      <div className="flex items-center gap-2 mb-6">
+        <ShoppingCart className="h-6 w-6 text-primary" />
+        <h1 className="text-2xl font-bold">Buy Products</h1>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-6">
-          <AddCart />
+          <AddCart
+            onAddCart={handleAddCart}
+            supplierName={supplierName}
+            paymentMethod={paymentMethod}
+            categories={categories}
+            productTypes={productTypes}
+          />
         </div>
         <div className="space-y-6">
-          <CartList />
+          <CartList
+            cartList={cartList}
+            onBuyCart={handleBuyCart}
+            categories={categories}
+            productTypes={productTypes}
+            onBuyAll={handleBuyAll}
+            supplierName={supplierName}
+            paymentMethod={paymentMethod}
+            totalAmount={totalAmount}
+            bankList={bankList}
+          />
         </div>
       </div>
     </div>
