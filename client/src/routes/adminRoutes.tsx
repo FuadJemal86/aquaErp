@@ -1,3 +1,4 @@
+import BuyProducts from "@/Pages/AdminSide/Buy/BuyProducts/BuyProducts";
 import { lazy } from "react";
 import { Route } from "react-router-dom";
 
@@ -47,6 +48,10 @@ export const adminRoutes = (
     <Route
       path="/admin/customers"
       element={<ListCustomers></ListCustomers>}
+    ></Route>
+    <Route
+      path="/admin/buy-products"
+      element={<BuyProducts></BuyProducts>}
     ></Route>
   </Route>
 );
