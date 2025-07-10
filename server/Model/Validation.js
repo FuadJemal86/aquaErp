@@ -32,8 +32,9 @@ const Customer = Joi.object({
   email: Joi.string().email().optional(),
   phone: Joi.string().required(),
   address: Joi.string().required(),
-  // id_card: Joi.string().optional(),
+  id_card: Joi.string().optional().allow('', null),
 });
+
 const Add_user = Joi.object({
   name: Joi.string().required(),
   email: Joi.string().email().required(),
@@ -49,6 +50,12 @@ const Add_account_list = Joi.object({
   balance: Joi.number().required(),
 });
 
+const Edit_account = Joi.object({
+  branch: Joi.string().required(),
+  account_number: Joi.string().required(),
+  owner: Joi.string().required(),
+});
+
 module.exports = {
   Product_Category,
   Product_Type,
@@ -57,4 +64,5 @@ module.exports = {
   Customer,
   Add_user,
   Add_account_list,
+  Edit_account
 };

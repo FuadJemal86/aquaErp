@@ -158,7 +158,7 @@ function AddUsers() {
 
         setIsCreatingUser(true);
 
-        // await api.put(`/admin/update-user/${editingId}`, validatedUser);
+        await api.put(`/admin/edit-user/${editingId}`, validatedUser);
 
         // For now, just update locally
         setUsers((usersList) =>

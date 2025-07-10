@@ -1,4 +1,4 @@
-import React, { useState, useEffect, type JSX } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -9,6 +9,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 import { Edit, Trash2, Plus, Building2, CreditCard } from "lucide-react";
@@ -28,13 +38,17 @@ const bankAccountSchema = z.object({
   branch: z.string().min(1, "Branch name is required"),
   account_number: z.string().min(1, "Account number is required"),
   owner: z.string().min(1, "Owner name is required"),
-  balance: z.string().optional()
+  balance: z.string().min(1, "Balance is required").refine((val) => !isNaN(Number(val)) && Number(val) >= 0, {
+    message: "Balance must be a valid positive number"
+  })
 });
 
-function BankAccount(): JSX.Element {
+function BankAccount() {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState<BankAccount | null>(null);
 
   // Form states
   const [branch, setBranch] = useState("");
@@ -42,12 +56,20 @@ function BankAccount(): JSX.Element {
   const [owner, setOwner] = useState("");
   const [balance, setBalance] = useState("");
 
+  // Error states
+  const [errors, setErrors] = useState<{
+    branch?: string;
+    account_number?: string;
+    owner?: string;
+    balance?: string;
+  }>({});
+
   // Fetch bank accounts on component mount
   useEffect(() => {
     fetchBankAccounts();
   }, []);
 
-  const fetchBankAccounts = async (): Promise<void> => {
+  const fetchBankAccounts = async () => {
     try {
       setIsLoading(true);
       const response = await api.get("/admin/get-bank-list");
@@ -60,20 +82,65 @@ function BankAccount(): JSX.Element {
     }
   };
 
+  const validateForm = () => {
+    const newErrors: typeof errors = {};
+
+    if (!branch.trim()) {
+      newErrors.branch = "Branch name is required";
+    }
+
+    if (!account_number.trim()) {
+      newErrors.account_number = "Account number is required";
+    }
+
+    if (!owner.trim()) {
+      newErrors.owner = "Owner name is required";
+    }
+
+    if (!balance.trim()) {
+      newErrors.balance = "Balance is required";
+    } else if (isNaN(Number(balance)) || Number(balance) < 0) {
+      newErrors.balance = "Balance must be a valid positive number";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateUpdateForm = (): boolean => {
+    const newErrors: typeof errors = {};
+
+    if (!branch.trim()) {
+      newErrors.branch = "Branch name is required";
+    }
+
+    if (!account_number.trim()) {
+      newErrors.account_number = "Account number is required";
+    }
+
+    if (!owner.trim()) {
+      newErrors.owner = "Owner name is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleAddBankAccount = async (): Promise<void> => {
+    if (!validateForm()) {
+      return;
+    }
+
     try {
-      // Validate the input data
-      const validatedData = bankAccountSchema.parse({
+      setIsLoading(true);
+      const response = await api.post("/admin/add-bank-list", {
         branch: branch.trim(),
         account_number: account_number.trim(),
         owner: owner.trim(),
         balance: balance.trim()
       });
 
-      setIsLoading(true);
-      const response = await api.post("/admin/add-bank-list", validatedData);
-
-      if (response.data.status || response.status === 200) {
+      if (response.data.status || response.status === 201) {
         toast.success("Bank account created successfully");
         fetchBankAccounts();
         // Reset form
@@ -81,17 +148,13 @@ function BankAccount(): JSX.Element {
         setAccountNumber("");
         setOwner("");
         setBalance("");
+        setErrors({});
       } else {
         toast.error("Failed to create bank account");
       }
     } catch (error: any) {
       console.error("Error creating bank account:", error);
-      if (error instanceof z.ZodError) {
-        // Handle Zod validation errors
-        toast.error(error.errors[0].message);
-      } else {
-        toast.error(error.response?.data?.error || "Failed to create bank account");
-      }
+      toast.error(error.response?.data?.error || "Failed to create bank account");
     } finally {
       setIsLoading(false);
     }
@@ -102,53 +165,63 @@ function BankAccount(): JSX.Element {
     setBranch(account.branch);
     setAccountNumber(account.account_number);
     setOwner(account.owner);
+    setBalance("");
+    setErrors({});
   };
 
   const handleUpdate = async (): Promise<void> => {
-    if (!editingId || !branch.trim() || !account_number.trim() || !owner.trim()) {
-      alert("Please fill all fields");
+    if (!validateUpdateForm()) {
       return;
     }
 
     try {
       setIsLoading(true);
-      const response = await api.put(`/admin/update-bank-list/${editingId}`, {
+      const response = await api.put(`/admin/edit-bank-list/${editingId}`, {
         branch: branch.trim(),
         account_number: account_number.trim(),
         owner: owner.trim(),
       });
 
       if (response.data.status || response.status === 200) {
-        alert("Bank account updated successfully");
+        toast.success("Bank account updated successfully");
         fetchBankAccounts();
         handleCancel();
       } else {
-        alert("Failed to update bank account");
+        toast.error("Failed to update bank account");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating bank account:", error);
-      alert("Failed to update bank account");
+      toast.error(error.response?.data?.error || "Failed to update bank account");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDelete = async (id: number): Promise<void> => {
+  const handleDeleteClick = (account: BankAccount): void => {
+    setAccountToDelete(account);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async (): Promise<void> => {
+    if (!accountToDelete) return;
+
     try {
       setIsLoading(true);
-      const response = await api.delete(`/admin/delete-bank-list/${id}`);
+      const response = await api.put(`/admin/delete-bank-list/${accountToDelete.id}`);
 
       if (response.data.status || response.status === 200) {
-        alert("Bank account deleted successfully");
+        toast.success("Bank account deleted successfully");
         fetchBankAccounts();
       } else {
-        alert("Failed to delete bank account");
+        toast.error("Failed to delete bank account");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting bank account:", error);
-      alert("Failed to delete bank account");
+      toast.error(error.response?.data?.error || "Failed to delete bank account");
     } finally {
       setIsLoading(false);
+      setDeleteDialogOpen(false);
+      setAccountToDelete(null);
     }
   };
 
@@ -158,6 +231,13 @@ function BankAccount(): JSX.Element {
     setAccountNumber("");
     setOwner("");
     setBalance("");
+    setErrors({});
+  };
+
+  const clearFieldError = (field: string): void => {
+    if (errors[field as keyof typeof errors]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
   };
 
   return (
@@ -188,9 +268,16 @@ function BankAccount(): JSX.Element {
                 id="branch"
                 placeholder="Enter branch name"
                 value={branch}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBranch(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setBranch(e.target.value);
+                  clearFieldError('branch');
+                }}
                 disabled={isLoading}
+                className={errors.branch ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
               />
+              {errors.branch && (
+                <p className="text-sm text-red-600 mt-1">{errors.branch}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="account_number">Account Number</Label>
@@ -198,9 +285,16 @@ function BankAccount(): JSX.Element {
                 id="account_number"
                 placeholder="Enter account number"
                 value={account_number}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAccountNumber(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setAccountNumber(e.target.value);
+                  clearFieldError('account_number');
+                }}
                 disabled={isLoading}
+                className={errors.account_number ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
               />
+              {errors.account_number && (
+                <p className="text-sm text-red-600 mt-1">{errors.account_number}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="owner">Account Holder Name</Label>
@@ -208,21 +302,37 @@ function BankAccount(): JSX.Element {
                 id="owner"
                 placeholder="Enter holder name"
                 value={owner}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOwner(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setOwner(e.target.value);
+                  clearFieldError('owner');
+                }}
                 disabled={isLoading}
+                className={errors.owner ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
               />
+              {errors.owner && (
+                <p className="text-sm text-red-600 mt-1">{errors.owner}</p>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="balance">Current Balance</Label>
-              <Input
-                id="balance"
-                type="number"
-                placeholder="0.00"
-                value={balance}
-                onChange={(e) => setBalance(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
+            {!editingId && (
+              <div className="space-y-2">
+                <Label htmlFor="balance">Current Balance</Label>
+                <Input
+                  id="balance"
+                  type="number"
+                  placeholder="0.00"
+                  value={balance}
+                  onChange={(e) => {
+                    setBalance(e.target.value);
+                    clearFieldError('balance');
+                  }}
+                  disabled={isLoading}
+                  className={errors.balance ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+                />
+                {errors.balance && (
+                  <p className="text-sm text-red-600 mt-1">{errors.balance}</p>
+                )}
+              </div>
+            )}
             <div className="flex gap-2">
               {editingId ? (
                 <>
@@ -317,7 +427,7 @@ function BankAccount(): JSX.Element {
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => handleDelete(account.id)}
+                              onClick={() => handleDeleteClick(account)}
                               disabled={isLoading}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -333,6 +443,64 @@ function BankAccount(): JSX.Element {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="z-[9999] max-w-md mx-auto bg-white border border-gray-200 shadow-2xl rounded-xl overflow-hidden">
+          <div className="p-6">
+            <AlertDialogHeader className="text-center mb-4">
+              <div className="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
+                <Trash2 className="h-8 w-8 text-red-600" />
+              </div>
+              <AlertDialogTitle className="text-xl font-bold text-gray-900 mb-2">
+                Delete Bank Account
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-600 leading-relaxed">
+                This action cannot be undone. This will permanently delete the bank account:
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-500">Account Holder:</span>
+                  <span className="text-sm font-semibold text-gray-900">{accountToDelete?.owner}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-500">Account Number:</span>
+                  <span className="text-sm font-semibold text-gray-900">{accountToDelete?.account_number}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-500">Branch:</span>
+                  <span className="text-sm font-semibold text-gray-900">{accountToDelete?.branch}</span>
+                </div>
+              </div>
+            </div>
+
+            <AlertDialogFooter className="flex gap-3 pt-0">
+              <AlertDialogCancel className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300 rounded-lg py-2.5 font-medium transition-colors">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteConfirm}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2.5 font-medium transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Deleting...
+                  </div>
+                ) : (
+                  <>
+                    Delete Account
+                  </>
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

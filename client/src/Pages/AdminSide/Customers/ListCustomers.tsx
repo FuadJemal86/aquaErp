@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -34,9 +34,32 @@ import {
   Calendar,
   Phone,
   MapPin,
+  Upload,
+  X,
+  Image as ImageIcon,
+  File,
 } from "lucide-react";
 import api from "@/services/api";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Customer {
   id: number;
@@ -52,6 +75,14 @@ function ListCustomers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchCustomers();
@@ -70,23 +101,88 @@ function ListCustomers() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm("Are you sure you want to delete this customer?")) {
-      try {
-        // Note: You'll need to implement delete endpoint in backend
-        // await api.delete(`/admin/delete-customer/${id}`);
-        toast.success("Customer deleted successfully");
-        fetchCustomers(); // Refresh the list
-      } catch (error: any) {
-        console.error("Error deleting customer:", error);
-        toast.error("Failed to delete customer");
+  const handleDeleteClick = (id: number) => {
+    setCustomerToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!customerToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await api.put(`/admin/delete-customer/${customerToDelete}`);
+      toast.success("Customer deleted successfully");
+      fetchCustomers(); // Refresh the list
+    } catch (error: any) {
+      console.error("Error deleting customer:", error);
+      toast.error("Failed to delete customer");
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setCustomerToDelete(null);
+    }
+  };
+
+  const handleEditClick = (customer: Customer) => {
+    setCurrentCustomer(customer);
+    setPreviewUrl(null);
+    setSelectedFile(null);
+    setEditModalOpen(true);
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+
+      // Create preview URL for images
+      if (file.type.startsWith("image/")) {
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+      } else {
+        setPreviewUrl(null);
       }
     }
   };
 
-  const handleEdit = (customer: Customer) => {
-    // Navigate to edit page or open edit modal
-    toast.info(`Edit customer: ${customer.full_name}`);
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCustomer) return;
+
+    try {
+      const formData = new FormData();
+      formData.append("full_name", currentCustomer.full_name);
+      formData.append("phone", currentCustomer.phone);
+      formData.append("address", currentCustomer.address);
+
+      if (selectedFile) {
+        formData.append("id_card", selectedFile);
+      }
+
+      await api.put(`/admin/update-customer/${currentCustomer.id}`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      toast.success("Customer updated successfully");
+      fetchCustomers(); // Refresh the list
+      setEditModalOpen(false);
+      setSelectedFile(null);
+      setPreviewUrl(null);
+    } catch (error: any) {
+      console.error("Error updating customer:", error);
+      toast.error("Failed to update customer");
+    }
   };
 
   const handleDownloadIdCard = async (
@@ -300,13 +396,13 @@ function ListCustomers() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
-                              onClick={() => handleEdit(customer)}
+                              onClick={() => handleEditClick(customer)}
                             >
                               <Edit className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => handleDelete(customer.id)}
+                              onClick={() => handleDeleteClick(customer.id)}
                               className="text-red-600 focus:text-red-600"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
@@ -323,6 +419,220 @@ function ListCustomers() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Customer Dialog */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Edit Customer</DialogTitle>
+            <DialogDescription>
+              Update customer details below. Click save when you're done.
+            </DialogDescription>
+          </DialogHeader>
+          {currentCustomer && (
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="full_name">Full Name</Label>
+                  <Input
+                    id="full_name"
+                    value={currentCustomer.full_name}
+                    onChange={(e) =>
+                      setCurrentCustomer({
+                        ...currentCustomer,
+                        full_name: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    value={currentCustomer.phone}
+                    onChange={(e) =>
+                      setCurrentCustomer({
+                        ...currentCustomer,
+                        phone: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Textarea
+                    id="address"
+                    value={currentCustomer.address}
+                    onChange={(e) =>
+                      setCurrentCustomer({
+                        ...currentCustomer,
+                        address: e.target.value,
+                      })
+                    }
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>ID Card</Label>
+                  {currentCustomer.id_card && !selectedFile && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleDownloadIdCard(
+                            currentCustomer.id_card!,
+                            currentCustomer.full_name
+                          )
+                        }
+                        className="flex items-center gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download Current ID Card
+                      </Button>
+                    </div>
+                  )}
+                  {selectedFile ? (
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 hover:bg-gray-100 transition-colors">
+                          <div className="flex flex-col items-center justify-center space-y-3">
+                            {previewUrl ? (
+                              <div className="relative">
+                                <img
+                                  src={previewUrl}
+                                  alt="Preview"
+                                  className="w-32 h-32 object-cover rounded-lg border"
+                                />
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="destructive"
+                                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                                  onClick={handleRemoveFile}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="relative">
+                                {selectedFile.type.startsWith("image/") ? (
+                                  <ImageIcon className="h-8 w-8 text-blue-500" />
+                                ) : selectedFile.type === "application/pdf" ? (
+                                  <FileText className="h-8 w-8 text-red-500" />
+                                ) : (
+                                  <File className="h-8 w-8 text-gray-500" />
+                                )}
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="destructive"
+                                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                                  onClick={handleRemoveFile}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
+                            <div className="text-center">
+                              <p className="text-sm font-medium text-gray-900">
+                                {selectedFile.name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <Input
+                        id="id_card"
+                        type="file"
+                        ref={fileInputRef}
+                        accept=".jpg,.jpeg,.png,.pdf"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="id_card"
+                        className="block w-full border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 hover:bg-gray-50 transition-colors cursor-pointer"
+                      >
+                        <div className="flex flex-col items-center justify-center space-y-3">
+                          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                            <Upload className="h-8 w-8 text-gray-400" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              Click to upload new ID Card
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              JPG, PNG, PDF (max 5MB)
+                            </p>
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Save Changes</Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="z-[9999] max-w-md mx-auto bg-white border border-gray-200 shadow-2xl rounded-xl overflow-hidden">
+          <div className="p-6">
+            <AlertDialogHeader className="text-center mb-4">
+              <div className="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
+                <Trash2 className="h-8 w-8 text-red-600" />
+              </div>
+              <AlertDialogTitle className="text-xl font-bold text-gray-900 mb-2">
+                Delete Customer
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-600 leading-relaxed">
+                This action cannot be undone. This will permanently delete the
+                customer and all associated data.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <AlertDialogFooter className="flex gap-3 pt-0">
+              <AlertDialogCancel className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300 rounded-lg py-2.5 font-medium transition-colors">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteConfirm}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2.5 font-medium transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Deleting...
+                  </div>
+                ) : (
+                  "Delete Customer"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
