@@ -220,7 +220,7 @@ const addUser = async (req, res) => {
     }
 
     // check if the user is already exist
-    const checkUserExist = await prisma.user.findFirst({
+    const checkUserExist = await prisma.user.findUnique({
       where: { email: email }
     })
 
@@ -239,7 +239,7 @@ const addUser = async (req, res) => {
       }
     })
 
-    res.status(200).json({ status: true, error: 'user successful added' })
+    res.status(200).json({ status: true, message: 'user successful added' })
 
   } catch (error) {
     console.log(error);
