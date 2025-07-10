@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -25,40 +25,104 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Edit, Trash2, Plus, Users, UserPlus } from "lucide-react";
+import { z } from "zod";
+import api from "@/services/api";
+import { toast } from "sonner";
+
+export const AddUserSchema = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+  email: z.string().trim().email("Invalid email"),
+  phone: z.string().trim().min(1, "Phone number is required"),
+  password: z.string().trim().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["ADMIN", "CASHIER"]),
+});
 
 interface User {
   id: string;
   name: string;
   email: string;
-  phoneNumber: string;
+  phone: string;
   role: "ADMIN" | "CASHIER";
+}
+
+interface FormErrors {
+  [key: string]: string;
 }
 
 function AddUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [userErrors, setUserErrors] = useState<FormErrors>({});
 
   // Form states
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [role, setRole] = useState<"ADMIN" | "CASHIER" | "">("");
 
-  const handleAddUser = () => {
-    if (name.trim() && email.trim() && phoneNumber.trim() && role) {
-      const newUser: User = {
-        id: Date.now().toString(),
+  // Fetch users on component mount
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await api.get("/admin/get-user");
+      setUsers(response.data.allUsers || []);
+    } catch (error: any) {
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error("Failed to fetch users");
+      }
+    }
+  };
+
+  const handleAddUser = async () => {
+    try {
+      setUserErrors({});
+
+      // Validate using Zod
+      const validatedUser = AddUserSchema.parse({
         name: name.trim(),
         email: email.trim(),
-        phoneNumber: phoneNumber.trim(),
+        phone: phone.trim(),
+        password: password.trim(),
         role: role as "ADMIN" | "CASHIER",
-      };
-      setUsers([...users, newUser]);
+      });
+
+      setIsCreatingUser(true);
+
+      const response = await api.post("/admin/add-user", validatedUser);
+
+      toast.success("User added successfully");
+
       // Reset form
       setName("");
       setEmail("");
-      setPhoneNumber("");
+      setPhone("");
+      setPassword("");
       setRole("");
+
+      // Refresh the user list
+      await fetchUsers();
+    } catch (error: any) {
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else if (error.errors) {
+        // Zod validation errors
+        const errors: FormErrors = {};
+        error.errors.forEach((err: any) => {
+          errors[err.path[0]] = err.message;
+        });
+        setUserErrors(errors);
+      } else {
+        toast.error("Failed to add user");
+      }
+    } finally {
+      setIsCreatingUser(false);
     }
   };
 
@@ -66,50 +130,103 @@ function AddUsers() {
     setEditingId(user.id);
     setName(user.name);
     setEmail(user.email);
-    setPhoneNumber(user.phoneNumber);
+    setPhone(user.phone);
+    setPassword("");
     setRole(user.role);
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (
       editingId &&
       name.trim() &&
       email.trim() &&
-      phoneNumber.trim() &&
+      phone.trim() &&
+      password.trim() &&
       role
     ) {
-      setUsers((usersList) =>
-        usersList.map((user) =>
-          user.id === editingId
-            ? {
+      try {
+        setUserErrors({});
+
+        // Validate using Zod
+        const validatedUser = AddUserSchema.parse({
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          password: password.trim(),
+          role: role as "ADMIN" | "CASHIER",
+        });
+
+        setIsCreatingUser(true);
+
+        // await api.put(`/admin/update-user/${editingId}`, validatedUser);
+
+        // For now, just update locally
+        setUsers((usersList) =>
+          usersList.map((user) =>
+            user.id === editingId
+              ? {
                 ...user,
                 name: name.trim(),
                 email: email.trim(),
-                phoneNumber: phoneNumber.trim(),
+                phone: phone.trim(),
                 role: role as "ADMIN" | "CASHIER",
               }
-            : user
-        )
-      );
-      // Reset form
-      setEditingId(null);
-      setName("");
-      setEmail("");
-      setPhoneNumber("");
-      setRole("");
+              : user
+          )
+        );
+
+        toast.success("User updated successfully");
+
+        // Reset form
+        setEditingId(null);
+        setName("");
+        setEmail("");
+        setPhone("");
+        setPassword("");
+        setRole("");
+      } catch (error: any) {
+        if (error.response?.data?.error) {
+          toast.error(error.response.data.error);
+        } else if (error.errors) {
+          // Zod validation errors
+          const errors: FormErrors = {};
+          error.errors.forEach((err: any) => {
+            errors[err.path[0]] = err.message;
+          });
+          setUserErrors(errors);
+        } else {
+          toast.error("Failed to update user");
+        }
+      } finally {
+        setIsCreatingUser(false);
+      }
     }
   };
 
-  const handleDelete = (id: string) => {
-    setUsers((usersList) => usersList.filter((user) => user.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+
+      // await api.delete(`/admin/delete-user/${id}`);
+
+      setUsers((usersList) => usersList.filter((user) => user.id !== id));
+      toast.success("User deleted successfully");
+    } catch (error: any) {
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error("Failed to delete user");
+      }
+    }
   };
 
   const handleCancel = () => {
     setEditingId(null);
     setName("");
     setEmail("");
-    setPhoneNumber("");
+    setPhone("");
+    setPassword("");
     setRole("");
+    setUserErrors({});
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -147,7 +264,11 @@ function AddUsers() {
                 placeholder="Enter full name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                className={userErrors.name ? "border-red-500" : ""}
               />
+              {userErrors.name && (
+                <p className="text-sm text-red-500">{userErrors.name}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
@@ -157,16 +278,38 @@ function AddUsers() {
                 placeholder="Enter email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className={userErrors.email ? "border-red-500" : ""}
               />
+              {userErrors.email && (
+                <p className="text-sm text-red-500">{userErrors.email}</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phoneNumber">Phone Number</Label>
+              <Label htmlFor="phone">Phone Number</Label>
               <Input
-                id="phoneNumber"
+                id="phone"
                 placeholder="Enter phone number"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className={userErrors.phone ? "border-red-500" : ""}
               />
+              {userErrors.phone && (
+                <p className="text-sm text-red-500">{userErrors.phone}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={userErrors.password ? "border-red-500" : ""}
+              />
+              {userErrors.password && (
+                <p className="text-sm text-red-500">{userErrors.password}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
@@ -174,7 +317,7 @@ function AddUsers() {
                 value={role}
                 onValueChange={(value) => setRole(value as "ADMIN" | "CASHIER")}
               >
-                <SelectTrigger>
+                <SelectTrigger className={userErrors.role ? "border-red-500" : ""}>
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -182,21 +325,42 @@ function AddUsers() {
                   <SelectItem value="CASHIER">CASHIER</SelectItem>
                 </SelectContent>
               </Select>
+              {userErrors.role && (
+                <p className="text-sm text-red-500">{userErrors.role}</p>
+              )}
             </div>
             <div className="flex gap-2">
               {editingId ? (
                 <>
-                  <Button onClick={handleUpdate} className="flex-1">
-                    Update User
+                  <Button
+                    onClick={handleUpdate}
+                    className="flex-1"
+                    disabled={isCreatingUser}
+                  >
+                    {isCreatingUser ? "Updating..." : "Update User"}
                   </Button>
-                  <Button onClick={handleCancel} variant="outline">
+                  <Button
+                    onClick={handleCancel}
+                    variant="outline"
+                    disabled={isCreatingUser}
+                  >
                     Cancel
                   </Button>
                 </>
               ) : (
-                <Button onClick={handleAddUser} className="w-full">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add User
+                <Button
+                  onClick={handleAddUser}
+                  className="w-full"
+                  disabled={isCreatingUser}
+                >
+                  {isCreatingUser ? (
+                    "Adding..."
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add User
+                    </>
+                  )}
                 </Button>
               )}
             </div>
@@ -238,7 +402,7 @@ function AddUsers() {
                           {user.name}
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>{user.phoneNumber}</TableCell>
+                        <TableCell>{user.phone}</TableCell>
                         <TableCell>
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(

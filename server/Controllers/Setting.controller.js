@@ -4,6 +4,9 @@ const {
   Product_Type,
   Initialize_Stock,
   Bank_list,
+  Add_user,
+  Add_account,
+  Add_account_list,
 } = require("../Model/Validation");
 
 // Add Product  catagory
@@ -204,6 +207,133 @@ const getBankList = async (req, res) => {
   }
 };
 
+
+// add user
+const addUser = async (req, res) => {
+
+  try {
+    const { name, email, password, phone, role } = req.body;
+    const { error } = Add_user.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    // check if the user is already exist
+    const checkUserExist = await prisma.user.findUnique({
+      where: { email: email }
+    })
+
+    if (checkUserExist) {
+      return res.status(400).json({ status: false, error: 'user already exist' })
+    }
+
+    // create the user
+    await prisma.user.create({
+      data: {
+        name: name,
+        email: email,
+        password: password,
+        phone: phone,
+        role: role
+      }
+    })
+
+    res.status(200).json({ status: true, message: 'user successful added' })
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+// get users
+const getUsers = async (req, res) => {
+  try {
+    const allUsers = await prisma.user.findMany({
+      select: {
+        name: true,
+        email: true,
+        phone: true,
+        role: true
+      }
+    })
+
+    if (!allUsers) {
+      return res.status(400).json({ status: false, error: 'no user found' })
+    }
+    res.json({ allUsers })
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+
+// add account
+const addAccount = async (req, res) => {
+  try {
+    const { branch, account_number, owner, balance } = req.body;
+    const { error } = Add_account_list.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    // Check if account exists
+    const checkAccountExist = await prisma.bank_list.findFirst({
+      where: { account_number, branch }
+    });
+
+    if (checkAccountExist) {
+      return res.status(400).json({ status: false, error: 'Bank account already exists' });
+    }
+
+    //  Create bank account
+    const newBankAccount = await prisma.bank_list.create({
+      data: {
+        branch,
+        account_number,
+        owner,
+      }
+    });
+
+    // Create initial balance linked to the new bank account
+    await prisma.bank_balance.create({
+      data: {
+        Bank_id: newBankAccount.id,
+        balance: parseFloat(balance),
+      }
+    });
+
+    return res.status(201).json({ status: true, message: 'Bank account created successfully' });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+// get bank account
+const getAccounts = async (req, res) => {
+  try {
+    const accounts = await prisma.bank_list.findMany({
+      include: {
+        bank_balance: true,
+      },
+    });
+    res.json({ accounts });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to fetch accounts' });
+  }
+};
+
+
+
+
+
 module.exports = {
   addProductCategory,
   addProductType,
@@ -213,4 +343,8 @@ module.exports = {
   getProductStock,
   createBank,
   getBankList,
+  addUser,
+  getUsers,
+  addAccount,
+  getAccounts,
 };

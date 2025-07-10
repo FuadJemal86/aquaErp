@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, type JSX } from "react";
 import {
   Card,
   CardContent,
@@ -9,107 +9,155 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { toast } from "sonner";
+
 import { Edit, Trash2, Plus, Building2, CreditCard } from "lucide-react";
+import api from "@/services/api";
+import { z } from "zod";
 
 interface BankAccount {
-  id: string;
-  branchName: string;
-  accountNumber: string;
-  holderName: string;
-  currentBalance: number;
+  id: number;
+  branch: string;
+  account_number: string;
+  owner: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-function BankAccount() {
+const bankAccountSchema = z.object({
+  branch: z.string().min(1, "Branch name is required"),
+  account_number: z.string().min(1, "Account number is required"),
+  owner: z.string().min(1, "Owner name is required"),
+  balance: z.string().optional()
+});
+
+function BankAccount(): JSX.Element {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Form states
-  const [branchName, setBranchName] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [holderName, setHolderName] = useState("");
-  const [currentBalance, setCurrentBalance] = useState("");
+  const [branch, setBranch] = useState("");
+  const [account_number, setAccountNumber] = useState("");
+  const [owner, setOwner] = useState("");
+  const [balance, setBalance] = useState("");
 
-  const handleAddBankAccount = () => {
-    if (
-      branchName.trim() &&
-      accountNumber.trim() &&
-      holderName.trim() &&
-      currentBalance
-    ) {
-      const newAccount: BankAccount = {
-        id: Date.now().toString(),
-        branchName: branchName.trim(),
-        accountNumber: accountNumber.trim(),
-        holderName: holderName.trim(),
-        currentBalance: parseFloat(currentBalance),
-      };
-      setBankAccounts([...bankAccounts, newAccount]);
-      // Reset form
-      setBranchName("");
-      setAccountNumber("");
-      setHolderName("");
-      setCurrentBalance("");
+  // Fetch bank accounts on component mount
+  useEffect(() => {
+    fetchBankAccounts();
+  }, []);
+
+  const fetchBankAccounts = async (): Promise<void> => {
+    try {
+      setIsLoading(true);
+      const response = await api.get("/admin/get-bank-list");
+      setBankAccounts(response.data || []);
+    } catch (error: any) {
+      console.error("Failed to fetch bank accounts:", error);
+      toast.error(error.response?.data?.error || "Failed to fetch bank accounts");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleEdit = (account: BankAccount) => {
+  const handleAddBankAccount = async (): Promise<void> => {
+    try {
+      // Validate the input data
+      const validatedData = bankAccountSchema.parse({
+        branch: branch.trim(),
+        account_number: account_number.trim(),
+        owner: owner.trim(),
+        balance: balance.trim()
+      });
+
+      setIsLoading(true);
+      const response = await api.post("/admin/add-bank-list", validatedData);
+
+      if (response.data.status || response.status === 200) {
+        toast.success("Bank account created successfully");
+        fetchBankAccounts();
+        // Reset form
+        setBranch("");
+        setAccountNumber("");
+        setOwner("");
+        setBalance("");
+      } else {
+        toast.error("Failed to create bank account");
+      }
+    } catch (error: any) {
+      console.error("Error creating bank account:", error);
+      if (error instanceof z.ZodError) {
+        // Handle Zod validation errors
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error(error.response?.data?.error || "Failed to create bank account");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEdit = (account: BankAccount): void => {
     setEditingId(account.id);
-    setBranchName(account.branchName);
-    setAccountNumber(account.accountNumber);
-    setHolderName(account.holderName);
-    setCurrentBalance(account.currentBalance.toString());
+    setBranch(account.branch);
+    setAccountNumber(account.account_number);
+    setOwner(account.owner);
   };
 
-  const handleUpdate = () => {
-    if (
-      editingId &&
-      branchName.trim() &&
-      accountNumber.trim() &&
-      holderName.trim() &&
-      currentBalance
-    ) {
-      setBankAccounts((accounts) =>
-        accounts.map((account) =>
-          account.id === editingId
-            ? {
-                ...account,
-                branchName: branchName.trim(),
-                accountNumber: accountNumber.trim(),
-                holderName: holderName.trim(),
-                currentBalance: parseFloat(currentBalance),
-              }
-            : account
-        )
-      );
-      // Reset form
-      setEditingId(null);
-      setBranchName("");
-      setAccountNumber("");
-      setHolderName("");
-      setCurrentBalance("");
+  const handleUpdate = async (): Promise<void> => {
+    if (!editingId || !branch.trim() || !account_number.trim() || !owner.trim()) {
+      alert("Please fill all fields");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await api.put(`/admin/update-bank-list/${editingId}`, {
+        branch: branch.trim(),
+        account_number: account_number.trim(),
+        owner: owner.trim(),
+      });
+
+      if (response.data.status || response.status === 200) {
+        alert("Bank account updated successfully");
+        fetchBankAccounts();
+        handleCancel();
+      } else {
+        alert("Failed to update bank account");
+      }
+    } catch (error) {
+      console.error("Error updating bank account:", error);
+      alert("Failed to update bank account");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDelete = (id: string) => {
-    setBankAccounts((accounts) =>
-      accounts.filter((account) => account.id !== id)
-    );
+  const handleDelete = async (id: number): Promise<void> => {
+    try {
+      setIsLoading(true);
+      const response = await api.delete(`/admin/delete-bank-list/${id}`);
+
+      if (response.data.status || response.status === 200) {
+        alert("Bank account deleted successfully");
+        fetchBankAccounts();
+      } else {
+        alert("Failed to delete bank account");
+      }
+    } catch (error) {
+      console.error("Error deleting bank account:", error);
+      alert("Failed to delete bank account");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleCancel = () => {
+  const handleCancel = (): void => {
     setEditingId(null);
-    setBranchName("");
+    setBranch("");
     setAccountNumber("");
-    setHolderName("");
-    setCurrentBalance("");
+    setOwner("");
+    setBalance("");
   };
 
   return (
@@ -135,56 +183,78 @@ function BankAccount() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="branchName">Branch Name</Label>
+              <Label htmlFor="branch">Branch Name</Label>
               <Input
-                id="branchName"
+                id="branch"
                 placeholder="Enter branch name"
-                value={branchName}
-                onChange={(e) => setBranchName(e.target.value)}
+                value={branch}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBranch(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="accountNumber">Account Number</Label>
+              <Label htmlFor="account_number">Account Number</Label>
               <Input
-                id="accountNumber"
+                id="account_number"
                 placeholder="Enter account number"
-                value={accountNumber}
-                onChange={(e) => setAccountNumber(e.target.value)}
+                value={account_number}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAccountNumber(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="holderName">Account Holder Name</Label>
+              <Label htmlFor="owner">Account Holder Name</Label>
               <Input
-                id="holderName"
+                id="owner"
                 placeholder="Enter holder name"
-                value={holderName}
-                onChange={(e) => setHolderName(e.target.value)}
+                value={owner}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOwner(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="currentBalance">Current Balance</Label>
+              <Label htmlFor="balance">Current Balance</Label>
               <Input
-                id="currentBalance"
+                id="balance"
                 type="number"
                 placeholder="0.00"
-                value={currentBalance}
-                onChange={(e) => setCurrentBalance(e.target.value)}
+                value={balance}
+                onChange={(e) => setBalance(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             <div className="flex gap-2">
               {editingId ? (
                 <>
-                  <Button onClick={handleUpdate} className="flex-1">
-                    Update Account
+                  <Button
+                    onClick={handleUpdate}
+                    className="flex-1"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Updating..." : "Update Account"}
                   </Button>
-                  <Button onClick={handleCancel} variant="outline">
+                  <Button
+                    onClick={handleCancel}
+                    variant="outline"
+                    disabled={isLoading}
+                  >
                     Cancel
                   </Button>
                 </>
               ) : (
-                <Button onClick={handleAddBankAccount} className="w-full">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Bank Account
+                <Button
+                  onClick={handleAddBankAccount}
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    "Adding..."
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Bank Account
+                    </>
+                  )}
                 </Button>
               )}
             </div>
@@ -203,39 +273,44 @@ function BankAccount() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {bankAccounts.length === 0 ? (
+            {isLoading && bankAccounts.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Loading bank accounts...
+              </div>
+            ) : bankAccounts.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No bank accounts found. Add your first account using the form.
               </div>
             ) : (
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Branch</TableHead>
-                      <TableHead>Account Number</TableHead>
-                      <TableHead>Holder Name</TableHead>
-                      <TableHead>Balance</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Branch</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Account Number</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Holder Name</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Created</th>
+                      <th className="px-4 py-3 text-right text-sm font-medium text-gray-900">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
                     {bankAccounts.map((account) => (
-                      <TableRow key={account.id}>
-                        <TableCell className="font-medium">
-                          {account.branchName}
-                        </TableCell>
-                        <TableCell>{account.accountNumber}</TableCell>
-                        <TableCell>{account.holderName}</TableCell>
-                        <TableCell>
-                          ${account.currentBalance.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right">
+                      <tr key={account.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                          {account.branch}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{account.account_number}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{account.owner}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">
+                          {new Date(account.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-2">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => handleEdit(account)}
+                              disabled={isLoading}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -243,15 +318,16 @@ function BankAccount() {
                               size="sm"
                               variant="destructive"
                               onClick={() => handleDelete(account.id)}
+                              disabled={isLoading}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </tr>
                     ))}
-                  </TableBody>
-                </Table>
+                  </tbody>
+                </table>
               </div>
             )}
           </CardContent>

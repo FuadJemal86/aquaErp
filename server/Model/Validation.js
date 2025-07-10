@@ -1,4 +1,5 @@
 const Joi = require("joi");
+const { join } = require("../generated/prisma/runtime/library");
 
 // Validation all here  with joi
 
@@ -33,6 +34,20 @@ const Customer = Joi.object({
   address: Joi.string().required(),
   // id_card: Joi.string().optional(),
 });
+const Add_user = Joi.object({
+  name: Joi.string().required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).required(),
+  phone: Joi.string().required(),
+  role: Joi.string().valid("ADMIN", "CASHIER").required(),
+});
+
+const Add_account_list = Joi.object({
+  branch: Joi.string().required(),
+  account_number: Joi.string().required(),
+  owner: Joi.string().required(),
+  balance: Joi.number().required(),
+});
 
 module.exports = {
   Product_Category,
@@ -40,4 +55,6 @@ module.exports = {
   Initialize_Stock,
   Bank_list,
   Customer,
+  Add_user,
+  Add_account_list,
 };

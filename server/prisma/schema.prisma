@@ -19,6 +19,7 @@ model User {
   name      String
   email     String   @unique(map: "Admin_email_key")
   password  String
+  phone     String
   image     String?
   role      role     @default(ADMIN)
   createdAt DateTime @default(now())
