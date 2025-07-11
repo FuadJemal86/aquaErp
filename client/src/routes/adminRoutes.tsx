@@ -40,6 +40,10 @@ const SalesCreditReport = lazy(
   () => import("../Pages/AdminSide/Sale/SaleProducts/SalesCreditReport")
 );
 
+const RepaySalesCredit = lazy(
+  () => import("../Pages/AdminSide/RepayCredit/RepaySalesCredit")
+);
+
 export const adminRoutes = (
   <Route path="/admin" element={<AdminLayout></AdminLayout>}>
     <Route index element={<AdminDashboard></AdminDashboard>}></Route>
@@ -90,6 +94,10 @@ export const adminRoutes = (
     <Route
       path="/admin/bank-transfer/withdraw"
       element={<BankWithdraw></BankWithdraw>}
+    ></Route>
+    <Route
+      path="/admin/sales-credit-repay"
+      element={<RepaySalesCredit></RepaySalesCredit>}
     ></Route>
   </Route>
 );

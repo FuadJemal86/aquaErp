@@ -288,11 +288,15 @@ const salesCreditReport = async (req, res) => {
     const getSalesCreditReport = await prisma.sales_credit.findMany();
 
     if (getSalesCreditReport.length === 0) {
-      return res.status(404).json({ status: false, error: 'Sales credit report not found' });
+      return res
+        .status(404)
+        .json({ status: false, error: "Sales credit report not found" });
     }
 
     // Extract all unique customer_ids
-    const customerIds = [...new Set(getSalesCreditReport.map(item => item.customer_id))];
+    const customerIds = [
+      ...new Set(getSalesCreditReport.map((item) => item.customer_id)),
+    ];
 
     // Fetch customer info based on those IDs
     const customers = await prisma.customer.findMany({
@@ -307,14 +311,14 @@ const salesCreditReport = async (req, res) => {
 
     // Create a map for fast lookup
     const customerMap = {};
-    customers.forEach(cust => {
+    customers.forEach((cust) => {
       customerMap[cust.id] = cust.full_name;
     });
 
     // Append customer name to each sales credit report
-    const reportWithCustomerName = getSalesCreditReport.map(report => ({
+    const reportWithCustomerName = getSalesCreditReport.map((report) => ({
       ...report,
-      customer_name: customerMap[report.customer_id] || 'Unknown',
+      customer_name: customerMap[report.customer_id] || "Unknown",
     }));
 
     return res.status(200).json({ status: true, data: reportWithCustomerName });
@@ -322,11 +326,10 @@ const salesCreditReport = async (req, res) => {
     console.error(err);
     return res.status(500).json({
       status: false,
-      error: 'Internal server error',
+      error: "Internal server error",
     });
   }
 };
-
 
 // detail sales credit report
 const detailSalesCredit = async (req, res) => {
@@ -335,20 +338,22 @@ const detailSalesCredit = async (req, res) => {
   try {
     const getDetailSalesCredit = await prisma.sales_transaction.findMany({
       where: {
-        transaction_id: transaction_id
+        transaction_id: transaction_id,
       },
       include: {
         Product_type: {
           select: {
             id: true,
-            name: true
-          }
-        }
-      }
+            name: true,
+          },
+        },
+      },
     });
 
     if (getDetailSalesCredit.length === 0) {
-      return res.status(404).json({ status: false, error: 'sales credit detail not found' });
+      return res
+        .status(404)
+        .json({ status: false, error: "sales credit detail not found" });
     }
 
     return res.status(200).json({ status: true, data: getDetailSalesCredit });
@@ -356,9 +361,11 @@ const detailSalesCredit = async (req, res) => {
     console.error(err);
     return res.status(500).json({
       status: false,
-      error: 'Internal server error'
+      error: "Internal server error",
     });
   }
 };
+
+// List of credit
 
 module.exports = { sellProduct, salesCreditReport, detailSalesCredit };
