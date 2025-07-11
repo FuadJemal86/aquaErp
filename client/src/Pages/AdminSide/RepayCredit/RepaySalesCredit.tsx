@@ -1,5 +1,6 @@
 import api from "@/services/api";
 import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   Card,
   CardContent,
@@ -113,6 +114,15 @@ function RepaySalesCredit() {
   // Check if return date has passed
   const isOverdue = (returnDate: string) => {
     return new Date(returnDate) < new Date();
+  };
+
+  // Calculate remaining days or days overdue
+  const calculateRemainingDays = (returnDate: string) => {
+    const today = new Date();
+    const returnDateObj = new Date(returnDate);
+    const timeDiff = returnDateObj.getTime() - today.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    return daysDiff;
   };
 
   // Filter active credits with safety check
@@ -244,17 +254,62 @@ function RepaySalesCredit() {
                       {credit.customer_name}
                     </CardTitle>
                   </div>
-                  <Badge
-                    className={`bg-red-500 text-white ${
-                      credit.status === "ACCEPTED"
-                        ? "bg-blue-500"
-                        : credit.status === "PAYED"
-                        ? "bg-green-500"
-                        : "bg-red-500"
-                    }`}
-                  >
-                    {credit.status}
-                  </Badge>
+                  <div className="relative">
+                    <Badge
+                      className={`text-white relative z-10 ${
+                        credit.status === "ACCEPTED"
+                          ? "bg-blue-500"
+                          : credit.status === "PAYED"
+                          ? "bg-green-500"
+                          : "bg-red-500"
+                      }`}
+                    >
+                      {credit.status}
+                    </Badge>
+                    {credit.status !== "ACCEPTED" &&
+                      credit.status !== "PAYED" && (
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                          <motion.div
+                            className="absolute w-8 h-8 rounded-full bg-red-500/30 transform -translate-x-1/2 -translate-y-1/2"
+                            animate={{
+                              scale: [1, 3, 1],
+                              opacity: [0.6, 0, 0.6],
+                            }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              ease: "easeOut",
+                            }}
+                          />
+                          <motion.div
+                            className="absolute w-8 h-8 rounded-full bg-red-500/25 transform -translate-x-1/2 -translate-y-1/2"
+                            animate={{
+                              scale: [1, 2.5, 1],
+                              opacity: [0.5, 0, 0.5],
+                            }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              ease: "easeOut",
+                              delay: 0.4,
+                            }}
+                          />
+                          <motion.div
+                            className="absolute w-8 h-8 rounded-full bg-red-500/20 transform -translate-x-1/2 -translate-y-1/2"
+                            animate={{
+                              scale: [1, 3.5, 1],
+                              opacity: [0.4, 0, 0.4],
+                            }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              ease: "easeOut",
+                              delay: 0.8,
+                            }}
+                          />
+                        </div>
+                      )}
+                  </div>
                 </div>
               </CardHeader>
 
@@ -309,6 +364,29 @@ function RepaySalesCredit() {
                       {isOverdue(credit.return_date) && (
                         <span className="ml-2 text-xs">⚠️ OVERDUE</span>
                       )}
+                    </div>
+                  </div>
+
+                  {/* Remaining Days */}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      Remaining Days
+                    </div>
+                    <div
+                      className={`text-sm font-medium ${
+                        calculateRemainingDays(credit.return_date) < 0
+                          ? "text-destructive"
+                          : "text-green-600 dark:text-green-400"
+                      }`}
+                    >
+                      {calculateRemainingDays(credit.return_date) < 0
+                        ? `${Math.abs(
+                            calculateRemainingDays(credit.return_date)
+                          )} days overdue`
+                        : `${calculateRemainingDays(
+                            credit.return_date
+                          )} days left`}
                     </div>
                   </div>
                 </div>
