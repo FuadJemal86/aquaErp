@@ -27,6 +27,9 @@ const BuyProducts = lazy(
 const SaleProducts = lazy(
   () => import("../Pages/AdminSide/Sale/SaleProducts/SaleProducts")
 );
+const BuyCreditReport = lazy(
+  () => import('../Pages/AdminSide/Buy/BuyProducts/BuyCreditReport')
+)
 
 export const adminRoutes = (
   <Route path="/admin" element={<AdminLayout></AdminLayout>}>
@@ -62,6 +65,10 @@ export const adminRoutes = (
     <Route
       path="/admin/sales-products"
       element={<SaleProducts></SaleProducts>}
+    ></Route>
+    <Route
+      path="/admin/buy-credit-report"
+      element={<BuyCreditReport></BuyCreditReport>}
     ></Route>
   </Route>
 );

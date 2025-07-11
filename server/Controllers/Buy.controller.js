@@ -228,4 +228,58 @@ const buyProduct = async (req, res) => {
   }
 };
 
-module.exports = { buyProduct };
+// buy credit report
+const buyCreditReport = async (req, res) => {
+  try {
+    const getBuyCreditReport = await prisma.buy_credit.findMany();
+
+    if (getBuyCreditReport.length === 0) {
+      return res.status(404).json({ status: false, error: 'Buy credit report not found' });
+    }
+
+    return res.status(200).json({ status: true, data: getBuyCreditReport });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      status: false,
+      error: 'Internal server error'
+    });
+  }
+};
+
+
+// detail buy credit report
+const detailBuyCredit = async (req, res) => {
+  const transaction_id = req.params.id;
+
+  try {
+    const getDetailBuyCreditReport = await prisma.buy_transaction.findMany({
+      where: {
+        transaction_id: transaction_id
+      },
+      include: {
+        Product_type: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    });
+
+    if (getDetailBuyCreditReport.length === 0) {
+      return res.status(404).json({ status: false, error: 'Buy credit detail not found' });
+    }
+
+    return res.status(200).json({ status: true, data: getDetailBuyCreditReport });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      status: false,
+      error: 'Internal server error'
+    });
+  }
+};
+
+
+module.exports = { buyProduct, buyCreditReport, detailBuyCredit };
