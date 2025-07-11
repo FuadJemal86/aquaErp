@@ -65,8 +65,6 @@ const sellProduct = async (req, res) => {
             // manager_id: 1, // You might want to get from auth
             // casher_id: 1, // You might want to get from auth
             bank_id: payment_method === "BANK" ? bank_id : null, // Default bank for CASH/CREDIT
-            return_date:
-              payment_method === "CREDIT" ? formattedReturnDate : null,
           },
         });
         salesTransactions.push(salesTransaction);
@@ -90,31 +88,25 @@ const sellProduct = async (req, res) => {
           }
         }
 
-        // Create Sales_credit record
-        const salesCredit = await tx.sales_credit.create({
-          data: {
-            customer_id: customer_type === "REGULAR" ? customer_id : null,
-            transaction_id,
-            total_money,
-            return_date: formattedCreditReturnDate,
-            status: "ACCEPTED",
-            issued_date: new Date(),
-            description,
-          },
-        });
-
-        // Update all sales transactions with credit_id
-        for (const transaction of salesTransactions) {
-          await tx.sales_transaction.update({
-            where: { id: transaction.id },
-            data: { credit_id: salesCredit.id },
+        // Create Sales_credit record (only for REGULAR customers)
+        if (customer_type === "REGULAR" && customer_id) {
+          const salesCredit = await tx.sales_credit.create({
+            data: {
+              customer_id,
+              transaction_id,
+              total_money,
+              return_date: formattedCreditReturnDate,
+              status: "ACCEPTED",
+              issued_date: new Date(),
+              description,
+            },
           });
         }
       } else if (payment_method === "BANK") {
         // Check bank balance
         const check_bank_balance = await tx.bank_balance.findFirst({
           where: {
-            Bank_id: bank_id,
+            bank_id: bank_id,
           },
         });
 
@@ -144,16 +136,48 @@ const sellProduct = async (req, res) => {
         });
       } else if (payment_method === "CASH") {
         // Create Cash_transaction (money coming in for sales)
+        let currentCashBalance = 0;
+
+        try {
+          const check_cash_balance = await tx.cash_balance.findFirst({
+            where: {
+              id: 1,
+            },
+          });
+
+          if (check_cash_balance) {
+            currentCashBalance = check_cash_balance.balance;
+          }
+        } catch (error) {
+          console.log("Cash balance not found, starting with 0");
+        }
+
         await tx.cash_transaction.create({
           data: {
             in: total_money,
             out: 0,
-            balance: total_money, // You might want to get current cash balance and add
+            balance: total_money + currentCashBalance,
             transaction_id,
             manager_id: 1, // You might want to get from auth
             casher_id: 1, // You might want to get from auth
           },
         });
+
+        // Update cash balance if it exists
+        try {
+          await tx.cash_balance.upsert({
+            where: { id: 1 },
+            update: {
+              balance: total_money + currentCashBalance,
+            },
+            create: {
+              id: 1,
+              balance: total_money + currentCashBalance,
+            },
+          });
+        } catch (error) {
+          console.log("Could not update cash balance");
+        }
       } else {
         throw new Error("Invalid payment method");
       }

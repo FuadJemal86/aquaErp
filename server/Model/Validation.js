@@ -81,10 +81,26 @@ const Sales_product = Joi.object({
   cart_list: Joi.array().items(Sales_cart_item).min(1).required(),
   payment_method: Joi.string().valid("CASH", "BANK", "CREDIT").required(),
   customer_type: Joi.string().valid("WALKER", "REGULAR").required(),
-  customer_id: Joi.number().optional(),
-  bank_id: Joi.number().optional(),
-  return_date: Joi.date().optional(),
-  description: Joi.string().optional(),
+  customer_id: Joi.when("customer_type", {
+    is: "REGULAR",
+    then: Joi.number().required(),
+    otherwise: Joi.number().optional().allow(null),
+  }),
+  bank_id: Joi.when("payment_method", {
+    is: "BANK",
+    then: Joi.number().required(),
+    otherwise: Joi.number().optional().allow(null),
+  }),
+  return_date: Joi.when("payment_method", {
+    is: "CREDIT",
+    then: Joi.date().required(),
+    otherwise: Joi.date().optional().allow(null),
+  }),
+  description: Joi.when("payment_method", {
+    is: "CREDIT",
+    then: Joi.string().required(),
+    otherwise: Joi.string().optional().allow(null),
+  }),
 });
 
 module.exports = {

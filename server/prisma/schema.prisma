@@ -153,13 +153,13 @@ enum credit {
 
 model Bank_balance {
   id        Int      @id @default(autoincrement())
-  Bank_id   Int
   balance   Float
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  bank_list Bank_list @relation(fields: [Bank_id], references: [id])
+  bank_id   Int
+  Bank_list Bank_list @relation(fields: [bank_id], references: [id])
 
   @@map("bank_balance")
 }
@@ -199,6 +199,17 @@ model Buy_credit_transaction {
   @@map("buy_credit_transaction")
 }
 
+model Cash_balance {
+  id      Int   @id @default(autoincrement())
+  balance Float
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("cash_balance")
+}
+
 model Cash_transaction {
   id                       Int                        @id @default(autoincrement())
   in                       Float
@@ -219,7 +230,7 @@ model Sales_transaction {
   id                 Int            @id @default(autoincrement())
   type_id            Int
   customer_id        Int?
-  walker_id          Int?
+  walker_id          String?
   manager_id         Int?
   casher_id          Int?
   transaction_id     String
@@ -232,12 +243,12 @@ model Sales_transaction {
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
-  bank_id   Int
-  credit_id Int?
+  bank_id Int?
 
-  Product_type Product_type  @relation(fields: [type_id], references: [id])
-  Bank_list    Bank_list     @relation(fields: [bank_id], references: [id])
-  Sales_credit Sales_credit? @relation(fields: [credit_id], references: [id])
+  Product_type   Product_type  @relation(fields: [type_id], references: [id])
+  Bank_list      Bank_list?    @relation(fields: [bank_id], references: [id])
+  Sales_credit   Sales_credit? @relation(fields: [sales_creditId], references: [id])
+  sales_creditId Int?
 
   @@index([transaction_id, price_per_quantity, quantity, payment_method, customer_type, status])
   @@map("sale_transaction")
