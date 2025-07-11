@@ -27,8 +27,14 @@ const {
   detailBuyCredit,
 } = require("../Controllers/Buy.controller");
 const { sellProduct } = require("../Controllers/Sales.controller");
-const { addBankDeposit } = require("../Controllers/BankTrasnfer.controller");
-const { uploadBankDepositReceiptMiddleware } = require("../Utils/fileUtils");
+const {
+  addBankDeposit,
+  addBankWithdraw,
+} = require("../Controllers/BankTrasnfer.controller");
+const {
+  uploadBankDepositReceiptMiddleware,
+  uploadBankWithdrawReceiptMiddleware,
+} = require("../Utils/fileUtils");
 
 router.post("/add-product-category", addProductCategory);
 router.post("/add-product-type", addProductType);
@@ -73,6 +79,11 @@ router.post(
   "/add-bank-deposit",
   uploadBankDepositReceiptMiddleware,
   addBankDeposit
+);
+router.post(
+  "/add-bank-withdrawal",
+  uploadBankWithdrawReceiptMiddleware,
+  addBankWithdraw
 );
 
 module.exports = router;

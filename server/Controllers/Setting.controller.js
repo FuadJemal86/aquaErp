@@ -192,6 +192,14 @@ const getBankList = async (req, res) => {
   try {
     const bankList = await prisma.bank_list.findMany({
       where: { isActive: true },
+      include: {
+        bank_balance: {
+          where: { isActive: true },
+          select: {
+            balance: true,
+          },
+        },
+      },
     });
     res.json(bankList);
   } catch (error) {

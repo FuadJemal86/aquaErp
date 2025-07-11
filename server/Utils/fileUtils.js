@@ -9,6 +9,7 @@ const createDirectories = () => {
   const directories = [
     path.join(baseUploadDir, "Images", "Customer", "Profile"),
     path.join(baseUploadDir, "Images", "Bank", "Deposit", "Receipt"),
+    path.join(baseUploadDir, "Images", "Bank", "Withdraw", "Receipt"),
   ];
 
   directories.forEach((dir) => {
@@ -179,6 +180,71 @@ const uploadBankDepositReceiptMiddleware = (req, res, next) => {
   });
 };
 
+const uploadBankWithdrawReceipt = multer({
+  storage: multer.diskStorage({
+    destination: function (req, file, cb) {
+      console.log("Processing bank withdraw receipt upload");
+      const uploadPath = path.join(
+        __dirname,
+        "..",
+        "upload",
+        "Images",
+        "Bank",
+        "Withdraw",
+        "Receipt"
+      );
+      if (!fs.existsSync(uploadPath)) {
+        console.log("Creating bank withdraw receipt directory:", uploadPath);
+        fs.mkdirSync(uploadPath, { recursive: true });
+      }
+      cb(null, uploadPath);
+    },
+    filename: function (req, file, cb) {
+      console.log(
+        "Generating filename for bank withdraw receipt:",
+        file.originalname
+      );
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      const sanitizedOriginalname = file.originalname.replace(
+        /[^a-zA-Z0-9.]/g,
+        "_"
+      );
+      const finalFilename = uniqueSuffix + "-" + sanitizedOriginalname;
+      console.log(
+        "Generated filename for bank withdraw receipt:",
+        finalFilename
+      );
+      cb(null, finalFilename);
+    },
+  }),
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+}).single("receipt_image");
+
+const uploadBankWithdrawReceiptMiddleware = (req, res, next) => {
+  uploadBankWithdrawReceipt(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ message: err.message });
+    }
+    // If file was uploaded, store the full path using normalized path
+    if (req.file) {
+      const relativePath = path.join(
+        "upload",
+        "Images",
+        "Bank",
+        "Withdraw",
+        "Receipt",
+        req.file.filename
+      );
+      // Convert Windows backslashes to forward slashes for URL consistency
+      req.file.fullPath = relativePath.split(path.sep).join("/");
+    }
+    next();
+  });
+};
+
 // Create directories on module load
 createDirectories();
 
@@ -187,4 +253,6 @@ module.exports = {
   deleteFileIfExists,
   uploadBankDepositReceipt,
   uploadBankDepositReceiptMiddleware,
+  uploadBankWithdrawReceipt,
+  uploadBankWithdrawReceiptMiddleware,
 };

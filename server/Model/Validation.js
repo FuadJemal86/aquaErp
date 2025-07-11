@@ -109,6 +109,12 @@ const Bank_deposit = Joi.object({
   description: Joi.string().optional(),
 });
 
+const Bank_withdraw = Joi.object({
+  bank_id: Joi.number().required(),
+  amount: Joi.number().required(),
+  description: Joi.string().optional(),
+});
+
 module.exports = {
   Product_Category,
   Product_Type,
@@ -122,4 +128,5 @@ module.exports = {
   Edit_account,
   Sales_product,
   Bank_deposit,
+  Bank_withdraw,
 };
