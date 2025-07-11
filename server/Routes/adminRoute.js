@@ -21,7 +21,7 @@ const {
   deleteCustomer,
 } = require("../Controllers/Customer.controller");
 const { uploadCustomerProfileMiddleware } = require("../Utils/fileUtils");
-const { buyProduct } = require("../Controllers/Buy.controller");
+const { buyProduct, buyCreditReport, detailBuyCredit } = require("../Controllers/Buy.controller");
 const { sellProduct } = require("../Controllers/Sales.controller");
 
 router.post("/add-product-category", addProductCategory);
@@ -56,6 +56,8 @@ router.put(
 
 // Buy Routes
 router.post("/buy-product", buyProduct);
+router.get('/get-all-buy-credits', buyCreditReport)
+router.get('/get-buy-transaction-details/:id', detailBuyCredit)
 
 // Sales Routes
 router.post("/sell-product", sellProduct);
