@@ -170,6 +170,8 @@ model Bank_transaction {
   out            Float
   balance        Float
   transaction_id String
+  description    String?
+  receipt_image  String?
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

@@ -185,10 +185,10 @@ function CartList({
                     {cart.quantity}
                   </TableCell>
                   <TableCell className="p-2 border-b text-center">
-                    ${cart.price}
+                    {cart.price}
                   </TableCell>
                   <TableCell className="p-2 border-b text-center">
-                    ${cart.total_money}
+                    {cart.total_money}
                   </TableCell>
                 </TableRow>
               ))}
@@ -202,7 +202,7 @@ function CartList({
             <div className="flex justify-between items-center">
               <span className="font-medium">Total Amount:</span>
               <span className="text-lg font-bold">
-                ${totalAmount.toFixed(2)}
+                {totalAmount.toFixed(2)} Birr
               </span>
             </div>
           </div>

@@ -243,7 +243,7 @@ function ConfirmSellModal({
                   Total Amount:
                 </span>{" "}
                 <span className="text-gray-900 dark:text-gray-100">
-                  ${totalAmount.toFixed(2)}
+                  {totalAmount.toFixed(2)} Birr
                 </span>
               </div>
             </div>
@@ -283,8 +283,8 @@ function ConfirmSellModal({
                         {getTypeName(cart.type_id)}
                       </td>
                       <td className="p-2 text-center">{cart.quantity}</td>
-                      <td className="p-2 text-center">${cart.price}</td>
-                      <td className="p-2 text-center">${cart.total_money}</td>
+                      <td className="p-2 text-center">{cart.price}</td>
+                      <td className="p-2 text-center">{cart.total_money}</td>
                     </tr>
                   ))}
                 </tbody>

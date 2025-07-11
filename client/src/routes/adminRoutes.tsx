@@ -28,8 +28,14 @@ const SaleProducts = lazy(
   () => import("../Pages/AdminSide/Sale/SaleProducts/SaleProducts")
 );
 const BuyCreditReport = lazy(
-  () => import('../Pages/AdminSide/Buy/BuyProducts/BuyCreditReport')
-)
+  () => import("../Pages/AdminSide/Buy/BuyProducts/BuyCreditReport")
+);
+const BankTransfer = lazy(
+  () => import("../Pages/AdminSide/BankTransfer/Deposit/BankDeposti")
+);
+const BankWithdraw = lazy(
+  () => import("../Pages/AdminSide/BankTransfer/Withdraw/BankWithdraw")
+);
 
 export const adminRoutes = (
   <Route path="/admin" element={<AdminLayout></AdminLayout>}>
@@ -69,6 +75,14 @@ export const adminRoutes = (
     <Route
       path="/admin/buy-credit-report"
       element={<BuyCreditReport></BuyCreditReport>}
+    ></Route>
+    <Route
+      path="/admin/bank-transfer/deposit"
+      element={<BankTransfer></BankTransfer>}
+    ></Route>
+    <Route
+      path="/admin/bank-transfer/withdraw"
+      element={<BankWithdraw></BankWithdraw>}
     ></Route>
   </Route>
 );

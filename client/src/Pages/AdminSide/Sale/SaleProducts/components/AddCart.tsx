@@ -796,11 +796,12 @@ function AddCart({
           {watch("quantity") && watch("price") && (
             <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <p className="text-sm font-medium">
-                Total: $
+                Total:{" "}
                 {(
                   parseFloat(watch("quantity") || "0") *
                   parseFloat(watch("price") || "0")
-                ).toFixed(2)}
+                ).toFixed(2)}{" "}
+                Birr
               </p>
             </div>
           )}
