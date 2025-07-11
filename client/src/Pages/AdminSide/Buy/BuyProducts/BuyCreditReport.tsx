@@ -1,5 +1,31 @@
-import api from '@/services/api';
-import React, { useState, useEffect } from 'react';
+import api from "@/services/api";
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Eye, X, RefreshCw } from "lucide-react";
 
 // Type definitions based on your Prisma models
 interface BuyCredit {
@@ -14,7 +40,6 @@ interface BuyCredit {
   createdAt: string;
   updatedAt: string;
 }
-
 
 interface BuyTransaction {
   id: number;
@@ -35,7 +60,6 @@ interface BuyTransaction {
   };
 }
 
-
 const BuyCreditReport: React.FC = () => {
   const [credits, setCredits] = useState<BuyCredit[]>([]);
   const [selectedCredit, setSelectedCredit] = useState<BuyCredit | null>(null);
@@ -49,33 +73,33 @@ const BuyCreditReport: React.FC = () => {
   const fetchBuyCredits = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/admin/get-all-buy-credits');
+      const response = await api.get("/admin/get-all-buy-credits");
 
       // Axios wraps response in .data property
       const result = response.data;
 
-      console.log('API Response:', result); // Debug log
+      console.log("API Response:", result); // Debug log
 
       if (result.status && result.data && Array.isArray(result.data)) {
         setCredits(result.data);
         setError(null);
       } else if (result.status === false) {
-        setError(result.error || 'Failed to fetch buy credit report');
+        setError(result.error || "Failed to fetch buy credit report");
         setCredits([]);
       } else {
-        setError('Invalid response format');
+        setError("Invalid response format");
         setCredits([]);
       }
     } catch (err: any) {
       if (err.response?.status === 404) {
-        setError('Buy credit report not found');
+        setError("Buy credit report not found");
       } else if (err.response?.status === 500) {
-        setError('Internal server error');
+        setError("Internal server error");
       } else {
-        setError('Network error occurred');
+        setError("Network error occurred");
       }
       setCredits([]);
-      console.error('Error fetching buy credits:', err);
+      console.error("Error fetching buy credits:", err);
     } finally {
       setLoading(false);
     }
@@ -85,7 +109,9 @@ const BuyCreditReport: React.FC = () => {
   const fetchCreditDetails = async (transactionId: string) => {
     try {
       setDetailLoading(true);
-      const response = await api.get(`/admin/get-buy-transaction-details/${transactionId}`);
+      const response = await api.get(
+        `/admin/get-buy-transaction-details/${transactionId}`
+      );
 
       // Axios wraps response in .data property
       const result = response.data;
@@ -94,22 +120,22 @@ const BuyCreditReport: React.FC = () => {
         setCreditDetails(result.data);
         setShowDetails(true);
       } else if (result.status === false) {
-        setError(result.error || 'Failed to fetch credit details');
+        setError(result.error || "Failed to fetch credit details");
         setCreditDetails([]);
       } else {
-        setError('Invalid response format');
+        setError("Invalid response format");
         setCreditDetails([]);
       }
     } catch (err: any) {
       if (err.response?.status === 404) {
-        setError('Buy credit detail not found');
+        setError("Buy credit detail not found");
       } else if (err.response?.status === 500) {
-        setError('Internal server error');
+        setError("Internal server error");
       } else {
-        setError('Network error occurred while fetching details');
+        setError("Network error occurred while fetching details");
       }
       setCreditDetails([]);
-      console.error('Error fetching credit details:', err);
+      console.error("Error fetching credit details:", err);
     } finally {
       setDetailLoading(false);
     }
@@ -130,28 +156,51 @@ const BuyCreditReport: React.FC = () => {
 
   // Format date for display
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   // Format currency
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
+  // Get badge variant for status
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case "ACCEPTED":
+        return "default";
+      case "PENDING":
+        return "secondary";
+      case "REJECTED":
+        return "destructive";
+      default:
+        return "outline";
+    }
+  };
+
   // Filter active credits with safety check
-  const activeCredits = Array.isArray(credits) ? credits.filter(credit => credit.isActive) : [];
+  const activeCredits = Array.isArray(credits)
+    ? credits.filter((credit) => credit.isActive)
+    : [];
 
   // Debug log to see what credits contains
-  console.log('Credits state:', credits, 'Type:', typeof credits, 'IsArray:', Array.isArray(credits));
+  console.log(
+    "Credits state:",
+    credits,
+    "Type:",
+    typeof credits,
+    "IsArray:",
+    Array.isArray(credits)
+  );
 
   useEffect(() => {
     fetchBuyCredits();
@@ -159,107 +208,125 @@ const BuyCreditReport: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Loading buy credit report...</div>
+      <div className="container mx-auto p-6 space-y-6">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-48" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-        <strong>Error:</strong> {error}
-        <button
-          onClick={fetchBuyCredits}
-          className="ml-4 bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded text-sm"
-        >
-          Retry
-        </button>
+      <div className="container mx-auto p-1">
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Error</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={fetchBuyCredits}
+              variant="outline"
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Buy Credit Report</h1>
-        <p className="text-gray-600">Total Credits: {activeCredits.length}</p>
-      </div>
-
-      {activeCredits.length === 0 ? (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
-          No buy credit records found.
-        </div>
-      ) : (
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    #
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Issued Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Return Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {activeCredits.map((credit) => (
-                  <tr key={credit.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {credit.id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(credit.total_money)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${credit.status === 'ACCEPTED'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                        {credit.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(credit.issued_date)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(credit.return_date)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                      {credit.description || 'No description'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleViewDetails(credit)}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        View Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+    <div className="container mx-auto p-1 pt-3 space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold">
+            Buy Credit Report
+          </CardTitle>
+          <CardDescription>
+            Manage and track buy credit transactions
+          </CardDescription>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="gap-1">
+              Total Credits: {activeCredits.length}
+            </Badge>
           </div>
-        </div>
-      )}
+        </CardHeader>
+
+        <CardContent>
+          {activeCredits.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-muted-foreground mb-4">
+                No buy credit records found.
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[80px]">#</TableHead>
+                    <TableHead>Total Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Issued Date</TableHead>
+                    <TableHead>Return Date</TableHead>
+                    <TableHead className="max-w-[200px]">Description</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {activeCredits.map((credit) => (
+                    <TableRow key={credit.id}>
+                      <TableCell className="font-medium">{credit.id}</TableCell>
+                      <TableCell className="font-semibold">
+                        {formatCurrency(credit.total_money)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(credit.status)}>
+                          {credit.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatDate(credit.issued_date)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatDate(credit.return_date)}
+                      </TableCell>
+                      <TableCell className="max-w-[200px] truncate">
+                        {credit.description || "No description"}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDetails(credit)}
+                          className="gap-2"
+                        >
+                          <Eye className="h-4 w-4" />
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Credit Details Modal */}
       {showDetails && selectedCredit && (
@@ -274,92 +341,162 @@ const BuyCreditReport: React.FC = () => {
                   onClick={handleCloseDetails}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
 
               {detailLoading ? (
-                <div className="flex justify-center py-8">
-                  <div className="text-lg">Loading details...</div>
+                <div className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <Skeleton className="h-6 w-48" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-4">
+                        {[...Array(4)].map((_, i) => (
+                          <Skeleton key={i} className="h-4 w-full" />
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="space-y-4">
+                        {[...Array(3)].map((_, i) => (
+                          <Skeleton key={i} className="h-12 w-full" />
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               ) : creditDetails.length > 0 ? (
-                <div className="space-y-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-gray-900 mb-2">Credit Summary</h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Total Amount:</span>
-                        <span className="ml-2 font-medium">{formatCurrency(selectedCredit.total_money)}</span>
+                <div className="space-y-6">
+                  {/* Credit Summary Card */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Credit Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <div className="text-sm text-muted-foreground">
+                            Total Amount
+                          </div>
+                          <div className="text-lg font-semibold">
+                            {formatCurrency(selectedCredit.total_money)}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="text-sm text-muted-foreground">
+                            Status
+                          </div>
+                          <Badge
+                            variant={getStatusBadgeVariant(
+                              selectedCredit.status
+                            )}
+                          >
+                            {selectedCredit.status}
+                          </Badge>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="text-sm text-muted-foreground">
+                            Issued Date
+                          </div>
+                          <div className="text-sm">
+                            {formatDate(selectedCredit.issued_date)}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="text-sm text-muted-foreground">
+                            Return Date
+                          </div>
+                          <div className="text-sm">
+                            {formatDate(selectedCredit.return_date)}
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-gray-600">Status:</span>
-                        <span className="ml-2 font-medium">{selectedCredit.status}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Issued Date:</span>
-                        <span className="ml-2 font-medium">{formatDate(selectedCredit.issued_date)}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Return Date:</span>
-                        <span className="ml-2 font-medium">{formatDate(selectedCredit.return_date)}</span>
-                      </div>
-                    </div>
-                  </div>
+                      {selectedCredit.description && (
+                        <div className="mt-4 space-y-2">
+                          <div className="text-sm text-muted-foreground">
+                            Description
+                          </div>
+                          <div className="text-sm p-3 bg-muted rounded-md">
+                            {selectedCredit.description}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
 
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Transaction Details</h4>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                              Product
-                            </th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                              Quantity
-                            </th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                              Price per Unit
-                            </th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                              Total
-                            </th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                              Supplier
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {creditDetails.map((detail) => (
-                            <tr key={detail.id}>
-                              <td className="px-4 py-2 text-sm text-gray-900">
-                                {detail.Product_type.name}
-                              </td>
-                              <td className="px-4 py-2 text-sm text-gray-900">
-                                {detail.quantity}
-                              </td>
-                              <td className="px-4 py-2 text-sm text-gray-900">
-                                {formatCurrency(detail.price_per_quantity)}
-                              </td>
-                              <td className="px-4 py-2 text-sm text-gray-900">
-                                {formatCurrency(detail.total_money)}
-                              </td>
-                              <td className="px-4 py-2 text-sm text-gray-900">
-                                {detail.supplier_name}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                  {/* Transaction Details Card */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">
+                        Transaction Details
+                      </CardTitle>
+                      <CardDescription>
+                        {creditDetails.length} item(s) in this credit
+                        transaction
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="rounded-md border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Product</TableHead>
+                              <TableHead>Quantity</TableHead>
+                              <TableHead>Price per Unit</TableHead>
+                              <TableHead>Total</TableHead>
+                              <TableHead>Supplier</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {creditDetails.map((detail) => (
+                              <TableRow key={detail.id}>
+                                <TableCell className="font-medium">
+                                  {detail.Product_type.name}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">
+                                    {detail.quantity}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {formatCurrency(detail.price_per_quantity)}
+                                </TableCell>
+                                <TableCell className="font-semibold">
+                                  {formatCurrency(detail.total_money)}
+                                </TableCell>
+                                <TableCell>{detail.supplier_name}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  No transaction details found.
-                </div>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center py-8 text-muted-foreground">
+                      No transaction details found.
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </div>
           </div>
