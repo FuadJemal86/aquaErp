@@ -47,6 +47,32 @@ const buyProduct = async (req, res) => {
           }
         }
 
+        const productStock = await tx.product_stock.findFirst({
+          where: {
+            product_type_id: item.product_type_id,
+          },
+        });
+        // if product stock is not found, throw an error
+        if (!productStock) {
+          throw new Error("Product stock not found");
+        }
+
+        // Calculate new quantity and amount_money
+        const newQuantity = productStock.quantity + item.quantity;
+
+        const newAmountMoney = newQuantity * productStock.price_per_quantity;
+
+        // Update the product stock
+        await tx.product_stock.update({
+          where: {
+            id: productStock.id,
+          },
+          data: {
+            quantity: newQuantity,
+            amount_money: newAmountMoney,
+          },
+        });
+
         const buyTransaction = await tx.buy_transaction.create({
           data: {
             price_per_quantity: item.price_per_quantity,
