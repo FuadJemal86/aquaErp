@@ -142,9 +142,30 @@ const getProductType = async (req, res) => {
     const productType = await prisma.product_type.findMany({
       include: {
         Product_category: true,
+        product_Stock: {
+          where: { isActive: true },
+          select: {
+            quantity: true,
+            price_per_quantity: true,
+            amount_money: true,
+          },
+        },
       },
     });
-    res.json(productType);
+
+    // Transform the data to include stock information
+    const productTypeWithStock = productType.map((type) => {
+      const stock = type.product_Stock[0]; // Get the first (and should be only) stock record
+      return {
+        ...type,
+        available_quantity: stock ? stock.quantity : 0,
+        price_per_quantity: stock ? stock.price_per_quantity : 0,
+        total_amount: stock ? stock.amount_money : 0,
+        product_Stock: undefined, // Remove the original stock array
+      };
+    });
+
+    res.json(productTypeWithStock);
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: "Internal server error" });

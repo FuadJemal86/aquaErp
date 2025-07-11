@@ -6,6 +6,7 @@ import {
   Package,
   Settings,
   ShoppingCart,
+  Banknote,
   UserPlus,
 } from "lucide-react";
 import type * as React from "react";
@@ -106,6 +107,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           {
             title: "Buy credit repay",
             url: "/admin/buy-credit-repay",
+          },
+        ],
+      },
+      {
+        title: "Bank Transfer",
+        url: "#",
+        icon: Banknote,
+        isActive: false,
+        items: [
+          {
+            title: "Deposit",
+            url: "/admin/bank-transfer/deposit",
+          },
+          {
+            title: "Withdraw",
+            url: "/admin/bank-transfer/withdraw",
           },
         ],
       },

@@ -101,6 +101,20 @@ const salesCartSchema = z
       message: "Credit payment is only available for regular customers",
       path: ["payment_method"],
     }
+  )
+  .refine(
+    (data) => {
+      // Validate quantity against available stock
+      const quantity = parseInt(data.quantity);
+      const productTypeId = parseInt(data.product_type_id);
+
+      // This will be validated in the component with actual product data
+      return true; // We'll handle this validation in the component
+    },
+    {
+      message: "Quantity validation will be handled in component",
+      path: ["quantity"],
+    }
   );
 
 type SalesCartFormData = z.infer<typeof salesCartSchema>;
@@ -118,6 +132,9 @@ type ProductType = {
   measurement: string;
   product_category_id: number;
   Product_category: ProductCategory;
+  available_quantity?: number;
+  price_per_quantity?: number;
+  total_amount?: number;
 };
 
 type BankList = {
@@ -158,6 +175,7 @@ function AddCart({
   const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [bankList, setBankList] = useState<BankList[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [quantityError, setQuantityError] = useState<string>("");
 
   const {
     register,
@@ -274,6 +292,8 @@ function AddCart({
   // Handle product type change
   const handleProductTypeChange = (productTypeId: string) => {
     setValue("product_type_id", productTypeId);
+    // Clear quantity error when product type changes
+    setQuantityError("");
   };
 
   // Handle payment method change
@@ -298,9 +318,60 @@ function AddCart({
     setValue("customer_id", customerId);
   };
 
+  // Function to validate quantity against available stock
+  const validateQuantity = (quantity: string, productTypeId: string) => {
+    const selectedProduct = productTypes.find(
+      (type) => type.id === parseInt(productTypeId)
+    );
+
+    if (!selectedProduct) {
+      return { isValid: false, message: "Product not found" };
+    }
+
+    const requestedQuantity = parseInt(quantity);
+    const availableQuantity = selectedProduct.available_quantity || 0;
+
+    if (requestedQuantity > availableQuantity) {
+      return {
+        isValid: false,
+        message: `Out of stock! Available quantity: ${availableQuantity}`,
+      };
+    }
+
+    if (requestedQuantity <= 0) {
+      return { isValid: false, message: "Quantity must be greater than 0" };
+    }
+
+    return { isValid: true, message: "" };
+  };
+
+  // Function to handle quantity changes and validate in real-time
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const quantity = e.target.value;
+    const productTypeId = watch("product_type_id");
+
+    if (quantity && productTypeId) {
+      const validation = validateQuantity(quantity, productTypeId);
+      setQuantityError(validation.isValid ? "" : validation.message);
+    } else {
+      setQuantityError("");
+    }
+  };
+
   const onSubmit = async (data: SalesCartFormData) => {
     setIsSubmitting(true);
     try {
+      // Validate quantity against available stock
+      const quantityValidation = validateQuantity(
+        data.quantity,
+        data.product_type_id
+      );
+      if (!quantityValidation.isValid) {
+        toast.error(quantityValidation.message);
+        setIsSubmitting(false);
+        return;
+      }
+
       const cartData = {
         customer_type: data.customer_type,
         customer_id:
@@ -395,6 +466,20 @@ function AddCart({
     selectedBankId,
     setValue,
   ]);
+
+  // Effect to validate quantity when product type changes
+  useEffect(() => {
+    const currentQuantity = watch("quantity");
+    const currentProductTypeId = watch("product_type_id");
+
+    if (currentQuantity && currentProductTypeId) {
+      const validation = validateQuantity(
+        currentQuantity,
+        currentProductTypeId
+      );
+      setQuantityError(validation.isValid ? "" : validation.message);
+    }
+  }, [watch("product_type_id"), productTypes]);
 
   return (
     <Card>
@@ -543,23 +628,51 @@ function AddCart({
           {/* Quantity and Price */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity *</Label>
+              <Label htmlFor="quantity">
+                Quantity * (Available:{" "}
+                {
+                  productTypes.find(
+                    (type) => type.id === parseInt(watch("product_type_id"))
+                  )?.available_quantity
+                }
+                )
+              </Label>
               <Input
                 id="quantity"
                 type="number"
                 placeholder="0"
+                min="1"
+                max={
+                  productTypes.find(
+                    (type) => type.id === parseInt(watch("product_type_id"))
+                  )?.available_quantity || 0
+                }
                 {...register("quantity")}
-                className={errors.quantity ? "border-red-500" : ""}
+                onChange={(e) => {
+                  register("quantity").onChange(e);
+                  handleQuantityChange(e);
+                }}
+                className={
+                  errors.quantity || quantityError ? "border-red-500" : ""
+                }
               />
-              {errors.quantity && (
+              {(errors.quantity || quantityError) && (
                 <p className="text-sm text-red-500">
-                  {errors.quantity.message}
+                  {quantityError || errors.quantity?.message}
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="price">Price *</Label>
+              <Label htmlFor="price">
+                Price * (
+                {
+                  productTypes.find(
+                    (type) => type.id === parseInt(watch("product_type_id"))
+                  )?.price_per_quantity
+                }{" "}
+                Birr)
+              </Label>
               <Input
                 id="price"
                 type="number"

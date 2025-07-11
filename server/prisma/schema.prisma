@@ -291,7 +291,7 @@ model Sales_credit_transaction {
   Cash_transaction Cash_transaction? @relation(fields: [cash_id], references: [id])
 
   @@index([transaction_id, amount_payed, payment_method, outstanding_balance, image])
-  @@map("sales_status")
+  @@map("sales_credit_transaction")
 }
 
 enum role {

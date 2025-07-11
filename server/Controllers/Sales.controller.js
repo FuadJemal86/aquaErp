@@ -32,6 +32,17 @@ const sellProduct = async (req, res) => {
       0
     );
 
+    // Check for duplicate product types in cart list
+    const typeIds = cart_list.map((item) => item.type_id);
+    const uniqueTypeIds = [...new Set(typeIds)];
+
+    if (typeIds.length !== uniqueTypeIds.length) {
+      return res.status(400).json({
+        message:
+          "Product already selected. Each product type can only be added once to the cart.",
+      });
+    }
+
     // Use Prisma transaction for atomic operations
     const result = await prisma.$transaction(async (tx) => {
       // Create Sales_transaction records for each cart item
@@ -50,6 +61,41 @@ const sellProduct = async (req, res) => {
             console.error("Invalid return_date format:", return_date);
           }
         }
+
+        // get product stock
+        let available_quantity = 0;
+        const productStock = await tx.product_stock.findFirst({
+          where: {
+            product_type_id: item.type_id,
+          },
+        });
+        // if product stock is not found, throw an error
+        if (!productStock) {
+          throw new Error("Product stock not found");
+        }
+
+        // Check if available quantity is sufficient
+        if (productStock.quantity < item.quantity) {
+          throw new Error(
+            `Insufficient stock. Available: ${productStock.quantity}, Requested: ${item.quantity}`
+          );
+        }
+
+        // Calculate new quantity and amount_money
+        const newQuantity = productStock.quantity - item.quantity;
+
+        const newAmountMoney = newQuantity * productStock.price_per_quantity;
+
+        // Update the product stock
+        await tx.product_stock.update({
+          where: {
+            id: productStock.id,
+          },
+          data: {
+            quantity: newQuantity,
+            amount_money: newAmountMoney,
+          },
+        });
 
         const salesTransaction = await tx.sales_transaction.create({
           data: {
@@ -204,6 +250,12 @@ const sellProduct = async (req, res) => {
         return res
           .status(400)
           .json({ message: "Invalid payment method provided" });
+      }
+      if (error.message.includes("Insufficient stock")) {
+        return res.status(400).json({ message: error.message });
+      }
+      if (error.message.includes("Product stock not found")) {
+        return res.status(400).json({ message: "Product stock not found" });
       }
 
       // Handle validation errors
