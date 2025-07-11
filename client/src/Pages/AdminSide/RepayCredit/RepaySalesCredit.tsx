@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import {
   RefreshCw,
   CreditCard,
@@ -19,6 +20,7 @@ import {
   DollarSign,
   FileText,
   Eye,
+  Search,
 } from "lucide-react";
 
 // Type definitions based on your Prisma models
@@ -41,6 +43,7 @@ function RepaySalesCredit() {
   const [credits, setCredits] = useState<SalesCredit[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   // Fetch sales credit report
   const fetchSalesCredits = async () => {
@@ -125,10 +128,15 @@ function RepaySalesCredit() {
     return daysDiff;
   };
 
-  // Filter active credits with safety check
+  // Filter active credits with safety check and search term
   const activeCredits = Array.isArray(credits)
     ? credits.filter((credit) => credit.isActive)
     : [];
+
+  // Filter credits based on search term
+  const filteredCredits = activeCredits.filter((credit) =>
+    credit.customer_name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   useEffect(() => {
     fetchSalesCredits();
@@ -216,6 +224,31 @@ function RepaySalesCredit() {
         </div>
       </div>
 
+      {/* Search Section */}
+      {activeCredits.length > 0 && (
+        <CardContent className="pt-6">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search by customer name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          {searchTerm && (
+            <div className="mt-3 text-sm text-muted-foreground">
+              {filteredCredits.length === 0
+                ? `No credits found for "${searchTerm}"`
+                : `Found ${filteredCredits.length} credit${
+                    filteredCredits.length === 1 ? "" : "s"
+                  } for "${searchTerm}"`}
+            </div>
+          )}
+        </CardContent>
+      )}
+
       {/* Credits Grid */}
       {activeCredits.length === 0 ? (
         <Card>
@@ -235,9 +268,24 @@ function RepaySalesCredit() {
             </div>
           </CardContent>
         </Card>
+      ) : filteredCredits.length === 0 && searchTerm ? (
+        <CardContent className="pt-6">
+          <div className="text-center py-12">
+            <Search className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              No matching credits found
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              No sales credits match your search term "{searchTerm}"
+            </p>
+            <Button onClick={() => setSearchTerm("")} variant="outline">
+              Clear Search
+            </Button>
+          </div>
+        </CardContent>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {activeCredits.map((credit) => (
+          {filteredCredits.map((credit) => (
             <Card
               key={credit.id}
               className={`transition-all duration-200 hover:shadow-lg ${
