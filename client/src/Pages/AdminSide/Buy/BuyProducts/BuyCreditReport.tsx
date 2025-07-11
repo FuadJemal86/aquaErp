@@ -17,15 +17,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Eye, X, RefreshCw } from "lucide-react";
+import { Eye, RefreshCw } from "lucide-react";
 
 // Type definitions based on your Prisma models
 interface BuyCredit {
@@ -335,7 +328,7 @@ const BuyCreditReport: React.FC = () => {
             <div className="mt-3">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-medium text-card-foreground">
-                  Credit Details - {selectedCredit.transaction_id}
+                  Buy Credit Details - {selectedCredit.transaction_id}
                 </h3>
                 <button
                   onClick={handleCloseDetails}
@@ -412,6 +405,14 @@ const BuyCreditReport: React.FC = () => {
                         </div>
                         <div className="space-y-2">
                           <div className="text-sm text-muted-foreground">
+                            Transaction ID
+                          </div>
+                          <div className="text-sm font-mono">
+                            {selectedCredit.transaction_id}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="text-sm text-muted-foreground">
                             Issued Date
                           </div>
                           <div className="text-sm">
@@ -444,7 +445,7 @@ const BuyCreditReport: React.FC = () => {
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-lg">
-                        Transaction Details
+                        Buy Transaction Details
                       </CardTitle>
                       <CardDescription>
                         {creditDetails.length} item(s) in this credit
@@ -480,7 +481,11 @@ const BuyCreditReport: React.FC = () => {
                                 <TableCell className="font-semibold">
                                   {formatCurrency(detail.total_money)}
                                 </TableCell>
-                                <TableCell>{detail.supplier_name}</TableCell>
+                                <TableCell>
+                                  <Badge variant="secondary">
+                                    {detail.supplier_name}
+                                  </Badge>
+                                </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>

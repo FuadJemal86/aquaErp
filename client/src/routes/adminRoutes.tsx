@@ -24,17 +24,20 @@ const ListCustomers = lazy(
 const BuyProducts = lazy(
   () => import("../Pages/AdminSide/Buy/BuyProducts/BuyProducts")
 );
-const SaleProducts = lazy(
-  () => import("../Pages/AdminSide/Sale/SaleProducts/SaleProducts")
-);
 const BuyCreditReport = lazy(
   () => import("../Pages/AdminSide/Buy/BuyProducts/BuyCreditReport")
+);
+const SaleProducts = lazy(
+  () => import("../Pages/AdminSide/Sale/SaleProducts/SaleProducts")
 );
 const BankTransfer = lazy(
   () => import("../Pages/AdminSide/BankTransfer/Deposit/BankDeposti")
 );
 const BankWithdraw = lazy(
   () => import("../Pages/AdminSide/BankTransfer/Withdraw/BankWithdraw")
+);
+const SalesCreditReport = lazy(
+  () => import("../Pages/AdminSide/Sale/SaleProducts/SalesCreditReport")
 );
 
 export const adminRoutes = (
@@ -71,6 +74,10 @@ export const adminRoutes = (
     <Route
       path="/admin/sales-products"
       element={<SaleProducts></SaleProducts>}
+    ></Route>
+    <Route
+      path="/admin/sales-credit-report"
+      element={<SalesCreditReport></SalesCreditReport>}
     ></Route>
     <Route
       path="/admin/buy-credit-report"

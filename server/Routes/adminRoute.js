@@ -26,7 +26,11 @@ const {
   buyCreditReport,
   detailBuyCredit,
 } = require("../Controllers/Buy.controller");
-const { sellProduct } = require("../Controllers/Sales.controller");
+const {
+  sellProduct,
+  detailSalesCredit,
+  salesCreditReport,
+} = require("../Controllers/Sales.controller");
 const {
   addBankDeposit,
   addBankWithdraw,
@@ -85,5 +89,6 @@ router.post(
   uploadBankWithdrawReceiptMiddleware,
   addBankWithdraw
 );
-
+router.get("/get-all-sales-credits", salesCreditReport);
+router.get("/get-sales-transaction-details/:id", detailSalesCredit);
 module.exports = router;

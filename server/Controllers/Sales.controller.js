@@ -281,4 +281,84 @@ const sellProduct = async (req, res) => {
   }
 };
 
-module.exports = { sellProduct };
+// sales credit report
+const salesCreditReport = async (req, res) => {
+  try {
+    // Get all sales credit entries
+    const getSalesCreditReport = await prisma.sales_credit.findMany();
+
+    if (getSalesCreditReport.length === 0) {
+      return res.status(404).json({ status: false, error: 'Sales credit report not found' });
+    }
+
+    // Extract all unique customer_ids
+    const customerIds = [...new Set(getSalesCreditReport.map(item => item.customer_id))];
+
+    // Fetch customer info based on those IDs
+    const customers = await prisma.customer.findMany({
+      where: {
+        id: { in: customerIds },
+      },
+      select: {
+        id: true,
+        full_name: true,
+      },
+    });
+
+    // Create a map for fast lookup
+    const customerMap = {};
+    customers.forEach(cust => {
+      customerMap[cust.id] = cust.full_name;
+    });
+
+    // Append customer name to each sales credit report
+    const reportWithCustomerName = getSalesCreditReport.map(report => ({
+      ...report,
+      customer_name: customerMap[report.customer_id] || 'Unknown',
+    }));
+
+    return res.status(200).json({ status: true, data: reportWithCustomerName });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      status: false,
+      error: 'Internal server error',
+    });
+  }
+};
+
+
+// detail sales credit report
+const detailSalesCredit = async (req, res) => {
+  const transaction_id = req.params.id;
+
+  try {
+    const getDetailSalesCredit = await prisma.sales_transaction.findMany({
+      where: {
+        transaction_id: transaction_id
+      },
+      include: {
+        Product_type: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    });
+
+    if (getDetailSalesCredit.length === 0) {
+      return res.status(404).json({ status: false, error: 'sales credit detail not found' });
+    }
+
+    return res.status(200).json({ status: true, data: getDetailSalesCredit });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      status: false,
+      error: 'Internal server error'
+    });
+  }
+};
+
+module.exports = { sellProduct, salesCreditReport, detailSalesCredit };
