@@ -35,7 +35,7 @@ interface BuyCredit {
   description?: string;
   issued_date: string;
   return_date: string;
-  status: string;
+  status: "ACCEPTED" | "PAYED" | "OVERDUE";
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -178,9 +178,9 @@ const BuyCreditReport: React.FC = () => {
     switch (status) {
       case "ACCEPTED":
         return "default";
-      case "PENDING":
+      case "PAYED":
         return "secondary";
-      case "REJECTED":
+      case "OVERDUE":
         return "destructive";
       default:
         return "outline";
