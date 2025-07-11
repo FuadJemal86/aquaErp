@@ -331,15 +331,15 @@ const BuyCreditReport: React.FC = () => {
       {/* Credit Details Modal */}
       {showDetails && selectedCredit && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-4xl shadow-2xl rounded-lg bg-white/95 backdrop-blur-md">
+          <div className="relative mx-auto p-5 border w-full max-w-4xl shadow-2xl rounded-lg bg-card/95 backdrop-blur-md border-border">
             <div className="mt-3">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
+                <h3 className="text-lg font-medium text-card-foreground">
                   Credit Details - {selectedCredit.transaction_id}
                 </h3>
                 <button
                   onClick={handleCloseDetails}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <svg
                     className="w-6 h-6"
