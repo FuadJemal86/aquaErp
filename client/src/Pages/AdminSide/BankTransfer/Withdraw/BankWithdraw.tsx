@@ -154,7 +154,7 @@ function BankWithdraw() {
           "Content-Type": "multipart/form-data",
         },
       });
-
+      fetchBankAccounts();
       toast.success("Withdrawal added successfully!");
       reset();
       setSelectedFile(null);

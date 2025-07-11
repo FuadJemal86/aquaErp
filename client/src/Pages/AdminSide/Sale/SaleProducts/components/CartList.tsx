@@ -15,7 +15,14 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import { List, RefreshCw, ShoppingCart, User, Users } from "lucide-react";
+import {
+  List,
+  RefreshCw,
+  ShoppingCart,
+  Trash,
+  User,
+  Users,
+} from "lucide-react";
 import ConfirmSellModal from "./ConfirmSellModal";
 
 function CartList({
@@ -102,7 +109,7 @@ function CartList({
   };
 
   return (
-    <Card className="h-[470px] flex flex-col">
+    <Card className="h-[70vh] flex flex-col">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -166,6 +173,9 @@ function CartList({
                 <TableHead className="p-2 border-b text-center">
                   Total
                 </TableHead>
+                <TableHead className="p-2 border-b text-center">
+                  Delete
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -189,6 +199,15 @@ function CartList({
                   </TableCell>
                   <TableCell className="p-2 border-b text-center">
                     {cart.total_money}
+                  </TableCell>
+                  <TableCell className="p-2 border-b text-center">
+                    <Button
+                      className="bg-red-500"
+                      size="icon"
+                      onClick={() => onSellCart(cart.id)}
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

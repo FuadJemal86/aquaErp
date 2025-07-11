@@ -6,7 +6,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
@@ -14,8 +13,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-import { useContext, useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { Outlet } from "react-router-dom";
 import { AppSidebar } from "./Components/app-sidebar";
 
 function AdminLayout() {

@@ -54,10 +54,7 @@ function SaleProducts() {
       ...prev,
       { ...cart, id: Date.now() + Math.random() },
     ]);
-    setTotalAmount(
-      cartList.reduce((acc, curr) => acc + curr.total_money, 0) +
-        cart.total_money
-    );
+    setTotalAmount((prev) => prev + cart.total_money);
   };
 
   // Handle sell action (for now, just remove from list)
