@@ -8,6 +8,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -464,7 +472,7 @@ function RepaySalesCredit() {
 
       {/* Search Section */}
       {activeCredits.length > 0 && (
-        <Card>
+        <div>
           <CardContent className="pt-6">
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -485,7 +493,7 @@ function RepaySalesCredit() {
               </div>
             )}
           </CardContent>
-        </Card>
+        </div>
       )}
 
       {/* Credits Grid */}
@@ -700,7 +708,7 @@ function RepaySalesCredit() {
                       Show Details & Repay
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                  <DialogContent className="max-w-[95vw] lg:max-w-[85vw] xl:max-w-[80vw] 2xl:max-w-[75vw] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle className="flex items-center gap-2">
                         <CreditCard className="h-5 w-5" />
@@ -775,97 +783,94 @@ function RepaySalesCredit() {
                               <Skeleton className="h-4 w-1/2" />
                             </div>
                           ) : transactionDetails.length > 0 ? (
-                            <div className="space-y-6">
-                              {transactionDetails.map((detail, index) => (
-                                <div key={detail.id} className="space-y-4">
-                                  {transactionDetails.length > 1 && (
-                                    <div className="flex items-center gap-2 mb-4">
-                                      <Badge variant="secondary">
-                                        Transaction {index + 1}
-                                      </Badge>
-                                      <Separator className="flex-1" />
-                                    </div>
-                                  )}
-
-                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <div className="space-y-2">
-                                      <Label className="text-sm font-medium text-muted-foreground">Product Type</Label>
-                                      <div className="flex items-center gap-2">
-                                        <Package className="h-4 w-4" />
-                                        {detail.Product_type?.name || 'N/A'}
-                                      </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                      <Label className="text-sm font-medium text-muted-foreground">Customer Type</Label>
-                                      <div className="flex items-center gap-2">
-                                        <Users className="h-4 w-4" />
-                                        {detail.customer_type}
-                                      </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                      <Label className="text-sm font-medium text-muted-foreground">Price per Quantity</Label>
-                                      <div className="flex items-center gap-2">
-                                        <DollarSign className="h-4 w-4" />
-                                        {formatCurrency(detail.price_per_quantity)}
-                                      </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                      <Label className="text-sm font-medium text-muted-foreground">Payment Method</Label>
-                                      <div className="flex items-center gap-2">
-                                        <Banknote className="h-4 w-4" />
-                                        {detail.payment_method}
-                                      </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                      <Label className="text-sm font-medium text-muted-foreground">Manager</Label>
-                                      <div className="flex items-center gap-2">
-                                        <User className="h-4 w-4" />
-                                        {detail.manager_name || 'N/A'}
-                                      </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                      <Label className="text-sm font-medium text-muted-foreground">Cashier</Label>
-                                      <div className="flex items-center gap-2">
-                                        <User className="h-4 w-4" />
-                                        {detail.cashier_name || 'N/A'}
-                                      </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                      <Label className="text-sm font-medium text-muted-foreground">Status</Label>
-                                      <Badge
-                                        className={`text-white ${detail.status === "ACCEPTED"
-                                          ? "bg-blue-500"
-                                          : detail.status === "PAYED"
-                                            ? "bg-green-500"
-                                            : "bg-red-500"
-                                          }`}
-                                      >
-                                        {detail.status}
-                                      </Badge>
-                                    </div>
-
-                                    {detail.Bank_list && (
-                                      <div className="space-y-2">
-                                        <Label className="text-sm font-medium text-muted-foreground">Bank Account</Label>
+                            <div className="rounded-md border overflow-x-auto">
+                              <Table className="min-w-full">
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead className="w-[120px]">ID</TableHead>
+                                    <TableHead className="w-[180px]">Product Type</TableHead>
+                                    <TableHead className="w-[160px]">Customer Type</TableHead>
+                                    <TableHead className="w-[140px]">Price/Qty</TableHead>
+                                    <TableHead className="w-[160px]">Payment Method</TableHead>
+                                    <TableHead className="w-[150px]">Manager</TableHead>
+                                    <TableHead className="w-[150px]">Cashier</TableHead>
+                                    <TableHead className="w-[200px]">Bank Account</TableHead>
+                                    <TableHead className="w-[120px]">Status</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {transactionDetails.map((detail) => (
+                                    <TableRow key={detail.id}>
+                                      <TableCell className="font-medium">
+                                        {detail.id}
+                                      </TableCell>
+                                      <TableCell>
                                         <div className="flex items-center gap-2">
-                                          <Building2 className="h-4 w-4" />
-                                          {detail.Bank_list.branch} - {detail.Bank_list.account_number}
+                                          <Package className="h-4 w-4 text-muted-foreground" />
+                                          {detail.Product_type?.name || 'N/A'}
                                         </div>
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {index < transactionDetails.length - 1 && (
-                                    <Separator className="my-4" />
-                                  )}
-                                </div>
-                              ))}
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="flex items-center gap-2">
+                                          <Users className="h-4 w-4 text-muted-foreground" />
+                                          {detail.customer_type}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="flex items-center gap-2">
+                                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                          {formatCurrency(detail.price_per_quantity)}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="flex items-center gap-2">
+                                          <Banknote className="h-4 w-4 text-muted-foreground" />
+                                          {detail.payment_method}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="flex items-center gap-2">
+                                          <User className="h-4 w-4 text-muted-foreground" />
+                                          {detail.manager_name || 'N/A'}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="flex items-center gap-2">
+                                          <User className="h-4 w-4 text-muted-foreground" />
+                                          {detail.cashier_name || 'N/A'}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell>
+                                        {detail.Bank_list ? (
+                                          <div className="flex items-center gap-2">
+                                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                                            <div className="text-sm">
+                                              <div>{detail.Bank_list.branch}</div>
+                                              <div className="text-muted-foreground">
+                                                {detail.Bank_list.account_number}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          'N/A'
+                                        )}
+                                      </TableCell>
+                                      <TableCell>
+                                        <Badge
+                                          className={`text-white ${detail.status === "ACCEPTED"
+                                            ? "bg-blue-500"
+                                            : detail.status === "PAYED"
+                                              ? "bg-green-500"
+                                              : "bg-red-500"
+                                            }`}
+                                        >
+                                          {detail.status}
+                                        </Badge>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
                             </div>
                           ) : (
                             <div className="text-center py-8">
