@@ -20,7 +20,10 @@ const {
   updateCustomer,
   deleteCustomer,
 } = require("../Controllers/Customer.controller");
-const { uploadCustomerProfileMiddleware, uploadSalesCreditReceiptMiddleware } = require("../Utils/fileUtils");
+const {
+  uploadCustomerProfileMiddleware,
+  uploadSalesCreditReceiptMiddleware,
+} = require("../Utils/fileUtils");
 const {
   buyProduct,
   buyCreditReport,
@@ -39,7 +42,7 @@ const {
   uploadBankDepositReceiptMiddleware,
   uploadBankWithdrawReceiptMiddleware,
 } = require("../Utils/fileUtils");
-const { repaySalesCredit } = require("../controllers/RepayCredit.controller");
+const { repaySalesCredit } = require("../Controllers/RepayCredit.controller");
 
 router.post("/add-product-category", addProductCategory);
 router.post("/add-product-type", addProductType);
@@ -80,7 +83,11 @@ router.get("/get-buy-transaction-details/:id", detailBuyCredit);
 router.post("/sell-product", sellProduct);
 
 //sales and buy repay credit
-router.post('/repay-credit-sales', uploadSalesCreditReceiptMiddleware, repaySalesCredit)
+router.post(
+  "/repay-credit-sales",
+  uploadSalesCreditReceiptMiddleware,
+  repaySalesCredit
+);
 
 // Bank Transfer Routes
 router.post(
