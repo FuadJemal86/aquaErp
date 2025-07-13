@@ -2,6 +2,33 @@ const { sales_repay_credit } = require("../Model/Validation");
 const prisma = require("../prisma/prisma");
 const path = require("path");
 const { deleteFileIfExists } = require("../Utils/fileUtils");
+const { generateSalesCreditTransactionId } = require("../Utils/GenerateTransactionId");
+
+
+
+
+const getSalesCreditDetailTransaction = async (req, res) => {
+  const transaction_id = req.params.id;
+
+  console.log(transaction_id)
+
+  try {
+    const salesCreditTransactionId = await prisma.sales_credit_transaction.findMany({
+      where: { transaction_id }
+    })
+
+    if (!salesCreditTransactionId) {
+      return res.status(400).json({ error: "not found sales credit transaction" });
+    }
+    return res.status(201).json({ status: true, data: salesCreditTransactionId })
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ status: false, error: "Internal server error" });
+  }
+}
+
+
 
 const repaySalesCredit = async (req, res) => {
   const {
@@ -110,6 +137,7 @@ const repaySalesCredit = async (req, res) => {
         payment_method,
         bank_id: bankId ?? null,
         cash_id: cashTransactionId,
+        SCTID: generateSalesCreditTransactionId(),
         outstanding_balance: parseFloat(outstanding_balance),
         image: req.file?.fullPath || "",
       },
@@ -153,4 +181,4 @@ const repaySalesCredit = async (req, res) => {
   }
 };
 
-module.exports = { repaySalesCredit };
+module.exports = { repaySalesCredit, getSalesCreditDetailTransaction };

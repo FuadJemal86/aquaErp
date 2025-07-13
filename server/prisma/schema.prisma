@@ -285,6 +285,7 @@ model Sales_credit_transaction {
   cash_id             Int?
   outstanding_balance Float
   image               String
+  SCTID               String               @unique
   isActive            Boolean              @default(true)
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt

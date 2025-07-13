@@ -82,6 +82,7 @@ interface SalesTransactionDetails {
   manager_id?: number;
   transaction_id: string;
   price_per_quantity: number;
+  quantity: number,
   payment_method: string;
   customer_type: string;
   status: string;
@@ -121,8 +122,17 @@ interface RepaymentForm {
   outstanding_balance: number;
 }
 
+interface SalesCreditTransactions {
+  id: number,
+  amount_payed: number,
+  payment_method: string,
+  SCTID: string,
+  outstanding_balance: number
+}
+
 function RepaySalesCredit() {
   const [credits, setCredits] = useState<SalesCredit[]>([]);
+  const [salesCreditTransaction, setSalesCreditTransaction] = useState<SalesCreditTransactions[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -162,7 +172,7 @@ function RepaySalesCredit() {
       }
     } catch (err: any) {
       if (err.response?.status === 404) {
-        setError("Sales credit report not found");
+        console.log("Sales credit report not found");
       } else if (err.response?.status === 500) {
         setError("Internal server error");
       } else {
@@ -193,6 +203,7 @@ function RepaySalesCredit() {
           manager_id: detail.manager_id,
           transaction_id: transactionId,
           price_per_quantity: detail.price_per_quantity,
+          quantity: detail.quantity,
           payment_method: detail.payment_method,
           customer_type: detail.customer_type,
           status: detail.status,
@@ -203,11 +214,40 @@ function RepaySalesCredit() {
         }));
         setTransactionDetails(mappedDetails);
       } else {
-        throw new Error(result.error || "No transaction details found");
+        console.log(result.error || "No transaction details found");
       }
     } catch (err: any) {
       console.error("Error fetching transaction details:", err);
       setTransactionDetails([]);
+      setRepaymentError(err.message || "Failed to load transaction details");
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const fetchSalesCreditTransaction = async (transactionId: string) => {
+    try {
+      setSalesCreditTransaction([]);
+      setModalLoading(true);
+      const response = await api.get(`/admin/get-sales-credit-transaction/${transactionId}`);
+      const result = response.data
+
+      if (result.status && Array.isArray(result.data) && result.data.length > 0) {
+        // Map all transactions instead of just taking the first one
+        const mappedDetails = result.data.map((detail: any) => ({
+          id: detail.id,
+          amount_payed: detail.amount_payed,
+          payment_method: detail.payment_method,
+          SCTID: detail.SCTID,
+          outstanding_balance: detail.outstanding_balance
+        }));
+        setSalesCreditTransaction(mappedDetails);
+      } else {
+        console.log(result.error || "No transaction details found");
+      }
+    } catch (err: any) {
+      console.error("Error fetching transaction details:", err);
+      setSalesCreditTransaction([]);
       setRepaymentError(err.message || "Failed to load transaction details");
     } finally {
       setModalLoading(false);
@@ -244,10 +284,13 @@ function RepaySalesCredit() {
       amount_payed: 0,
       payment_method: 'CASH',
       outstanding_balance: credit.total_money,
+
     });
     setRepaymentError(null);
 
     await fetchTransactionDetails(credit.transaction_id);
+    await fetchSalesCreditTransaction(credit.transaction_id);
+    await (credit.transaction_id)
     await fetchBankAccounts();
   };
 
@@ -471,10 +514,10 @@ function RepaySalesCredit() {
       </div>
 
       {/* Search Section */}
-      {activeCredits.length > 0 && (
-        <div>
-          <CardContent className="pt-6">
-            <div className="relative max-w-md">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-6">
+        {activeCredits.length > 0 && (
+          <CardContent className="">
+            <div className="relative max-w-md flex items-start justify-between">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
@@ -493,8 +536,8 @@ function RepaySalesCredit() {
               </div>
             )}
           </CardContent>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Credits Grid */}
       {activeCredits.length === 0 ? (
@@ -681,6 +724,7 @@ function RepaySalesCredit() {
                           credit.return_date
                         )} days left`}
                     </div>
+
                   </div>
                 </div>
 
@@ -693,352 +737,383 @@ function RepaySalesCredit() {
                     <div className="text-sm bg-muted p-2 rounded text-muted-foreground truncate">
                       {credit.description}
                     </div>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          className="w-full gap-2"
+                          variant="outline"
+                          onClick={() => handleShowDetails(credit)}
+                        >
+                          <Eye className="h-4 w-4" />
+                          Show Details & Repay
+                        </Button>
+                      </DialogTrigger>
+                    </Dialog>
                   </div>
                 )}
 
-                {/* Action Button */}
-                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                  <DialogTrigger asChild>
-                    <Button
-                      className="w-full gap-2"
-                      variant="outline"
-                      onClick={() => handleShowDetails(credit)}
-                    >
-                      <Eye className="h-4 w-4" />
-                      Show Details & Repay
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-[95vw] lg:max-w-[85vw] xl:max-w-[80vw] 2xl:max-w-[75vw] max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle className="flex items-center gap-2">
-                        <CreditCard className="h-5 w-5" />
-                        Credit Details & Repayment
-                      </DialogTitle>
-                      <DialogDescription>
-                        Transaction details and repayment form for {selectedCredit?.customer_name}
-                      </DialogDescription>
-                    </DialogHeader>
+                {/* Modal JSX only */}
+                {isModalOpen && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    {/* Backdrop with proper blur effect */}
+                    <div
+                      className="fixed inset-0 bg-black/20 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4"
+                      style={{ backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
+                      onClick={() => setIsModalOpen(false)}
+                    />
 
-                    <div className="space-y-6">
-                      {/* Credit Summary */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-lg">Credit Summary</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label className="text-sm font-medium text-muted-foreground">Customer Name</Label>
-                              <div className="flex items-center gap-2">
-                                <User className="h-4 w-4" />
-                                {selectedCredit?.customer_name}
-                              </div>
-                            </div>
-                            <div className="space-y-2">
-                              <Label className="text-sm font-medium text-muted-foreground">Transaction ID</Label>
-                              <div className="font-mono text-sm bg-muted px-2 py-1 rounded">
-                                {selectedCredit?.transaction_id}
-                              </div>
-                            </div>
-                            <div className="space-y-2">
-                              <Label className="text-sm font-medium text-muted-foreground">Total Amount</Label>
-                              <div className="text-lg font-bold text-primary">
-                                {selectedCredit && formatCurrency(selectedCredit.total_money)}
-                              </div>
-                            </div>
-                            <div className="space-y-2">
-                              <Label className="text-sm font-medium text-muted-foreground">Status</Label>
-                              <Badge
-                                className={`text-white ${selectedCredit?.status === "ACCEPTED"
-                                  ? "bg-blue-500"
-                                  : selectedCredit?.status === "PAYED"
-                                    ? "bg-green-500"
-                                    : "bg-red-500"
-                                  }`}
-                              >
-                                {selectedCredit?.status}
-                              </Badge>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                    {/* Modal */}
+                    <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-[95vw] lg:max-w-[85vw] xl:max-w-[80vw] 2xl:max-w-[75vw] max-h-[90vh] overflow-y-auto border z-10">
+                      {/* Header */}
+                      <div className="flex items-center justify-between p-6 border-b">
+                        <div>
+                          <h2 className="text-xl font-semibold flex items-center gap-2">
+                            <CreditCard className="h-5 w-5" />
+                            Product Details & Repayment
+                          </h2>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Transaction details and repayment form for {selectedCredit?.customer_name}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setIsModalOpen(false)}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                        >
+                          <X className="h-5 w-5" />
+                        </button>
+                      </div>
 
-                      {/* Transaction Details */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-lg">
-                            Transaction Details
-                            {transactionDetails.length > 0 && (
-                              <Badge variant="outline" className="ml-2">
-                                {transactionDetails.length} Transaction{transactionDetails.length > 1 ? 's' : ''}
-                              </Badge>
-                            )}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          {modalLoading ? (
-                            <div className="space-y-3">
-                              <Skeleton className="h-4 w-full" />
-                              <Skeleton className="h-4 w-3/4" />
-                              <Skeleton className="h-4 w-1/2" />
-                            </div>
-                          ) : transactionDetails.length > 0 ? (
-                            <div className="rounded-md border overflow-x-auto">
-                              <Table className="min-w-full">
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead className="w-[120px]">ID</TableHead>
-                                    <TableHead className="w-[180px]">Product Type</TableHead>
-                                    <TableHead className="w-[160px]">Customer Type</TableHead>
-                                    <TableHead className="w-[140px]">Price/Qty</TableHead>
-                                    <TableHead className="w-[160px]">Payment Method</TableHead>
-                                    <TableHead className="w-[150px]">Manager</TableHead>
-                                    <TableHead className="w-[150px]">Cashier</TableHead>
-                                    <TableHead className="w-[200px]">Bank Account</TableHead>
-                                    <TableHead className="w-[120px]">Status</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {transactionDetails.map((detail) => (
-                                    <TableRow key={detail.id}>
-                                      <TableCell className="font-medium">
-                                        {detail.id}
-                                      </TableCell>
-                                      <TableCell>
-                                        <div className="flex items-center gap-2">
-                                          <Package className="h-4 w-4 text-muted-foreground" />
-                                          {detail.Product_type?.name || 'N/A'}
-                                        </div>
-                                      </TableCell>
-                                      <TableCell>
-                                        <div className="flex items-center gap-2">
-                                          <Users className="h-4 w-4 text-muted-foreground" />
-                                          {detail.customer_type}
-                                        </div>
-                                      </TableCell>
-                                      <TableCell>
-                                        <div className="flex items-center gap-2">
-                                          <DollarSign className="h-4 w-4 text-muted-foreground" />
-                                          {formatCurrency(detail.price_per_quantity)}
-                                        </div>
-                                      </TableCell>
-                                      <TableCell>
-                                        <div className="flex items-center gap-2">
-                                          <Banknote className="h-4 w-4 text-muted-foreground" />
-                                          {detail.payment_method}
-                                        </div>
-                                      </TableCell>
-                                      <TableCell>
-                                        <div className="flex items-center gap-2">
-                                          <User className="h-4 w-4 text-muted-foreground" />
-                                          {detail.manager_name || 'N/A'}
-                                        </div>
-                                      </TableCell>
-                                      <TableCell>
-                                        <div className="flex items-center gap-2">
-                                          <User className="h-4 w-4 text-muted-foreground" />
-                                          {detail.cashier_name || 'N/A'}
-                                        </div>
-                                      </TableCell>
-                                      <TableCell>
-                                        {detail.Bank_list ? (
+                      {/* Content */}
+                      <div className="p-6 space-y-6">
+                        {/* Transaction Details */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg">
+                              Product Details
+                              {transactionDetails.length > 0 && (
+                                <Badge variant="outline" className="ml-2">
+                                  {transactionDetails.length} Transaction{transactionDetails.length > 1 ? 's' : ''}
+                                </Badge>
+                              )}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            {modalLoading ? (
+                              <div className="space-y-3">
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-3/4" />
+                                <Skeleton className="h-4 w-1/2" />
+                              </div>
+                            ) : transactionDetails.length > 0 ? (
+                              <div className="rounded-md border overflow-x-auto">
+                                <Table className="min-w-full">
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead className="w-[120px]">ID</TableHead>
+                                      <TableHead className="w-[180px]">Product Type</TableHead>
+                                      <TableHead className="w-[100px]">Quantity</TableHead>
+                                      <TableHead className="w-[140px]">Price/Unit</TableHead>
+                                      <TableHead className="w-[120px]">Total</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {transactionDetails.map((detail, index) => (
+                                      <TableRow key={detail.id}>
+                                        <TableCell className="font-medium">
+                                          {index + 1}
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="flex items-center gap-2">
+                                            <Package className="h-4 w-4 text-muted-foreground" />
+                                            {detail.Product_type?.name || 'N/A'}
+                                          </div>
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-sm font-medium">{detail.quantity}</span>
+                                          </div>
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="flex items-center gap-2">
+                                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                            {formatCurrency(detail.price_per_quantity)}
+                                          </div>
+                                        </TableCell>
+                                        <TableCell>
                                           <div className="flex items-center gap-2">
                                             <Building2 className="h-4 w-4 text-muted-foreground" />
-                                            <div className="text-sm">
-                                              <div>{detail.Bank_list.branch}</div>
-                                              <div className="text-muted-foreground">
-                                                {detail.Bank_list.account_number}
-                                              </div>
+                                            <div className="text-sm font-medium">
+                                              {formatCurrency(detail.quantity * detail.price_per_quantity)}
                                             </div>
                                           </div>
-                                        ) : (
-                                          'N/A'
-                                        )}
-                                      </TableCell>
-                                      <TableCell>
-                                        <Badge
-                                          className={`text-white ${detail.status === "ACCEPTED"
-                                            ? "bg-blue-500"
-                                            : detail.status === "PAYED"
-                                              ? "bg-green-500"
-                                              : "bg-red-500"
-                                            }`}
-                                        >
-                                          {detail.status}
-                                        </Badge>
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </div>
-                          ) : (
-                            <div className="text-center py-8">
-                              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                              <p className="text-muted-foreground">No transaction details available</p>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-
-                      {/* Repayment Form */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-lg">Process Repayment</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          {repaymentError && (
-                            <Alert variant="destructive">
-                              <AlertCircle className="h-4 w-4" />
-                              <AlertTitle>Error</AlertTitle>
-                              <AlertDescription>{repaymentError}</AlertDescription>
-                            </Alert>
-                          )}
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="amount_payed">Amount to Pay</Label>
-                              <Input
-                                id="amount_payed"
-                                type="number"
-                                placeholder="Enter amount"
-                                value={repaymentForm.amount_payed || ''}
-                                onChange={(e) => setRepaymentForm(prev => ({
-                                  ...prev,
-                                  amount_payed: parseFloat(e.target.value) || 0
-                                }))}
-                                min="0"
-                                step="0.01"
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor="outstanding_balance">Outstanding Balance</Label>
-                              <Input
-                                id="outstanding_balance"
-                                type="number"
-                                value={repaymentForm.outstanding_balance}
-                                disabled
-                                className="bg-muted"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="payment_method">Payment Method</Label>
-                            <Select
-                              value={repaymentForm.payment_method}
-                              onValueChange={(value: 'CASH' | 'BANK') => setRepaymentForm(prev => ({
-                                ...prev,
-                                payment_method: value,
-                                bank_id: value === 'CASH' ? undefined : prev.bank_id
-                              }))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select payment method" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="CASH">Cash</SelectItem>
-                                <SelectItem value="BANK">Bank Transfer</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {repaymentForm.payment_method === 'BANK' && (
-                            <div className="space-y-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="bank_id">Bank Account</Label>
-                                <Select
-                                  value={repaymentForm.bank_id?.toString() || ''}
-                                  onValueChange={(value) => setRepaymentForm(prev => ({
-                                    ...prev,
-                                    bank_id: parseInt(value)
-                                  }))}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select bank account" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {bankAccounts.map((bank) => (
-                                      <SelectItem key={bank.id} value={bank.id.toString()}>
-                                        {bank.branch} - {bank.account_number} ({bank.owner})
-                                        {bank.bank_balance && bank.bank_balance.length > 0 && (
-                                          <span className="ml-2 text-muted-foreground">
-                                            - Balance: {formatCurrency(bank.bank_balance[0].balance)}
-                                          </span>
-                                        )}
-                                      </SelectItem>
+                                        </TableCell>
+                                      </TableRow>
                                     ))}
-                                  </SelectContent>
-                                </Select>
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            ) : (
+                              <div className="text-center py-8">
+                                <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                <p className="text-muted-foreground">No transaction details available</p>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+
+                        {/* Sales Credit Transaction */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg">
+                              Sales Credit Transaction History
+                              {salesCreditTransaction.length > 0 && (
+                                <Badge variant="outline" className="ml-2">
+                                  {salesCreditTransaction.length} Transaction{salesCreditTransaction.length > 1 ? 's' : ''}
+                                </Badge>
+                              )}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            {modalLoading ? (
+                              <div className="space-y-3">
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-3/4" />
+                                <Skeleton className="h-4 w-1/2" />
+                              </div>
+                            ) : salesCreditTransaction.length > 0 ? (
+                              <div className="rounded-md border overflow-x-auto">
+                                <Table className="min-w-full">
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead className="w-[120px]">ID</TableHead>
+                                      <TableHead className="w-[120px]">Credit Transaction ID</TableHead>
+                                      <TableHead className="w-[180px]">Amount Payed</TableHead>
+                                      <TableHead className="w-[100px]">Payment Method</TableHead>
+                                      <TableHead className="w-[100px]">Outstanding Balance</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {salesCreditTransaction.map((detail, index) => (
+                                      <TableRow key={detail.id}>
+                                        <TableCell className="font-medium">
+                                          {index + 1}
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="flex items-center gap-2">
+                                            <FileText className="h-4 w-4 text-muted-foreground" />
+                                            {detail.SCTID || 'N/A'}
+                                          </div>
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="flex items-center gap-2">
+                                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-sm font-medium">{formatCurrency(detail.amount_payed)}</span>
+                                          </div>
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="flex items-center gap-2">
+                                            <Banknote className="h-4 w-4 text-muted-foreground" />
+                                            <Badge variant={detail.payment_method === 'CASH' ? 'default' : 'secondary'}>
+                                              {detail.payment_method}
+                                            </Badge>
+                                          </div>
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="flex items-center gap-2">
+                                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                                            <div className="text-sm font-medium">
+                                              {formatCurrency(detail.outstanding_balance)}
+                                            </div>
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            ) : (
+                              <div className="text-center py-8">
+                                <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                <p className="text-muted-foreground">No previous transactions available for this customer</p>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+
+                        {/* Repayment Form */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg">Process Repayment</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            {repaymentError && (
+                              <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Error</AlertTitle>
+                                <AlertDescription>{repaymentError}</AlertDescription>
+                              </Alert>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="amount_payed">Amount to Pay</Label>
+                                <Input
+                                  id="amount_payed"
+                                  type="number"
+                                  placeholder="Enter amount"
+                                  value={repaymentForm.amount_payed || ''}
+                                  onChange={(e) => {
+                                    const value = parseFloat(e.target.value) || 0;
+                                    const maxAmount = selectedCredit?.total_money || 0;
+                                    const limitedValue = Math.min(value, maxAmount);
+
+                                    setRepaymentForm(prev => ({
+                                      ...prev,
+                                      amount_payed: limitedValue
+                                    }));
+                                  }}
+                                  min="0"
+                                  max={selectedCredit?.total_money || 0}
+                                  step="0.01"
+                                  className={repaymentForm.amount_payed > (selectedCredit?.total_money || 0) ? 'border-red-500' : ''}
+                                />
+                                <p className="text-xs text-gray-500">
+                                  Maximum: {selectedCredit && formatCurrency(selectedCredit.total_money)}
+                                </p>
                               </div>
 
                               <div className="space-y-2">
-                                <Label htmlFor="receipt_image">Payment Receipt Image</Label>
+                                <Label htmlFor="outstanding_balance">Outstanding Balance</Label>
+                                <Input
+                                  id="outstanding_balance"
+                                  type="number"
+                                  value={repaymentForm.outstanding_balance}
+                                  disabled
+                                  className="bg-muted"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="payment_method">Payment Method</Label>
+                              <Select
+                                value={repaymentForm.payment_method}
+                                onValueChange={(value: 'CASH' | 'BANK') => setRepaymentForm(prev => ({
+                                  ...prev,
+                                  payment_method: value,
+                                  bank_id: value === 'CASH' ? undefined : prev.bank_id
+                                }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select payment method" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="CASH">Cash</SelectItem>
+                                  <SelectItem value="BANK">Bank Transfer</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {repaymentForm.payment_method === 'BANK' && (
+                              <div className="space-y-4">
                                 <div className="space-y-2">
-                                  <Input
-                                    id="receipt_image"
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleImageUpload}
-                                    className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
-                                  />
-                                  {repaymentForm.imagePreview && (
-                                    <div className="relative inline-block">
-                                      <img
-                                        src={repaymentForm.imagePreview}
-                                        alt="Payment Receipt Preview"
-                                        className="max-w-xs max-h-48 rounded-lg border"
-                                      />
-                                      <Button
-                                        type="button"
-                                        variant="destructive"
-                                        size="sm"
-                                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                                        onClick={removeImage}
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  )}
+                                  <Label htmlFor="bank_id">Bank Account</Label>
+                                  <Select
+                                    value={repaymentForm.bank_id?.toString() || ''}
+                                    onValueChange={(value) => setRepaymentForm(prev => ({
+                                      ...prev,
+                                      bank_id: parseInt(value)
+                                    }))}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select bank account" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {bankAccounts.map((bank) => (
+                                        <SelectItem key={bank.id} value={bank.id.toString()}>
+                                          {bank.branch} - {bank.account_number} ({bank.owner})
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="receipt_image">Payment Receipt Image</Label>
+                                  <div className="space-y-2">
+                                    <Input
+                                      id="receipt_image"
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={handleImageUpload}
+                                      className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
+                                    />
+                                    {repaymentForm.imagePreview && (
+                                      <div className="relative inline-block">
+                                        <img
+                                          src={repaymentForm.imagePreview}
+                                          alt="Payment Receipt Preview"
+                                          className="max-w-xs max-h-48 rounded-lg border"
+                                        />
+                                        <Button
+                                          type="button"
+                                          variant="destructive"
+                                          size="sm"
+                                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                                          onClick={removeImage}
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
+                            )}
 
-                          <Separator />
+                            <Separator />
 
-                          <div className="flex items-center justify-between pt-4">
-                            <div className="text-sm text-muted-foreground">
-                              <div>Total Amount: {selectedCredit && formatCurrency(selectedCredit.total_money)}</div>
-                              <div>Amount Paying: {formatCurrency(repaymentForm.amount_payed)}</div>
-                              <div className="font-medium">
-                                Outstanding Balance: {formatCurrency(repaymentForm.outstanding_balance)}
+                            <div className="flex items-center justify-between pt-4">
+                              <div className="text-sm text-muted-foreground">
+                                <div>Total Amount: {selectedCredit && formatCurrency(selectedCredit.total_money)}</div>
+                                <div>Amount Paying: {formatCurrency(repaymentForm.amount_payed)}</div>
+                                <div className="font-medium">
+                                  Outstanding Balance: {formatCurrency(repaymentForm.outstanding_balance)}
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setIsModalOpen(false)}
+                                  disabled={repaymentLoading}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  onClick={handleRepayment}
+                                  disabled={repaymentLoading || repaymentForm.amount_payed <= 0 || repaymentForm.amount_payed > (selectedCredit?.total_money || 0)}
+                                  className="gap-2"
+                                >
+                                  {repaymentLoading ? (
+                                    <>
+                                      <RefreshCw className="h-4 w-4 animate-spin" />
+                                      Processing...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CheckCircle className="h-4 w-4" />
+                                      Process Repayment
+                                    </>
+                                  )}
+                                </Button>
                               </div>
                             </div>
-                            <Button
-                              onClick={handleRepayment}
-                              disabled={repaymentLoading || repaymentForm.amount_payed <= 0}
-                              className="gap-2"
-                            >
-                              {repaymentLoading ? (
-                                <>
-                                  <RefreshCw className="h-4 w-4 animate-spin" />
-                                  Processing...
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCircle className="h-4 w-4" />
-                                  Process Repayment
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
+                          </CardContent>
+                        </Card>
+                      </div>
                     </div>
-                  </DialogContent>
-                </Dialog>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
