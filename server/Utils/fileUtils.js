@@ -245,6 +245,53 @@ const uploadBankWithdrawReceiptMiddleware = (req, res, next) => {
   });
 };
 
+// upload sale credit receipt
+const uploadSalesCreditReceipt = multer({
+  storage: multer.diskStorage({
+    destination: function (req, file, cb) {
+      const uploadPath = path.join(__dirname, "..", "upload", "Images", "Sales", "Credit", "Receipt");
+      if (!fs.existsSync(uploadPath)) {
+        fs.mkdirSync(uploadPath, { recursive: true });
+      }
+      cb(null, uploadPath);
+    },
+    filename: function (req, file, cb) {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      const sanitizedOriginalname = file.originalname.replace(/[^a-zA-Z0-9.]/g, "_");
+      const finalFilename = uniqueSuffix + "-" + sanitizedOriginalname;
+      file.generatedFilename = finalFilename; // Store filename directly on file
+      cb(null, finalFilename);
+    },
+  }),
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+}).single("image"); // Make sure frontend uses name="image"
+
+
+const uploadSalesCreditReceiptMiddleware = (req, res, next) => {
+  uploadSalesCreditReceipt(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ message: err.message });
+    }
+
+    if (req.file && req.file.generatedFilename) {
+      const relativePath = path.join(
+        "upload",
+        "Images",
+        "Sales",
+        "Credit",
+        "Receipt",
+        req.file.generatedFilename
+      );
+      req.file.fullPath = relativePath.split(path.sep).join("/"); // Normalize slashes
+    }
+
+    next();
+  });
+};
+
 // Create directories on module load
 createDirectories();
 
@@ -255,4 +302,6 @@ module.exports = {
   uploadBankDepositReceiptMiddleware,
   uploadBankWithdrawReceipt,
   uploadBankWithdrawReceiptMiddleware,
+  uploadSalesCreditReceipt,
+  uploadSalesCreditReceiptMiddleware
 };

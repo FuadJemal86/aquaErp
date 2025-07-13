@@ -336,11 +336,19 @@ const detailSalesCredit = async (req, res) => {
   const transaction_id = req.params.id;
 
   try {
+    // Fetch sales transactions
     const getDetailSalesCredit = await prisma.sales_transaction.findMany({
       where: {
         transaction_id: transaction_id,
       },
-      include: {
+      select: {
+        id: true,
+        price_per_quantity: true,
+        payment_method: true,
+        manager_id: true,
+        customer_id: true,
+        customer_type: true,
+        status: true,
         Product_type: {
           select: {
             id: true,
@@ -353,9 +361,30 @@ const detailSalesCredit = async (req, res) => {
     if (getDetailSalesCredit.length === 0) {
       return res
         .status(404)
-        .json({ status: false, error: "sales credit detail not found" });
+        .json({ status: false, error: "Sales credit detail not found" });
     }
 
+    const userIds = Array.from(
+      new Set(
+        getDetailSalesCredit.flatMap((item) => [item.manager_id, item.customer_id])
+      )
+    ).filter(Boolean);
+
+    //  Fetch users
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true },
+    });
+
+    const userMap = Object.fromEntries(users.map((u) => [u.id, u.name]));
+
+    // Mutate original result in place to add names
+    getDetailSalesCredit.forEach((item) => {
+      item.manager_name = userMap[item.manager_id] || null;
+      item.cashier_name = userMap[item.customer_id] || null;
+    });
+
+    //  Return in original structure
     return res.status(200).json({ status: true, data: getDetailSalesCredit });
   } catch (err) {
     console.error(err);
@@ -365,6 +394,7 @@ const detailSalesCredit = async (req, res) => {
     });
   }
 };
+
 
 // List of credit
 
