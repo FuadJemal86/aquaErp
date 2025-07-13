@@ -39,6 +39,10 @@ const {
   uploadBankDepositReceiptMiddleware,
   uploadBankWithdrawReceiptMiddleware,
 } = require("../Utils/fileUtils");
+const {
+  salesReport,
+  getSalesDetails,
+} = require("../Controllers/Report.controller");
 
 router.post("/add-product-category", addProductCategory);
 router.post("/add-product-type", addProductType);
@@ -91,4 +95,9 @@ router.post(
 );
 router.get("/get-all-sales-credits", salesCreditReport);
 router.get("/get-sales-transaction-details/:id", detailSalesCredit);
+
+// Report Routes
+router.get("/get-sales-report", salesReport);
+router.get("/get-sales-details/:transaction_id", getSalesDetails);
+
 module.exports = router;
