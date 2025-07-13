@@ -2,36 +2,12 @@ import api from "@/services/api";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import {
-  DollarSign,
-  BarChart3,
-  TrendingUp,
-  EyeIcon,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from "lucide-react";
+import { DollarSign, BarChart3, TrendingUp } from "lucide-react";
 import ShowDetails from "./components/ShowDetails";
 import SalesReportSkeleton from "./components/SalesReportSkeleton";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import SalesReportTable from "./components/SalesReportTable";
 
 interface SalesData {
   id: number;
@@ -101,40 +77,6 @@ function SalesReport() {
     };
     fetchSalesReport();
   }, [currentPage, pageSize]);
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "numeric",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  const getPaymentMethodBadge = (method: string) => {
-    const color = {
-      CASH: "bg-green-500 text-white",
-      BANK: "bg-blue-500 text-white",
-      CREDIT: "bg-yellow-500 text-white",
-    } as const;
-
-    return (
-      <Badge className={color[method as keyof typeof color]}>{method}</Badge>
-    );
-  };
-
-  const getCustomerTypeBadge = (type: string) => {
-    return (
-      <Badge variant={type === "REGULAR" ? "default" : "outline"}>{type}</Badge>
-    );
-  };
-
-  const getStatusBadge = (status: string) => {
-    return (
-      <Badge variant={status === "DONE" ? "default" : "secondary"}>
-        {status}
-      </Badge>
-    );
-  };
 
   const calculateTotal = (price: number, quantity: number) => {
     return price * quantity;
@@ -256,185 +198,19 @@ function SalesReport() {
       </div>
 
       {/* Sales Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Sales Transactions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>#</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Transaction ID</TableHead>
-
-                  <TableHead>Total</TableHead>
-                  <TableHead>Payment</TableHead>
-                  <TableHead>Bank</TableHead>
-
-                  <TableHead>Date</TableHead>
-                  <TableHead>See Details</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {salesData.map((sale, index) => (
-                  <TableRow key={sale.id}>
-                    <TableCell>
-                      {(paginationData.currentPage - 1) *
-                        paginationData.pageSize +
-                        index +
-                        1}
-                    </TableCell>
-                    <TableCell>
-                      {sale.Customer ? (
-                        <div>
-                          <div className="font-medium">
-                            {sale.Customer.full_name}
-                          </div>
-                        </div>
-                      ) : sale.walker_id ? (
-                        <div className="text-muted-foreground">
-                          Walker: {sale.walker_id}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {sale.transaction_id}
-                    </TableCell>
-
-                    <TableCell className="font-medium">
-                      {calculateTotal(
-                        sale.price_per_quantity,
-                        sale.quantity
-                      ).toLocaleString()}{" "}
-                      Birr
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {getPaymentMethodBadge(sale.payment_method)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {sale.Bank_list ? sale.Bank_list.branch : "-"}
-                    </TableCell>
-
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatDate(sale.createdAt)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-center items-center">
-                        <button
-                          onClick={() => handleViewDetails(sale.transaction_id)}
-                          className="p-1 hover:bg-muted rounded-md transition-colors"
-                        >
-                          <EyeIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                        </button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination */}
-          {salesData.length > 0 && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 sm:space-x-2 py-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-muted-foreground">Show</span>
-                  <Select
-                    value={pageSize.toString()}
-                    onValueChange={handlePageSizeChange}
-                  >
-                    <SelectTrigger className="w-20 h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">10</SelectItem>
-                      <SelectItem value="20">20</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                      <SelectItem value="100">100</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <span className="text-sm text-muted-foreground">entries</span>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Showing{" "}
-                  {(paginationData.currentPage - 1) * paginationData.pageSize +
-                    1}{" "}
-                  to{" "}
-                  {Math.min(
-                    paginationData.currentPage * paginationData.pageSize,
-                    paginationData.totalCount
-                  )}{" "}
-                  of {paginationData.totalCount} results
-                </div>
-              </div>
-              {paginationData.totalPages > 1 && (
-                <div className="flex items-center justify-center sm:justify-end space-x-2 w-full sm:w-auto">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={goToFirstPage}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronsLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={goToPreviousPage}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <div className="flex items-center space-x-1">
-                    {Array.from(
-                      { length: Math.min(5, paginationData.totalPages) },
-                      (_, i) => {
-                        const page = i + 1;
-                        return (
-                          <Button
-                            key={page}
-                            variant={
-                              currentPage === page ? "default" : "outline"
-                            }
-                            size="sm"
-                            onClick={() => goToPage(page)}
-                            className="h-8 w-8 p-0"
-                          >
-                            {page}
-                          </Button>
-                        );
-                      }
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={goToNextPage}
-                    disabled={currentPage === paginationData.totalPages}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={goToLastPage}
-                    disabled={currentPage === paginationData.totalPages}
-                  >
-                    <ChevronsRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <SalesReportTable
+        salesData={salesData}
+        paginationData={paginationData}
+        currentPage={currentPage}
+        pageSize={pageSize}
+        onViewDetails={handleViewDetails}
+        onPageChange={goToPage}
+        onPageSizeChange={handlePageSizeChange}
+        onFirstPage={goToFirstPage}
+        onLastPage={goToLastPage}
+        onPreviousPage={goToPreviousPage}
+        onNextPage={goToNextPage}
+      />
 
       {/* Show Details Modal */}
       {selectedTransaction && (
