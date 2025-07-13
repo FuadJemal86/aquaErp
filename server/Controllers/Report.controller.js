@@ -4,8 +4,40 @@ const prisma = require("../prisma/prisma");
 
 const salesReport = async (req, res) => {
   try {
+    const { page = 1, limit = 10 } = req.query;
+    const pageNumber = parseInt(page);
+    const pageSize = parseInt(limit);
+    const skip = (pageNumber - 1) * pageSize;
+
+    // Get total count for pagination - count distinct transaction_ids
+    const distinctTransactions = await prisma.sales_transaction.groupBy({
+      by: ["transaction_id"],
+      _count: {
+        transaction_id: true,
+      },
+    });
+    const totalCount = distinctTransactions.length;
+
+    // Get paginated sales transactions - get distinct transaction_ids first
+    const distinctTransactionIds = await prisma.sales_transaction.groupBy({
+      by: ["transaction_id"],
+      orderBy: {
+        transaction_id: "desc",
+      },
+      skip,
+      take: pageSize,
+    });
+
+    // Get the actual sales data for these transaction_ids - only one record per transaction
     const sales = await prisma.sales_transaction.findMany({
-      distinct: ["transaction_id"],
+      where: {
+        transaction_id: {
+          in: distinctTransactionIds.map((t) => t.transaction_id),
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
       select: {
         id: true,
         type_id: true,
@@ -40,9 +72,35 @@ const salesReport = async (req, res) => {
         },
       },
     });
-    res.status(200).json({ sales });
+
+    // Filter to get only one record per transaction_id (the first one)
+    const uniqueSales = [];
+    const seenTransactions = new Set();
+
+    for (const sale of sales) {
+      if (!seenTransactions.has(sale.transaction_id)) {
+        uniqueSales.push(sale);
+        seenTransactions.add(sale.transaction_id);
+      }
+    }
+
+    const totalPages = Math.ceil(totalCount / pageSize);
+
+    res.status(200).json({
+      sales: uniqueSales,
+      pagination: {
+        currentPage: pageNumber,
+        pageSize,
+        totalCount,
+        totalPages,
+        hasNextPage: pageNumber < totalPages,
+        hasPreviousPage: pageNumber > 1,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.log(error);
+
+    res.status(500).json({ message: "server error" });
   }
 };
 

@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import api from "@/services/api";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -7,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -15,9 +15,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import api from "@/services/api";
 import { X } from "lucide-react";
+import { useEffect, useState } from "react";
+import DetailSkeleton from "./DetailSkeleton";
 
 interface SalesDetail {
   id: number;
@@ -150,29 +151,7 @@ function ShowDetails({ transactionId, isOpen, onClose }: ShowDetailsProps) {
           </div>
 
           {loading ? (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <Skeleton className="h-6 w-48" />
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {[...Array(6)].map((_, i) => (
-                      <Skeleton key={i} className="h-4 w-full" />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    {[...Array(3)].map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full" />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <DetailSkeleton />
           ) : error ? (
             <Card className="border-destructive">
               <CardContent className="pt-6">

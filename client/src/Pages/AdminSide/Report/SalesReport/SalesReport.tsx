@@ -23,6 +23,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import ShowDetails from "./components/ShowDetails";
+import SalesReportSkeleton from "./components/SalesReportSkeleton";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -70,13 +71,27 @@ function SalesReport() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [paginationData, setPaginationData] = useState({
+    currentPage: 1,
+    pageSize: 10,
+    totalCount: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  });
 
   useEffect(() => {
     const fetchSalesReport = async () => {
       try {
         setLoading(true);
-        const response = await api.get("/admin/get-sales-report");
+        const response = await api.get("/admin/get-sales-report", {
+          params: {
+            page: currentPage,
+            limit: pageSize,
+          },
+        });
         setSalesData(response.data.sales);
+        setPaginationData(response.data.pagination);
       } catch (err) {
         setError("Failed to fetch sales report");
         console.error(err);
@@ -85,7 +100,7 @@ function SalesReport() {
       }
     };
     fetchSalesReport();
-  }, []);
+  }, [currentPage, pageSize]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -145,21 +160,16 @@ function SalesReport() {
     setSelectedTransaction(null);
   };
 
-  // Pagination logic
-  const totalPages = Math.ceil(salesData.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedData = salesData.slice(startIndex, endIndex);
-
+  // Pagination functions
   const goToPage = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    setCurrentPage(Math.max(1, Math.min(page, paginationData.totalPages)));
   };
 
   const goToFirstPage = () => setCurrentPage(1);
-  const goToLastPage = () => setCurrentPage(totalPages);
+  const goToLastPage = () => setCurrentPage(paginationData.totalPages);
   const goToPreviousPage = () => setCurrentPage(Math.max(1, currentPage - 1));
   const goToNextPage = () =>
-    setCurrentPage(Math.min(totalPages, currentPage + 1));
+    setCurrentPage(Math.min(paginationData.totalPages, currentPage + 1));
 
   const handlePageSizeChange = (newPageSize: string) => {
     setPageSize(Number(newPageSize));
@@ -167,33 +177,7 @@ function SalesReport() {
   };
 
   if (loading) {
-    return (
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Sales Report</h1>
-          <Skeleton className="h-10 w-32" />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
-        </div>
-
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-32" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <SalesReportSkeleton />;
   }
 
   if (error) {
@@ -294,9 +278,14 @@ function SalesReport() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedData.map((sale, index) => (
+                {salesData.map((sale, index) => (
                   <TableRow key={sale.id}>
-                    <TableCell>{startIndex + index + 1}</TableCell>
+                    <TableCell>
+                      {(paginationData.currentPage - 1) *
+                        paginationData.pageSize +
+                        index +
+                        1}
+                    </TableCell>
                     <TableCell>
                       {sale.Customer ? (
                         <div>
@@ -374,12 +363,18 @@ function SalesReport() {
                   <span className="text-sm text-muted-foreground">entries</span>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  Showing {startIndex + 1} to{" "}
-                  {Math.min(endIndex, salesData.length)} of {salesData.length}{" "}
-                  results
+                  Showing{" "}
+                  {(paginationData.currentPage - 1) * paginationData.pageSize +
+                    1}{" "}
+                  to{" "}
+                  {Math.min(
+                    paginationData.currentPage * paginationData.pageSize,
+                    paginationData.totalCount
+                  )}{" "}
+                  of {paginationData.totalCount} results
                 </div>
               </div>
-              {salesData.length > pageSize && (
+              {paginationData.totalPages > 1 && (
                 <div className="flex items-center justify-center sm:justify-end space-x-2 w-full sm:w-auto">
                   <Button
                     variant="outline"
@@ -398,26 +393,31 @@ function SalesReport() {
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <div className="flex items-center space-x-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      const page = i + 1;
-                      return (
-                        <Button
-                          key={page}
-                          variant={currentPage === page ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => goToPage(page)}
-                          className="h-8 w-8 p-0"
-                        >
-                          {page}
-                        </Button>
-                      );
-                    })}
+                    {Array.from(
+                      { length: Math.min(5, paginationData.totalPages) },
+                      (_, i) => {
+                        const page = i + 1;
+                        return (
+                          <Button
+                            key={page}
+                            variant={
+                              currentPage === page ? "default" : "outline"
+                            }
+                            size="sm"
+                            onClick={() => goToPage(page)}
+                            className="h-8 w-8 p-0"
+                          >
+                            {page}
+                          </Button>
+                        );
+                      }
+                    )}
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={goToNextPage}
-                    disabled={currentPage === totalPages}
+                    disabled={currentPage === paginationData.totalPages}
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
@@ -425,7 +425,7 @@ function SalesReport() {
                     variant="outline"
                     size="sm"
                     onClick={goToLastPage}
-                    disabled={currentPage === totalPages}
+                    disabled={currentPage === paginationData.totalPages}
                   >
                     <ChevronsRight className="h-4 w-4" />
                   </Button>
