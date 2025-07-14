@@ -39,7 +39,8 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sales_credit Sales_credit[]
+  sales_credit      Sales_credit[]
+  Sales_transaction Sales_transaction[]
 
   @@map("customer")
 }
@@ -247,6 +248,7 @@ model Sales_transaction {
 
   bank_id Int?
 
+  Customer       Customer?     @relation(fields: [customer_id], references: [id])
   Product_type   Product_type  @relation(fields: [type_id], references: [id])
   Bank_list      Bank_list?    @relation(fields: [bank_id], references: [id])
   Sales_credit   Sales_credit? @relation(fields: [sales_creditId], references: [id])

@@ -43,11 +43,14 @@ const {
   uploadBankWithdrawReceiptMiddleware,
 } = require("../Utils/fileUtils");
 const {
+
   repaySalesCredit,
   getSalesCreditDetailTransaction,
   salesCreditReportForRepay,
   getSalesCreditDetails,
 } = require("../Controllers/RepayCredit.controller");
+
+
 
 router.post("/add-product-category", addProductCategory);
 router.post("/add-product-type", addProductType);
@@ -107,6 +110,8 @@ router.post(
 );
 
 router.get("/get-all-sales-credits", salesCreditReport);
+
 router.get("/get-sales-credit-details/:id", getSalesCreditDetails);
 router.get("/get-sales-credit-report-for-repay", salesCreditReportForRepay);
+
 module.exports = router;

@@ -130,6 +130,28 @@
   --sidebar-ring: rgb(59, 130, 246);
 }
 
+/* Dark theme skeleton colors */
+.dark .animate-pulse {
+  animation: dark-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes dark-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.dark [data-skeleton] {
+  background-color: rgb(51, 65, 85);
+}
+
+.dark .skeleton {
+  background-color: rgb(51, 65, 85);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

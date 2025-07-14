@@ -74,23 +74,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: [
           {
             title: "sales report",
-            url: "/admin/buy-products",
+            url: "/admin/sales-report",
           },
           {
             title: "Buy report",
-            url: "/admin/buy-credit-report",
+            url: "/admin/buy-report",
           },
           {
             title: "Cash Transaction",
-            url: "/admin/buy-credit-report",
+            url: "/admin/cash-transaction",
           },
           {
             title: "Bank Transaction",
-            url: "/admin/buy-credit-report",
+            url: "/admin/bank-transaction",
           },
           {
             title: "Bank Balance",
-            url: "/admin/buy-credit-report",
+            url: "/admin/bank-balance",
           },
         ],
       },
