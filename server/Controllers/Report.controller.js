@@ -4,23 +4,82 @@ const prisma = require("../prisma/prisma");
 
 const getSalesReport = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      customerName,
+      transactionId,
+      paymentMethod,
+      bankBranch,
+      customerType,
+      startDate,
+      endDate,
+    } = req.query;
+
     const pageNumber = parseInt(page);
     const pageSize = parseInt(limit);
     const skip = (pageNumber - 1) * pageSize;
 
-    // Get total count for pagination - count distinct transaction_ids
+    // Build where clause for filtering
+    const whereClause = {
+      isActive: true,
+    };
+
+    // Add filters if they are provided
+    if (customerName) {
+      whereClause.Customer = {
+        full_name: {
+          contains: customerName,
+        },
+      };
+    }
+
+    if (transactionId) {
+      whereClause.transaction_id = {
+        contains: transactionId,
+      };
+    }
+
+    if (paymentMethod) {
+      whereClause.payment_method = paymentMethod;
+    }
+
+    if (bankBranch) {
+      whereClause.Bank_list = {
+        branch: {
+          contains: bankBranch,
+        },
+      };
+    }
+
+    if (customerType) {
+      whereClause.customer_type = customerType;
+    }
+
+    if (startDate || endDate) {
+      whereClause.createdAt = {};
+      if (startDate) {
+        whereClause.createdAt.gte = new Date(startDate);
+      }
+      if (endDate) {
+        whereClause.createdAt.lte = new Date(endDate + "T23:59:59.999Z");
+      }
+    }
+
+    // Get total count for pagination with filters - count distinct transaction_ids
     const distinctTransactions = await prisma.sales_transaction.groupBy({
       by: ["transaction_id"],
+      where: whereClause,
       _count: {
         transaction_id: true,
       },
     });
     const totalCount = distinctTransactions.length;
 
-    // Get paginated sales transactions - get distinct transaction_ids first
+    // Get paginated sales transactions with filters - get distinct transaction_ids first
     const distinctTransactionIds = await prisma.sales_transaction.groupBy({
       by: ["transaction_id"],
+      where: whereClause,
       orderBy: {
         transaction_id: "desc",
       },
@@ -34,6 +93,7 @@ const getSalesReport = async (req, res) => {
         transaction_id: {
           in: distinctTransactionIds.map((t) => t.transaction_id),
         },
+        isActive: true,
       },
       orderBy: {
         createdAt: "desc",

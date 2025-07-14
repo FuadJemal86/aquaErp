@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -24,10 +24,20 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
-import { Filter } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import api from "@/services/api";
 
+interface BankAccount {
+  id: number;
+  branch: string;
+  account_number: string;
+  owner: string;
+  createdAt: string;
+  updatedAt: string;
+}
 interface SalesData {
   id: number;
   type_id: number;
@@ -65,11 +75,24 @@ interface PaginationData {
   hasPreviousPage: boolean;
 }
 
+interface FilterForm {
+  customerName: string;
+  transactionId: string;
+  paymentMethod: string;
+  bankBranch: string;
+  customerType: string;
+  startDate: string;
+  endDate: string;
+}
+
 interface SalesReportTableProps {
   salesData: SalesData[];
   paginationData: PaginationData;
   currentPage: number;
   pageSize: number;
+  filters: FilterForm;
+  onFilterChange: (filters: Partial<FilterForm>) => void;
+  onClearFilters: () => void;
   onViewDetails: (transactionId: string) => void;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: string) => void;
@@ -84,6 +107,9 @@ function SalesReportTable({
   paginationData,
   currentPage,
   pageSize,
+  filters,
+  onFilterChange,
+  onClearFilters,
   onViewDetails,
   onPageChange,
   onPageSizeChange,
@@ -93,15 +119,8 @@ function SalesReportTable({
   onNextPage,
 }: SalesReportTableProps) {
   const [isFilterEnabled, setIsFilterEnabled] = React.useState(false);
-  const [filterForm, setFilterForm] = React.useState({
-    customerName: "",
-    transactionId: "",
-    paymentMethod: "",
-    bankBranch: "",
-    startDate: "",
-    endDate: "",
-    customerType: "",
-  });
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "numeric",
@@ -126,6 +145,28 @@ function SalesReportTable({
     return price * quantity;
   };
 
+  const fetchBankAccounts = async () => {
+    try {
+      const response = await api.get("/admin/get-bank-list");
+      setBankAccounts(response.data || []);
+    } catch (error: any) {
+      console.error("Failed to fetch bank accounts:", error);
+      toast.error(
+        error.response?.data?.error || "Failed to fetch bank accounts"
+      );
+    }
+  };
+
+  useEffect(() => {
+    fetchBankAccounts();
+  }, []);
+
+  const handleFilterChange = (field: keyof FilterForm, value: string) => {
+    onFilterChange({ [field]: value });
+  };
+
+  const hasActiveFilters = Object.values(filters).some((value) => value !== "");
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -146,6 +187,18 @@ function SalesReportTable({
               }`}
             />
           </button>
+          {/* Clear filters button */}
+          {hasActiveFilters && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClearFilters}
+              className="h-8 px-2"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Clear
+            </Button>
+          )}
         </div>
       </CardHeader>
 
@@ -161,9 +214,9 @@ function SalesReportTable({
               <Input
                 id="customerName"
                 placeholder="Enter customer name"
-                value={filterForm.customerName}
+                value={filters.customerName}
                 onChange={(e) =>
-                  setFilterForm({ ...filterForm, customerName: e.target.value })
+                  handleFilterChange("customerName", e.target.value)
                 }
               />
             </div>
@@ -176,12 +229,9 @@ function SalesReportTable({
               <Input
                 id="transactionId"
                 placeholder="Enter transaction ID"
-                value={filterForm.transactionId}
+                value={filters.transactionId}
                 onChange={(e) =>
-                  setFilterForm({
-                    ...filterForm,
-                    transactionId: e.target.value,
-                  })
+                  handleFilterChange("transactionId", e.target.value)
                 }
               />
             </div>
@@ -192,9 +242,9 @@ function SalesReportTable({
                 Payment Method
               </Label>
               <Select
-                value={filterForm.paymentMethod}
+                value={filters.paymentMethod}
                 onValueChange={(value) =>
-                  setFilterForm({ ...filterForm, paymentMethod: value })
+                  handleFilterChange("paymentMethod", value)
                 }
               >
                 <SelectTrigger>
@@ -214,18 +264,20 @@ function SalesReportTable({
                 Bank Branch
               </Label>
               <Select
-                value={filterForm.bankBranch}
+                value={filters.bankBranch}
                 onValueChange={(value) =>
-                  setFilterForm({ ...filterForm, bankBranch: value })
+                  handleFilterChange("bankBranch", value)
                 }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select bank branch" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="branch1">Branch 1</SelectItem>
-                  <SelectItem value="branch2">Branch 2</SelectItem>
-                  <SelectItem value="branch3">Branch 3</SelectItem>
+                  {bankAccounts.map((bank) => (
+                    <SelectItem key={bank.id} value={bank.branch}>
+                      {bank.branch}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -238,9 +290,9 @@ function SalesReportTable({
               <Input
                 id="startDate"
                 type="date"
-                value={filterForm.startDate}
+                value={filters.startDate}
                 onChange={(e) =>
-                  setFilterForm({ ...filterForm, startDate: e.target.value })
+                  handleFilterChange("startDate", e.target.value)
                 }
               />
             </div>
@@ -253,10 +305,8 @@ function SalesReportTable({
               <Input
                 id="endDate"
                 type="date"
-                value={filterForm.endDate}
-                onChange={(e) =>
-                  setFilterForm({ ...filterForm, endDate: e.target.value })
-                }
+                value={filters.endDate}
+                onChange={(e) => handleFilterChange("endDate", e.target.value)}
               />
             </div>
 
@@ -266,9 +316,9 @@ function SalesReportTable({
                 Customer Type
               </Label>
               <Select
-                value={filterForm.customerType}
+                value={filters.customerType}
                 onValueChange={(value) =>
-                  setFilterForm({ ...filterForm, customerType: value })
+                  handleFilterChange("customerType", value)
                 }
               >
                 <SelectTrigger>

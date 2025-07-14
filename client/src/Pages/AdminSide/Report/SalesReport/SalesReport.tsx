@@ -1,13 +1,11 @@
-import api from "@/services/api";
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
-import { DollarSign, BarChart3, TrendingUp } from "lucide-react";
-import ShowDetails from "./components/ShowDetails";
+import api from "@/services/api";
+import { BarChart3, DollarSign, TrendingUp } from "lucide-react";
+import { useEffect, useState } from "react";
 import SalesReportSkeleton from "./components/SalesReportSkeleton";
 import SalesReportTable from "./components/SalesReportTable";
+import ShowDetails from "./components/ShowDetails";
+import { toast } from "sonner";
 
 interface SalesData {
   id: number;
@@ -37,6 +35,16 @@ interface SalesData {
   } | null;
 }
 
+interface FilterForm {
+  customerName: string;
+  transactionId: string;
+  paymentMethod: string;
+  bankBranch: string;
+  customerType: string;
+  startDate: string;
+  endDate: string;
+}
+
 function SalesReport() {
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +55,15 @@ function SalesReport() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [filters, setFilters] = useState<FilterForm>({
+    customerName: "",
+    transactionId: "",
+    paymentMethod: "",
+    bankBranch: "",
+    customerType: "",
+    startDate: "",
+    endDate: "",
+  });
   const [paginationData, setPaginationData] = useState({
     currentPage: 1,
     pageSize: 10,
@@ -60,11 +77,24 @@ function SalesReport() {
     const fetchSalesReport = async () => {
       try {
         setLoading(true);
+
+        // Build query parameters
+        const params: any = {
+          page: currentPage,
+          limit: pageSize,
+        };
+
+        // Add filter parameters only if they have values
+        if (filters.customerName) params.customerName = filters.customerName;
+        if (filters.transactionId) params.transactionId = filters.transactionId;
+        if (filters.paymentMethod) params.paymentMethod = filters.paymentMethod;
+        if (filters.bankBranch) params.bankBranch = filters.bankBranch;
+        if (filters.customerType) params.customerType = filters.customerType;
+        if (filters.startDate) params.startDate = filters.startDate;
+        if (filters.endDate) params.endDate = filters.endDate;
+
         const response = await api.get("/admin/get-sales-report", {
-          params: {
-            page: currentPage,
-            limit: pageSize,
-          },
+          params,
         });
         setSalesData(response.data.sales);
         setPaginationData(response.data.pagination);
@@ -76,7 +106,7 @@ function SalesReport() {
       }
     };
     fetchSalesReport();
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize, filters]);
 
   const calculateTotal = (price: number, quantity: number) => {
     return price * quantity;
@@ -100,6 +130,25 @@ function SalesReport() {
   const handleCloseDetails = () => {
     setShowDetailsModal(false);
     setSelectedTransaction(null);
+  };
+
+  // Filter functions
+  const handleFilterChange = (newFilters: Partial<FilterForm>) => {
+    setFilters((prev) => ({ ...prev, ...newFilters }));
+    setCurrentPage(1); // Reset to first page when filters change
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      customerName: "",
+      transactionId: "",
+      paymentMethod: "",
+      bankBranch: "",
+      customerType: "",
+      startDate: "",
+      endDate: "",
+    });
+    setCurrentPage(1);
   };
 
   // Pagination functions
@@ -203,6 +252,9 @@ function SalesReport() {
         paginationData={paginationData}
         currentPage={currentPage}
         pageSize={pageSize}
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onClearFilters={clearFilters}
         onViewDetails={handleViewDetails}
         onPageChange={goToPage}
         onPageSizeChange={handlePageSizeChange}
