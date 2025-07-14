@@ -2,7 +2,7 @@ const prisma = require("../prisma/prisma");
 
 // Sales Report
 
-const salesReport = async (req, res) => {
+const getSalesReport = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
     const pageNumber = parseInt(page);
@@ -151,7 +151,8 @@ const getSalesDetails = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 module.exports = {
-  salesReport,
+  getSalesReport,
   getSalesDetails,
 };
