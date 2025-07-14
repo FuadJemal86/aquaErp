@@ -349,6 +349,7 @@ const detailSalesCredit = async (req, res) => {
         customer_id: true,
         customer_type: true,
         status: true,
+        quantity: true,
         Product_type: {
           select: {
             id: true,

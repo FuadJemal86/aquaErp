@@ -44,7 +44,7 @@ const SalesReport = lazy(
 );
 
 const RepaySalesCredit = lazy(
-  () => import("../Pages/AdminSide/RepayCredit/RepaySalesCredit")
+  () => import("../Pages/AdminSide/RepayCredit/Sales/RepaySalesCredit")
 );
 
 export const adminRoutes = (

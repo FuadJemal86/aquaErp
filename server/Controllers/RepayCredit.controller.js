@@ -2,6 +2,180 @@ const { sales_repay_credit } = require("../Model/Validation");
 const prisma = require("../prisma/prisma");
 const path = require("path");
 const { deleteFileIfExists } = require("../Utils/fileUtils");
+const {
+  generateSalesCreditTransactionId,
+} = require("../Utils/GenerateTransactionId");
+
+// const getSalesCreditDetailTransaction = async (req, res) => {
+//   const transaction_id = req.params.id;
+
+//   console.log(transaction_id);
+
+//   try {
+//     const salesCreditTransactionId =
+//       await prisma.sales_credit_transaction.findMany({
+//         where: { transaction_id },
+//       });
+
+//     if (!salesCreditTransactionId) {
+//       return res
+//         .status(400)
+//         .json({ error: "not found sales credit transaction" });
+//     }
+//     return res
+//       .status(201)
+//       .json({ status: true, data: salesCreditTransactionId });
+//   } catch (error) {
+//     console.log(error);
+//     return res
+//       .status(500)
+//       .json({ status: false, error: "Internal server error" });
+//   }
+// };
+
+const getSalesCreditDetails = async (req, res) => {
+  const transaction_id = req.params.id;
+
+  try {
+    // Fetch sales transactions
+    const salesTransactions = await prisma.sales_transaction.findMany({
+      where: {
+        transaction_id: transaction_id,
+      },
+      select: {
+        id: true,
+        price_per_quantity: true,
+        payment_method: true,
+        manager_id: true,
+        customer_id: true,
+        customer_type: true,
+        status: true,
+        quantity: true,
+        Product_type: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    // Fetch sales credit transactions
+    const salesCreditTransactions =
+      await prisma.sales_credit_transaction.findMany({
+        where: {
+          transaction_id: transaction_id,
+        },
+        select: {
+          id: true,
+          amount_payed: true,
+          payment_method: true,
+          CTID: true,
+          outstanding_balance: true,
+          image: true,
+          createdAt: true,
+        },
+      });
+
+    if (salesTransactions.length === 0) {
+      return res
+        .status(404)
+        .json({ status: false, error: "Sales credit detail not found" });
+    }
+
+    // Get user IDs for manager and customer names
+    const userIds = Array.from(
+      new Set(
+        salesTransactions.flatMap((item) => [item.manager_id, item.customer_id])
+      )
+    ).filter(Boolean);
+
+    // Fetch users
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true },
+    });
+
+    const userMap = Object.fromEntries(users.map((u) => [u.id, u.name]));
+
+    // Add manager and cashier names to sales transactions
+    const salesTransactionsWithNames = salesTransactions.map((item) => ({
+      ...item,
+      manager_name: userMap[item.manager_id] || null,
+      cashier_name: userMap[item.customer_id] || null,
+    }));
+
+    // Return unified response
+    return res.status(200).json({
+      status: true,
+      data: {
+        salesTransactions: salesTransactionsWithNames,
+        salesCreditTransactions: salesCreditTransactions,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      status: false,
+      error: "Internal server error",
+    });
+  }
+};
+
+const salesCreditReportForRepay = async (req, res) => {
+  try {
+    // Get all sales credit entries
+    const getSalesCreditReport = await prisma.sales_credit.findMany({
+      where: {
+        status: {
+          in: ["ACCEPTED", "OVERDUE"],
+        },
+      },
+    });
+
+    if (getSalesCreditReport.length === 0) {
+      return res
+        .status(404)
+        .json({ status: false, error: "Sales credit report not found" });
+    }
+
+    // Extract all unique customer_ids
+    const customerIds = [
+      ...new Set(getSalesCreditReport.map((item) => item.customer_id)),
+    ];
+
+    // Fetch customer info based on those IDs
+    const customers = await prisma.customer.findMany({
+      where: {
+        id: { in: customerIds },
+      },
+      select: {
+        id: true,
+        full_name: true,
+      },
+    });
+
+    // Create a map for fast lookup
+    const customerMap = {};
+    customers.forEach((cust) => {
+      customerMap[cust.id] = cust.full_name;
+    });
+
+    // Append customer name to each sales credit report
+    const reportWithCustomerName = getSalesCreditReport.map((report) => ({
+      ...report,
+      customer_name: customerMap[report.customer_id] || "Unknown",
+    }));
+
+    return res.status(200).json({ status: true, data: reportWithCustomerName });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      status: false,
+      error: "Internal server error",
+    });
+  }
+};
 
 const repaySalesCredit = async (req, res) => {
   const {
@@ -110,6 +284,7 @@ const repaySalesCredit = async (req, res) => {
         payment_method,
         bank_id: bankId ?? null,
         cash_id: cashTransactionId,
+        CTID: generateSalesCreditTransactionId(),
         outstanding_balance: parseFloat(outstanding_balance),
         image: req.file?.fullPath || "",
       },
@@ -153,4 +328,9 @@ const repaySalesCredit = async (req, res) => {
   }
 };
 
-module.exports = { repaySalesCredit };
+module.exports = {
+  repaySalesCredit,
+
+  salesCreditReportForRepay,
+  getSalesCreditDetails,
+};
