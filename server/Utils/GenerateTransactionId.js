@@ -35,14 +35,14 @@ const generateBankTransactionId = () => {
   return bankTransactionId;
 };
 
-//  const generate sales credit transaction 
+//  const generate sales credit transaction
 
 const generateSalesCreditTransactionId = () => {
   const date = new Date();
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const day = date.getDate();
-  const salesTransactionId = `SCTID-${year}-${month}-${day}-${Math.floor(
+  const salesTransactionId = `CTID-${year}-${month}-${day}-${Math.floor(
     Math.random() * 1000
   )}`;
   return salesTransactionId;
@@ -52,5 +52,5 @@ module.exports = {
   generateTransactionId,
   generateWalkingId,
   generateBankTransactionId,
-  generateSalesCreditTransactionId
+  generateSalesCreditTransactionId,
 };

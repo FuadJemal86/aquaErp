@@ -218,8 +218,8 @@ model Cash_transaction {
   out                      Float
   balance                  Float
   transaction_id           String
-  manager_id               Int
-  casher_id                Int
+  manager_id               Int?
+  casher_id                Int?
   isActive                 Boolean                    @default(true)
   updatedAt                DateTime                   @updatedAt
   Sales_credit_transaction Sales_credit_transaction[]
@@ -285,7 +285,7 @@ model Sales_credit_transaction {
   cash_id             Int?
   outstanding_balance Float
   image               String
-  SCTID               String               @unique
+  CTID                String?
   isActive            Boolean              @default(true)
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
