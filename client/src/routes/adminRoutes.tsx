@@ -55,6 +55,10 @@ const CashTransaction = lazy(
   () => import("../Pages/AdminSide/Report/CashTransaction/CashTransaction")
 );
 
+const BankTransaction = lazy(
+  () => import("../Pages/AdminSide/Report/BankTransaction/BankTransaction")
+);
+
 export const adminRoutes = (
   <Route path="/admin" element={<AdminLayout></AdminLayout>}>
     <Route index element={<AdminDashboard></AdminDashboard>}></Route>
@@ -121,6 +125,10 @@ export const adminRoutes = (
     <Route
       path="/admin/cash-transaction"
       element={<CashTransaction></CashTransaction>}
+    ></Route>
+    <Route
+      path="/admin/bank-transaction"
+      element={<BankTransaction></BankTransaction>}
     ></Route>
   </Route>
 );
