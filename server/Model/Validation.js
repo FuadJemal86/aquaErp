@@ -116,6 +116,18 @@ const sales_repay_credit = Joi.object({
   })
 });
 
+const buy_repay_credit = Joi.object({
+  amount_payed: Joi.number().required(),
+  payment_method: Joi.string().valid("CASH", "BANK").required(),
+  outstanding_balance: Joi.string().required(),
+  transaction_id: Joi.string().required(),
+  bank_id: Joi.when("payment_method", {
+    is: "BANK",
+    then: Joi.number().required(),
+    otherwise: Joi.any().strip(),
+  })
+});
+
 
 
 const Bank_deposit = Joi.object({
@@ -142,6 +154,7 @@ module.exports = {
   Cart_Item,
   Edit_account,
   Sales_product,
+  buy_repay_credit,
   Bank_deposit,
   Bank_withdraw,
   sales_repay_credit

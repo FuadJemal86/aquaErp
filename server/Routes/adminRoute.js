@@ -48,6 +48,10 @@ const {
   getSalesCreditDetailTransaction,
   salesCreditReportForRepay,
   getSalesCreditDetails,
+  buyCreditReportForRepay,
+  getBuyCreditDetails,
+  repayBuyCredit,
+  cashBalance,
 } = require("../Controllers/RepayCredit.controller");
 
 
@@ -109,9 +113,23 @@ router.post(
   addBankWithdraw
 );
 
+// get cash balance
+router.get('/get-cash-balance', cashBalance)
+
 router.get("/get-all-sales-credits", salesCreditReport);
 
 router.get("/get-sales-credit-details/:id", getSalesCreditDetails);
 router.get("/get-sales-credit-report-for-repay", salesCreditReportForRepay);
+
+// for buy credit
+router.get('/get-all-buy-credits', buyCreditReport)
+router.get('/get-buy-credit-report-for-repay', buyCreditReportForRepay)
+router.get('/get-buy-credit-details/:id', getBuyCreditDetails)
+router.post(
+  "/repay-credit-buy",
+  uploadSalesCreditReceiptMiddleware,
+  repayBuyCredit
+);
+
 
 module.exports = router;
