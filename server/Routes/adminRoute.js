@@ -55,6 +55,8 @@ const {
 const {
   getSalesReport,
   getSalesDetails,
+  getBuyReport,
+  getBuyDetails,
 } = require("../Controllers/Report.controller");
 const { cashReport } = require("../Controllers/Report/Cash.controller");
 const { bankTransaction } = require("../Controllers/Report/BankTransaction");
@@ -128,6 +130,10 @@ router.get("/get-sales-credit-report-for-repay", salesCreditReportForRepay);
 // Sales report
 router.get("/get-sales-report", getSalesReport);
 router.get("/get-sales-details/:transaction_id", getSalesDetails);
+
+// buy report
+router.get("/get-buy-report", getBuyReport)
+router.get("/get-buy-details/:transaction_id", getBuyDetails)
 
 // for buy credit
 router.get("/get-all-buy-credits", buyCreditReport);
