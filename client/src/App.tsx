@@ -5,11 +5,13 @@ import { Toaster } from "sonner";
 import { LoadingSpinner } from "./components/ui/loading-spinner";
 import NotFound from "./Pages/NotFound";
 import { adminRoutes } from "./routes/adminRoutes";
+import Login from "./Pages/Login/Login";
 function App() {
   return (
     <>
       <Suspense fallback={<LoadingSpinner size="lg" />}>
         <Routes>
+          <Route path="/login" element={<Login />} />
           <Route
             element={
               <ThemeProvider
