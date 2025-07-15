@@ -177,7 +177,6 @@ const salesCreditReportForRepay = async (req, res) => {
   }
 };
 
-
 const repaySalesCredit = async (req, res) => {
   const {
     amount_payed,
@@ -326,8 +325,6 @@ const repaySalesCredit = async (req, res) => {
   }
 };
 
-
-
 // Buy repay credit
 
 const getBuyCreditDetails = async (req, res) => {
@@ -355,21 +352,20 @@ const getBuyCreditDetails = async (req, res) => {
     });
 
     // Fetch buy credit transactions
-    const BuyCreditTransactions =
-      await prisma.buy_credit_transaction.findMany({
-        where: {
-          transaction_id: transaction_id,
-        },
-        select: {
-          id: true,
-          amount_payed: true,
-          payment_method: true,
-          CTID: true,
-          outstanding_balance: true,
-          image: true,
-          createdAt: true,
-        },
-      });
+    const BuyCreditTransactions = await prisma.buy_credit_transaction.findMany({
+      where: {
+        transaction_id: transaction_id,
+      },
+      select: {
+        id: true,
+        amount_payed: true,
+        payment_method: true,
+        CTID: true,
+        outstanding_balance: true,
+        image: true,
+        createdAt: true,
+      },
+    });
 
     if (buyTransactions.length === 0) {
       return res
@@ -384,7 +380,6 @@ const getBuyCreditDetails = async (req, res) => {
         buyTransactions: buyTransactions,
       },
     });
-
   } catch (err) {
     console.error(err);
     return res.status(500).json({
@@ -426,7 +421,6 @@ const buyCreditReportForRepay = async (req, res) => {
     );
 
     return res.status(200).json({ status: true, data: enrichedCredits });
-
   } catch (err) {
     console.error(err);
     return res.status(500).json({
@@ -435,7 +429,6 @@ const buyCreditReportForRepay = async (req, res) => {
     });
   }
 };
-
 
 const repayBuyCredit = async (req, res) => {
   const {
@@ -465,6 +458,7 @@ const repayBuyCredit = async (req, res) => {
   try {
     await prisma.$transaction(async (tx) => {
       let cashTransactionId = null;
+      const CTID = generateSalesCreditTransactionId();
 
       // Handle CASH
       if (payment_method === "CASH") {
@@ -473,7 +467,7 @@ const repayBuyCredit = async (req, res) => {
             in: 0,
             out: parseFloat(amount_payed),
             balance: parseFloat(amount_payed),
-            transaction_id,
+            transaction_id: CTID,
           },
         });
         cashTransactionId = newCash.id;
@@ -540,7 +534,7 @@ const repayBuyCredit = async (req, res) => {
           amount_payed: parseFloat(amount_payed),
           payment_method,
           Bank_id: bankId ?? null,
-          CTID: generateSalesCreditTransactionId(),
+          CTID,
           outstanding_balance: parseFloat(outstanding_balance),
           image: req.file?.fullPath || "",
         },
@@ -590,20 +584,20 @@ const repayBuyCredit = async (req, res) => {
 
 const cashBalance = async (req, res) => {
   try {
-    const getCashBalance = await prisma.cash_balance.findMany()
+    const getCashBalance = await prisma.cash_balance.findMany();
 
     if (getCashBalance.length === 0) {
-      return res.status(404).json({ status: false, error: 'cash balance not found' })
+      return res
+        .status(404)
+        .json({ status: false, error: "cash balance not found" });
     }
-    res.status(200).json(getCashBalance)
+    res.status(200).json(getCashBalance);
   } catch (err) {
     return res
       .status(500)
       .json({ status: false, error: "Internal server error" });
   }
-}
-
-
+};
 
 module.exports = {
   repaySalesCredit,
@@ -615,5 +609,5 @@ module.exports = {
   getBuyCreditDetails,
   buyCreditReportForRepay,
 
-  cashBalance
+  cashBalance,
 };

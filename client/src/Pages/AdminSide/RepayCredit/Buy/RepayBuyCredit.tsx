@@ -102,9 +102,7 @@ function RepayBuyCredit() {
   const [searchTerm, setSearchTerm] = useState<string>("");
 
   // Modal states
-  const [selectedCredit, setSelectedCredit] = useState<BuyCredit | null>(
-    null
-  );
+  const [selectedCredit, setSelectedCredit] = useState<BuyCredit | null>(null);
   const [transactionDetails, setTransactionDetails] = useState<
     BuyTransactionDetails[]
   >([]);
@@ -121,9 +119,7 @@ function RepayBuyCredit() {
   const fetchBuyCredits = async () => {
     try {
       setLoading(true);
-      const response = await api.get(
-        "/admin/get-buy-credit-report-for-repay"
-      );
+      const response = await api.get("/admin/get-buy-credit-report-for-repay");
       const result = response.data;
 
       // In your fetchBuyCredits function:
@@ -132,7 +128,7 @@ function RepayBuyCredit() {
           ...credit,
           customer_name: credit.supplier_name,
           customer_id: credit.customer_id || 0,
-          total_money: credit.total_money
+          total_money: credit.total_money,
         }));
         setCredits(mappedCredits);
         setError(null);
@@ -228,7 +224,6 @@ function RepayBuyCredit() {
 
   // Fetch bank accounts
   const fetchBankAccounts = async () => {
-
     try {
       const response = await api.get("/admin/get-bank-list");
       const result = response.data;
@@ -254,9 +249,10 @@ function RepayBuyCredit() {
       const response = await api.get("/admin/get-cash-balance");
       const result = response.data;
 
-
       if (Array.isArray(result)) {
-        setCashAccount(result.filter((cashBalance: CashBalance) => cashBalance.isActive));
+        setCashAccount(
+          result.filter((cashBalance: CashBalance) => cashBalance.isActive)
+        );
       } else {
         throw new Error(result.error || "no cash balance found");
       }
@@ -267,7 +263,6 @@ function RepayBuyCredit() {
     }
   };
 
-
   // Handle modal open
   const handleShowDetails = async (credit: BuyCredit) => {
     setSelectedCredit(credit);
@@ -276,7 +271,7 @@ function RepayBuyCredit() {
 
     await fetchTransactionDetails(credit.transaction_id);
     await fetchBankAccounts();
-    await fetchCashBalance()
+    await fetchCashBalance();
   };
 
   // Handle repayment form submission
@@ -303,15 +298,11 @@ function RepayBuyCredit() {
         }
       }
 
-      const response = await api.post(
-        "/admin/repay-credit-buy",
-        apiFormData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await api.post("/admin/repay-credit-buy", apiFormData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       const result = response.data;
 
@@ -329,8 +320,8 @@ function RepayBuyCredit() {
       console.error("Error processing repayment:", err);
       setRepaymentError(
         err.response?.data?.error ||
-        err.message ||
-        "Failed to process repayment"
+          err.message ||
+          "Failed to process repayment"
       );
     } finally {
       setRepaymentLoading(false);
@@ -469,7 +460,7 @@ function RepayBuyCredit() {
       {/* Search Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-6">
         {activeCredits.length > 0 && (
-          <CardContent className="">
+          <CardContent className="px-0">
             <div className="relative max-w-md flex items-start justify-between">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -484,8 +475,9 @@ function RepayBuyCredit() {
               <div className="mt-3 text-sm text-muted-foreground">
                 {filteredCredits.length === 0
                   ? `No credits found for "${searchTerm}"`
-                  : `Found ${filteredCredits.length} credit${filteredCredits.length === 1 ? "" : "s"
-                  } for "${searchTerm}"`}
+                  : `Found ${filteredCredits.length} credit${
+                      filteredCredits.length === 1 ? "" : "s"
+                    } for "${searchTerm}"`}
               </div>
             )}
           </CardContent>
@@ -533,10 +525,11 @@ function RepayBuyCredit() {
           {filteredCredits.map((credit) => (
             <Card
               key={credit.id}
-              className={`transition-all duration-200 hover:shadow-lg ${credit.status === "OVERDUE"
-                ? "border-destructive/50 bg-destructive/5"
-                : ""
-                }`}
+              className={`transition-all duration-200 hover:shadow-lg ${
+                credit.status === "OVERDUE"
+                  ? "border-destructive/50 bg-destructive/5"
+                  : ""
+              }`}
             >
               <CardHeader className="">
                 <div className="flex items-start justify-between">
@@ -548,12 +541,13 @@ function RepayBuyCredit() {
                   </div>
                   <div className="relative">
                     <Badge
-                      className={`text-white relative z-10 ${credit.status === "ACCEPTED"
-                        ? "bg-blue-500"
-                        : credit.status === "PAYED"
+                      className={`text-white relative z-10 ${
+                        credit.status === "ACCEPTED"
+                          ? "bg-blue-500"
+                          : credit.status === "PAYED"
                           ? "bg-green-500"
                           : "bg-red-500"
-                        }`}
+                      }`}
                     >
                       {credit.status}
                     </Badge>
@@ -645,10 +639,11 @@ function RepayBuyCredit() {
                       Return Date
                     </div>
                     <div
-                      className={`text-sm ${isOverdue(credit.return_date)
-                        ? "text-destructive font-medium"
-                        : ""
-                        }`}
+                      className={`text-sm ${
+                        isOverdue(credit.return_date)
+                          ? "text-destructive font-medium"
+                          : ""
+                      }`}
                     >
                       {formatDate(credit.return_date)}
                       {isOverdue(credit.return_date) && (
@@ -664,18 +659,19 @@ function RepayBuyCredit() {
                       Remaining Days
                     </div>
                     <div
-                      className={`text-sm font-medium ${calculateRemainingDays(credit.return_date) < 0
-                        ? "text-destructive"
-                        : "text-green-600 dark:text-green-400"
-                        }`}
+                      className={`text-sm font-medium ${
+                        calculateRemainingDays(credit.return_date) < 0
+                          ? "text-destructive"
+                          : "text-green-600 dark:text-green-400"
+                      }`}
                     >
                       {calculateRemainingDays(credit.return_date) < 0
                         ? `${Math.abs(
-                          calculateRemainingDays(credit.return_date)
-                        )} days overdue`
+                            calculateRemainingDays(credit.return_date)
+                          )} days overdue`
                         : `${calculateRemainingDays(
-                          credit.return_date
-                        )} days left`}
+                            credit.return_date
+                          )} days left`}
                     </div>
                   </div>
                 </div>
