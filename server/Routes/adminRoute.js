@@ -56,6 +56,7 @@ const {
   getSalesReport,
   getSalesDetails,
 } = require("../Controllers/Report.controller");
+const { cashReport } = require("../Controllers/Report/Cash.controller");
 
 router.post("/add-product-category", addProductCategory);
 router.post("/add-product-type", addProductType);
@@ -135,5 +136,8 @@ router.post(
   uploadSalesCreditReceiptMiddleware,
   repayBuyCredit
 );
+
+// cash transaction
+router.get("/get-cash-transaction", cashReport);
 
 module.exports = router;

@@ -51,6 +51,10 @@ const RepayBuyCredit = lazy(
   () => import("../Pages/AdminSide/RepayCredit/Buy/RepayBuyCredit")
 );
 
+const CashTransaction = lazy(
+  () => import("../Pages/AdminSide/Report/CashTransaction/CashTransaction")
+);
+
 export const adminRoutes = (
   <Route path="/admin" element={<AdminLayout></AdminLayout>}>
     <Route index element={<AdminDashboard></AdminDashboard>}></Route>
@@ -113,6 +117,10 @@ export const adminRoutes = (
     <Route
       path="/admin/buy-credit-repay"
       element={<RepayBuyCredit></RepayBuyCredit>}
+    ></Route>
+    <Route
+      path="/admin/cash-transaction"
+      element={<CashTransaction></CashTransaction>}
     ></Route>
   </Route>
 );
