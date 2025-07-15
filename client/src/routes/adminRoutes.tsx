@@ -43,6 +43,10 @@ const SalesReport = lazy(
   () => import("../Pages/AdminSide/Report/SalesReport/SalesReport")
 );
 
+const BuyReport = lazy(
+  () => import("../Pages/AdminSide/Report/BuyReport/BuyReport")
+);
+
 const RepaySalesCredit = lazy(
   () => import("../Pages/AdminSide/RepayCredit/Sales/RepaySalesCredit")
 );
@@ -99,6 +103,10 @@ export const adminRoutes = (
       element={<SalesReport></SalesReport>}
     ></Route>
     <Route
+      path="/admin/buy-report"
+      element={<BuyReport></BuyReport>}
+    ></Route>
+    <Route
       path="/admin/bank-transfer/deposit"
       element={<BankTransfer></BankTransfer>}
     ></Route>
@@ -114,5 +122,6 @@ export const adminRoutes = (
       path="/admin/buy-credit-repay"
       element={<RepayBuyCredit></RepayBuyCredit>}
     ></Route>
+
   </Route>
 );

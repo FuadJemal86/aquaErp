@@ -123,7 +123,7 @@ const buyProduct = async (req, res) => {
         // Check bank balance
         const check_bank_balance = await tx.bank_balance.findFirst({
           where: {
-            Bank_id: bank_id,
+            bank_id: bank_id,
           },
         });
 
