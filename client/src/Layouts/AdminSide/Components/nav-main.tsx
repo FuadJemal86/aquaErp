@@ -122,8 +122,8 @@ export function NavMain({
                       <span
                         className={
                           isItemActive(item)
-                            ? "text-muted-foreground"
-                            : "text-primary"
+                            ? "text-foreground font-bold "
+                            : "text-foreground"
                         }
                       >
                         {item.title}
@@ -150,8 +150,8 @@ export function NavMain({
                             <span
                               className={
                                 isSubItemActive(subItem.url)
-                                  ? "text-blue-500"
-                                  : "text-primary"
+                                  ? "text-foreground font-bold font-mono "
+                                  : "text-foreground"
                               }
                             >
                               {subItem.title}
