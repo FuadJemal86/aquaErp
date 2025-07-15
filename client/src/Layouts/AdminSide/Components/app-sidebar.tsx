@@ -77,6 +77,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             url: "/admin/buy-report",
           },
           {
+            title: "Product Transaction",
+            url: "/admin/product-transaction",
+          },
+          {
             title: "Cash Transaction",
             url: "/admin/cash-transaction",
           },
