@@ -108,4 +108,40 @@ function SalesReportSkeleton() {
   );
 }
 
+const LoadingTableSkeleton = () => {
+  return (
+    <>
+      {Array.from({ length: 5 }, (_, index) => (
+        <TableRow key={index}>
+          <TableCell>
+            <div className="h-4 w-8 bg-muted animate-pulse rounded"></div>
+          </TableCell>
+          <TableCell>
+            <div className="h-4 w-24 bg-muted animate-pulse rounded"></div>
+          </TableCell>
+          <TableCell>
+            <div className="h-4 w-32 bg-muted animate-pulse rounded"></div>
+          </TableCell>
+          <TableCell>
+            <div className="h-4 w-20 bg-muted animate-pulse rounded"></div>
+          </TableCell>
+          <TableCell>
+            <div className="h-6 w-16 bg-muted animate-pulse rounded"></div>
+          </TableCell>
+          <TableCell>
+            <div className="h-4 w-20 bg-muted animate-pulse rounded"></div>
+          </TableCell>
+          <TableCell>
+            <div className="h-4 w-20 bg-muted animate-pulse rounded"></div>
+          </TableCell>
+          <TableCell>
+            <div className="h-4 w-8 bg-muted animate-pulse rounded mx-auto"></div>
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+};
+
 export default SalesReportSkeleton;
+export { LoadingTableSkeleton };

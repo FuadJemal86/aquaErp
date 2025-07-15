@@ -73,7 +73,7 @@ function ShowDetails({ transactionId, isOpen, onClose }: ShowDetailsProps) {
       setSalesDetails(response.data.sales);
     } catch (err: any) {
       console.error("Error fetching sales details:", err);
-      setError("Failed to fetch sales details");
+      setError(err.response.data.message || "Failed to fetch sales details");
     } finally {
       setLoading(false);
     }

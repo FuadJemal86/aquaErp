@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import api from "@/services/api";
+import { LoadingTableSkeleton } from "./SalesReportSkeleton";
 
 interface BankAccount {
   id: number;
@@ -38,6 +39,7 @@ interface BankAccount {
   createdAt: string;
   updatedAt: string;
 }
+
 interface SalesData {
   id: number;
   type_id: number;
@@ -86,40 +88,39 @@ interface FilterForm {
 }
 
 interface SalesReportTableProps {
-  salesData: SalesData[];
-  paginationData: PaginationData;
-  currentPage: number;
-  pageSize: number;
-  filters: FilterForm;
-  onFilterChange: (filters: Partial<FilterForm>) => void;
-  onClearFilters: () => void;
   onViewDetails: (transactionId: string) => void;
-  onPageChange: (page: number) => void;
-  onPageSizeChange: (pageSize: string) => void;
-  onFirstPage: () => void;
-  onLastPage: () => void;
-  onPreviousPage: () => void;
-  onNextPage: () => void;
+  onDataChange?: (data: SalesData[]) => void;
 }
 
 function SalesReportTable({
-  salesData,
-  paginationData,
-  currentPage,
-  pageSize,
-  filters,
-  onFilterChange,
-  onClearFilters,
   onViewDetails,
-  onPageChange,
-  onPageSizeChange,
-  onFirstPage,
-  onLastPage,
-  onPreviousPage,
-  onNextPage,
+  onDataChange,
 }: SalesReportTableProps) {
+  const [salesData, setSalesData] = useState<SalesData[]>([]);
+  const [summaryData, setSummaryData] = useState<SalesData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [isFilterEnabled, setIsFilterEnabled] = React.useState(false);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [filters, setFilters] = useState<FilterForm>({
+    customerName: "",
+    transactionId: "",
+    paymentMethod: "",
+    bankBranch: "",
+    customerType: "",
+    startDate: "",
+    endDate: "",
+  });
+  const [paginationData, setPaginationData] = useState<PaginationData>({
+    currentPage: 1,
+    pageSize: 10,
+    totalCount: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  });
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -145,6 +146,52 @@ function SalesReportTable({
     return price * quantity;
   };
 
+  const fetchSalesReport = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Build query parameters for paginated data
+      const params: any = {
+        page: currentPage,
+        limit: pageSize,
+      };
+
+      // Add filter parameters only if they have values
+      if (filters.customerName) params.customerName = filters.customerName;
+      if (filters.transactionId) params.transactionId = filters.transactionId;
+      if (filters.paymentMethod) params.paymentMethod = filters.paymentMethod;
+      if (filters.bankBranch) params.bankBranch = filters.bankBranch;
+      if (filters.customerType) params.customerType = filters.customerType;
+      if (filters.startDate) params.startDate = filters.startDate;
+      if (filters.endDate) params.endDate = filters.endDate;
+
+      // Fetch paginated data for table
+      const response = await api.get("/admin/get-sales-report", {
+        params,
+      });
+      setSalesData(response.data.sales);
+      setPaginationData(response.data.pagination);
+
+      // Fetch all data for summary (with same filters but no pagination)
+      const summaryParams = { ...params };
+      delete summaryParams.page;
+      delete summaryParams.limit;
+      summaryParams.limit = 10000; // Get all records for summary
+
+      const summaryResponse = await api.get("/admin/get-sales-report", {
+        params: summaryParams,
+      });
+      setSummaryData(summaryResponse.data.sales);
+    } catch (err: any) {
+      setError("Failed to fetch sales report");
+      console.error(err);
+      toast.error(err.response?.data?.error || "Failed to fetch sales report");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchBankAccounts = async () => {
     try {
       const response = await api.get("/admin/get-bank-list");
@@ -158,14 +205,82 @@ function SalesReportTable({
   };
 
   useEffect(() => {
+    fetchSalesReport();
+  }, [currentPage, pageSize, filters]);
+
+  // Notify parent component when data changes
+  useEffect(() => {
+    if (onDataChange) {
+      onDataChange(summaryData);
+    }
+  }, [summaryData, onDataChange]);
+
+  useEffect(() => {
     fetchBankAccounts();
   }, []);
 
   const handleFilterChange = (field: keyof FilterForm, value: string) => {
-    onFilterChange({ [field]: value });
+    setFilters((prev) => ({ ...prev, [field]: value }));
+    setCurrentPage(1); // Reset to first page when filters change
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      customerName: "",
+      transactionId: "",
+      paymentMethod: "",
+      bankBranch: "",
+      customerType: "",
+      startDate: "",
+      endDate: "",
+    });
+    setCurrentPage(1);
+  };
+
+  // Pagination functions
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, paginationData.totalPages)));
+  };
+
+  const goToFirstPage = () => setCurrentPage(1);
+  const goToLastPage = () => setCurrentPage(paginationData.totalPages);
+  const goToPreviousPage = () => setCurrentPage(Math.max(1, currentPage - 1));
+  const goToNextPage = () =>
+    setCurrentPage(Math.min(paginationData.totalPages, currentPage + 1));
+
+  const handlePageSizeChange = (newPageSize: string) => {
+    setPageSize(Number(newPageSize));
+    setCurrentPage(1); // Reset to first page when changing page size
   };
 
   const hasActiveFilters = Object.values(filters).some((value) => value !== "");
+
+  // Keep filter open when there are active filters
+  React.useEffect(() => {
+    if (hasActiveFilters && !isFilterEnabled) {
+      setIsFilterEnabled(true);
+    }
+  }, [hasActiveFilters, isFilterEnabled]);
+
+  if (error) {
+    return (
+      <Card className="border-destructive">
+        <CardContent className="pt-6">
+          <div className="text-center text-destructive">
+            <h2 className="text-xl font-semibold mb-2">Error</h2>
+            <p>{error}</p>
+            <Button
+              onClick={fetchSalesReport}
+              className="mt-4"
+              variant="outline"
+            >
+              Retry
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -192,7 +307,7 @@ function SalesReportTable({
             <Button
               variant="outline"
               size="sm"
-              onClick={onClearFilters}
+              onClick={clearFilters}
               className="h-8 px-2"
             >
               <X className="h-4 w-4 mr-1" />
@@ -350,62 +465,66 @@ function SalesReportTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {salesData.map((sale, index) => (
-                <TableRow key={sale.id}>
-                  <TableCell>
-                    {(paginationData.currentPage - 1) *
-                      paginationData.pageSize +
-                      index +
-                      1}
-                  </TableCell>
-                  <TableCell>
-                    {sale.Customer ? (
-                      <div>
-                        <div className="font-medium">
-                          {sale.Customer.full_name}
+              {loading ? (
+                <LoadingTableSkeleton />
+              ) : (
+                salesData.map((sale, index) => (
+                  <TableRow key={sale.id}>
+                    <TableCell>
+                      {(paginationData.currentPage - 1) *
+                        paginationData.pageSize +
+                        index +
+                        1}
+                    </TableCell>
+                    <TableCell>
+                      {sale.Customer ? (
+                        <div>
+                          <div className="font-medium">
+                            {sale.Customer.full_name}
+                          </div>
                         </div>
+                      ) : sale.walker_id ? (
+                        <div className="text-muted-foreground">
+                          Walker: {sale.walker_id}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {sale.transaction_id}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {calculateTotal(
+                        sale.price_per_quantity,
+                        sale.quantity
+                      ).toLocaleString()}{" "}
+                      Birr
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {getPaymentMethodBadge(sale.payment_method)}
                       </div>
-                    ) : sale.walker_id ? (
-                      <div className="text-muted-foreground">
-                        Walker: {sale.walker_id}
+                    </TableCell>
+                    <TableCell>
+                      {sale.Bank_list ? sale.Bank_list.branch : "-"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDate(sale.createdAt)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-center items-center">
+                        <button
+                          onClick={() => onViewDetails(sale.transaction_id)}
+                          className="p-1 hover:bg-muted rounded-md transition-colors"
+                        >
+                          <EyeIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                        </button>
                       </div>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {sale.transaction_id}
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {calculateTotal(
-                      sale.price_per_quantity,
-                      sale.quantity
-                    ).toLocaleString()}{" "}
-                    Birr
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {getPaymentMethodBadge(sale.payment_method)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {sale.Bank_list ? sale.Bank_list.branch : "-"}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {formatDate(sale.createdAt)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-center items-center">
-                      <button
-                        onClick={() => onViewDetails(sale.transaction_id)}
-                        className="p-1 hover:bg-muted rounded-md transition-colors"
-                      >
-                        <EyeIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                      </button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
@@ -418,7 +537,7 @@ function SalesReportTable({
                 <span className="text-sm text-muted-foreground">Show</span>
                 <Select
                   value={pageSize.toString()}
-                  onValueChange={onPageSizeChange}
+                  onValueChange={handlePageSizeChange}
                 >
                   <SelectTrigger className="w-20 h-8">
                     <SelectValue />
@@ -448,7 +567,7 @@ function SalesReportTable({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={onFirstPage}
+                  onClick={goToFirstPage}
                   disabled={currentPage === 1}
                 >
                   <ChevronsLeft className="h-4 w-4" />
@@ -456,7 +575,7 @@ function SalesReportTable({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={onPreviousPage}
+                  onClick={goToPreviousPage}
                   disabled={currentPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -471,7 +590,7 @@ function SalesReportTable({
                           key={page}
                           variant={currentPage === page ? "default" : "outline"}
                           size="sm"
-                          onClick={() => onPageChange(page)}
+                          onClick={() => goToPage(page)}
                           className="h-8 w-8 p-0"
                         >
                           {page}
@@ -483,7 +602,7 @@ function SalesReportTable({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={onNextPage}
+                  onClick={goToNextPage}
                   disabled={currentPage === paginationData.totalPages}
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -491,7 +610,7 @@ function SalesReportTable({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={onLastPage}
+                  onClick={goToLastPage}
                   disabled={currentPage === paginationData.totalPages}
                 >
                   <ChevronsRight className="h-4 w-4" />

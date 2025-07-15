@@ -1,11 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import api from "@/services/api";
 import { BarChart3, DollarSign, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
-import SalesReportSkeleton from "./components/SalesReportSkeleton";
 import SalesReportTable from "./components/SalesReportTable";
 import ShowDetails from "./components/ShowDetails";
-import { toast } from "sonner";
 
 interface SalesData {
   id: number;
@@ -35,91 +32,25 @@ interface SalesData {
   } | null;
 }
 
-interface FilterForm {
-  customerName: string;
-  transactionId: string;
-  paymentMethod: string;
-  bankBranch: string;
-  customerType: string;
-  startDate: string;
-  endDate: string;
-}
-
 function SalesReport() {
-  const [salesData, setSalesData] = useState<SalesData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [summaryData, setSummaryData] = useState<SalesData[]>([]);
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(
     null
   );
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [filters, setFilters] = useState<FilterForm>({
-    customerName: "",
-    transactionId: "",
-    paymentMethod: "",
-    bankBranch: "",
-    customerType: "",
-    startDate: "",
-    endDate: "",
-  });
-  const [paginationData, setPaginationData] = useState({
-    currentPage: 1,
-    pageSize: 10,
-    totalCount: 0,
-    totalPages: 0,
-    hasNextPage: false,
-    hasPreviousPage: false,
-  });
-
-  useEffect(() => {
-    const fetchSalesReport = async () => {
-      try {
-        setLoading(true);
-
-        // Build query parameters
-        const params: any = {
-          page: currentPage,
-          limit: pageSize,
-        };
-
-        // Add filter parameters only if they have values
-        if (filters.customerName) params.customerName = filters.customerName;
-        if (filters.transactionId) params.transactionId = filters.transactionId;
-        if (filters.paymentMethod) params.paymentMethod = filters.paymentMethod;
-        if (filters.bankBranch) params.bankBranch = filters.bankBranch;
-        if (filters.customerType) params.customerType = filters.customerType;
-        if (filters.startDate) params.startDate = filters.startDate;
-        if (filters.endDate) params.endDate = filters.endDate;
-
-        const response = await api.get("/admin/get-sales-report", {
-          params,
-        });
-        setSalesData(response.data.sales);
-        setPaginationData(response.data.pagination);
-      } catch (err) {
-        setError("Failed to fetch sales report");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSalesReport();
-  }, [currentPage, pageSize, filters]);
 
   const calculateTotal = (price: number, quantity: number) => {
     return price * quantity;
   };
 
   const getTotalSales = () => {
-    return salesData.reduce((total, sale) => {
+    return summaryData.reduce((total, sale) => {
       return total + calculateTotal(sale.price_per_quantity, sale.quantity);
     }, 0);
   };
 
   const getTotalTransactions = () => {
-    return salesData.length;
+    return summaryData.length;
   };
 
   const handleViewDetails = (transactionId: string) => {
@@ -132,59 +63,9 @@ function SalesReport() {
     setSelectedTransaction(null);
   };
 
-  // Filter functions
-  const handleFilterChange = (newFilters: Partial<FilterForm>) => {
-    setFilters((prev) => ({ ...prev, ...newFilters }));
-    setCurrentPage(1); // Reset to first page when filters change
+  const handleDataChange = (data: SalesData[]) => {
+    setSummaryData(data);
   };
-
-  const clearFilters = () => {
-    setFilters({
-      customerName: "",
-      transactionId: "",
-      paymentMethod: "",
-      bankBranch: "",
-      customerType: "",
-      startDate: "",
-      endDate: "",
-    });
-    setCurrentPage(1);
-  };
-
-  // Pagination functions
-  const goToPage = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, paginationData.totalPages)));
-  };
-
-  const goToFirstPage = () => setCurrentPage(1);
-  const goToLastPage = () => setCurrentPage(paginationData.totalPages);
-  const goToPreviousPage = () => setCurrentPage(Math.max(1, currentPage - 1));
-  const goToNextPage = () =>
-    setCurrentPage(Math.min(paginationData.totalPages, currentPage + 1));
-
-  const handlePageSizeChange = (newPageSize: string) => {
-    setPageSize(Number(newPageSize));
-    setCurrentPage(1); // Reset to first page when changing page size
-  };
-
-  if (loading) {
-    return <SalesReportSkeleton />;
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <Card className="border-destructive">
-          <CardContent className="pt-6">
-            <div className="text-center text-destructive">
-              <h2 className="text-xl font-semibold mb-2">Error</h2>
-              <p>{error}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6 space-y-6">
@@ -248,20 +129,8 @@ function SalesReport() {
 
       {/* Sales Table */}
       <SalesReportTable
-        salesData={salesData}
-        paginationData={paginationData}
-        currentPage={currentPage}
-        pageSize={pageSize}
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        onClearFilters={clearFilters}
         onViewDetails={handleViewDetails}
-        onPageChange={goToPage}
-        onPageSizeChange={handlePageSizeChange}
-        onFirstPage={goToFirstPage}
-        onLastPage={goToLastPage}
-        onPreviousPage={goToPreviousPage}
-        onNextPage={goToNextPage}
+        onDataChange={handleDataChange}
       />
 
       {/* Show Details Modal */}

@@ -169,6 +169,10 @@ const getSalesReport = async (req, res) => {
 const getSalesDetails = async (req, res) => {
   try {
     const { transaction_id } = req.params;
+
+    if (!transaction_id) {
+      return res.status(400).json({ message: "Transaction ID is required" });
+    }
     const sales = await prisma.sales_transaction.findMany({
       where: {
         transaction_id: transaction_id,

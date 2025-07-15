@@ -117,6 +117,6 @@ router.get("/get-sales-credit-report-for-repay", salesCreditReportForRepay);
 
 // Sales report
 router.get("/get-sales-report", getSalesReport);
-router.get("/get-sales-details/:id", getSalesDetails);
+router.get("/get-sales-details/:transaction_id", getSalesDetails);
 
 module.exports = router;
