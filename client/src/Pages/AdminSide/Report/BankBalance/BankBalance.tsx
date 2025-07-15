@@ -176,7 +176,7 @@ function BankBalance() {
       {/* Bank Balance Cards */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Bank Branch Balances</h2>
+          <h2 className="text-xl font-semibold"></h2>
           <Button
             onClick={fetchBankBalances}
             variant="outline"
@@ -222,7 +222,6 @@ function BankBalance() {
                     <CardTitle className="text-lg font-semibold">
                       {bank.Bank_list.branch}
                     </CardTitle>
-                    {getBalanceIcon(bank.balance)}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -251,29 +250,6 @@ function BankBalance() {
                       >
                         {bank.isActive ? "Active" : "Inactive"}
                       </Badge>
-                    </div>
-                  </div>
-
-                  <div className="pt-2">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          getBalanceStatus(bank.balance) === "high"
-                            ? "bg-green-500"
-                            : getBalanceStatus(bank.balance) === "medium"
-                            ? "bg-yellow-500"
-                            : "bg-red-500"
-                        }`}
-                        style={{
-                          width: `${Math.min(
-                            (bank.balance / 100000) * 100,
-                            100
-                          )}%`,
-                        }}
-                      />
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Balance indicator
                     </div>
                   </div>
                 </CardContent>
