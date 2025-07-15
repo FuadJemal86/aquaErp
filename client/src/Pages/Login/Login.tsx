@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -56,6 +57,26 @@ const loginSchema = z.object({
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
+
+// Animation variants
+const textVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" as const },
+  },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, scale: 0.95, y: 30 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { duration: 0.7, ease: "easeOut" as const },
+  },
+};
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -125,19 +146,30 @@ export default function Login() {
           </div>
 
           {/* Main Heading */}
-          <div className="mb-12">
-            <h2 className="text-5xl font-bold leading-tight mb-6">
+          <motion.div
+            className="mb-12"
+            initial="hidden"
+            animate="visible"
+            variants={textVariants}
+          >
+            <motion.h2
+              className="text-5xl font-bold leading-tight mb-6"
+              variants={textVariants}
+            >
               Streamline Your
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
                 Product Distribution
               </span>
-            </h2>
-            <p className="text-xl text-slate-300 leading-relaxed">
+            </motion.h2>
+            <motion.p
+              className="text-xl text-slate-300 leading-relaxed"
+              variants={textVariants}
+            >
               AquaERP - Complete ERP solution for water and soft drink
               distribution companies. Manage sales, credit, delivery, and
               customer tracking efficiently.
-            </p>
-          </div>
+            </motion.p>
+          </motion.div>
 
           {/* Features Grid */}
           <div className="grid grid-cols-2 gap-6">
@@ -186,192 +218,198 @@ export default function Login() {
             </p>
           </div>
 
-          <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-            <CardHeader className="space-y-2 pb-8">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-2xl font-bold text-slate-900">
-                    Welcome Back
-                  </CardTitle>
-                  <CardDescription className="text-slate-600 mt-1">
-                    Sign in to access your dashboard
-                  </CardDescription>
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={cardVariants}
+          >
+            <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+              <CardHeader className="space-y-2 pb-8">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl font-bold text-slate-900">
+                      Welcome Back
+                    </CardTitle>
+                    <CardDescription className="text-slate-600 mt-1">
+                      Sign in to access your dashboard
+                    </CardDescription>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
+              </CardHeader>
 
-            <CardContent className="space-y-6">
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  className="space-y-5"
-                >
-                  {/* Role Selection */}
-                  <FormField
-                    control={form.control}
-                    name="role"
-                    render={({ field }: { field: any }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-semibold text-slate-700 ">
-                          Select Role
-                        </FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="h-12 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 w-full">
-                              <div className="flex items-center gap-3">
-                                <User className="w-4 h-4 text-slate-500" />
-                                <SelectValue placeholder="Choose your role" />
-                              </div>
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="border-slate-200 min-w-[var(--radix-select-trigger-width)]">
-                            <SelectItem value="admin" className="py-3">
-                              <div className="flex items-center gap-3">
-                                <Shield className="w-4 h-4 text-red-500" />
-                                <div>
-                                  <div className="font-medium">
-                                    Administrator
-                                  </div>
-                                  <div className="text-xs text-slate-500">
-                                    Full system access & management
-                                  </div>
-                                </div>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="cashier" className="py-3">
-                              <div className="flex items-center gap-3">
-                                <Users className="w-4 h-4 text-blue-500" />
-                                <div>
-                                  <div className="font-medium">Cashier</div>
-                                  <div className="text-xs text-slate-500">
-                                    Sales, payments & credit management
-                                  </div>
-                                </div>
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Email Input */}
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }: { field: any }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-semibold text-slate-700">
-                          Email Address
-                        </FormLabel>
-                        <div className="relative">
-                          <Mail className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type="email"
-                              placeholder="Enter your email address"
-                              className="h-12 pl-12 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500"
-                            />
-                          </FormControl>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Password Input */}
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }: { field: any }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-semibold text-slate-700">
-                          Password
-                        </FormLabel>
-                        <div className="relative">
-                          <Lock className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type={showPassword ? "text" : "password"}
-                              placeholder="Enter your password"
-                              className="h-12 pl-12 pr-12 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500"
-                            />
-                          </FormControl>
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-4 top-4 text-slate-400 hover:text-slate-600"
-                          >
-                            {showPassword ? (
-                              <EyeOff className="w-4 h-4" />
-                            ) : (
-                              <Eye className="w-4 h-4" />
-                            )}
-                          </button>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Remember Me & Forgot Password */}
-                  <div className="flex items-center justify-between">
+              <CardContent className="space-y-6">
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="space-y-5"
+                  >
+                    {/* Role Selection */}
                     <FormField
                       control={form.control}
-                      name="rememberMe"
+                      name="role"
                       render={({ field }: { field: any }) => (
-                        <FormItem className="flex flex-row items-center space-x-2">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              className="border-slate-300"
-                            />
-                          </FormControl>
-                          <FormLabel className="text-sm text-slate-600 cursor-pointer">
-                            Remember me
+                        <FormItem>
+                          <FormLabel className="text-sm font-semibold text-slate-700 ">
+                            Select Role
                           </FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="h-12 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 w-full">
+                                <div className="flex items-center gap-3">
+                                  <User className="w-4 h-4 text-slate-500" />
+                                  <SelectValue placeholder="Choose your role" />
+                                </div>
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="border-slate-200 min-w-[var(--radix-select-trigger-width)]">
+                              <SelectItem value="admin" className="py-3">
+                                <div className="flex items-center gap-3">
+                                  <Shield className="w-4 h-4 text-red-500" />
+                                  <div>
+                                    <div className="font-medium">
+                                      Administrator
+                                    </div>
+                                    <div className="text-xs text-slate-500">
+                                      Full system access & management
+                                    </div>
+                                  </div>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="cashier" className="py-3">
+                                <div className="flex items-center gap-3">
+                                  <Users className="w-4 h-4 text-blue-500" />
+                                  <div>
+                                    <div className="font-medium">Cashier</div>
+                                    <div className="text-xs text-slate-500">
+                                      Sales, payments & credit management
+                                    </div>
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
-                    <button
-                      type="button"
-                      className="text-sm text-emerald-600 hover:text-emerald-700 font-medium hover:underline"
+
+                    {/* Email Input */}
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }: { field: any }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-semibold text-slate-700">
+                            Email Address
+                          </FormLabel>
+                          <div className="relative">
+                            <Mail className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="email"
+                                placeholder="Enter your email address"
+                                className="h-12 pl-12 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500"
+                              />
+                            </FormControl>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Password Input */}
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }: { field: any }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-semibold text-slate-700">
+                            Password
+                          </FormLabel>
+                          <div className="relative">
+                            <Lock className="absolute left-4 top-4 w-4 h-4 text-slate-400" />
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Enter your password"
+                                className="h-12 pl-12 pr-12 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500"
+                              />
+                            </FormControl>
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600"
+                            >
+                              {showPassword ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Remember Me & Forgot Password */}
+                    <div className="flex items-center justify-between">
+                      <FormField
+                        control={form.control}
+                        name="rememberMe"
+                        render={({ field }: { field: any }) => (
+                          <FormItem className="flex flex-row items-center space-x-2">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                className="border-slate-300"
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm text-slate-600 cursor-pointer">
+                              Remember me
+                            </FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                      <button
+                        type="button"
+                        className="text-sm text-emerald-600 hover:text-emerald-700 font-medium hover:underline"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+
+                    {/* Submit Button */}
+                    <Button
+                      type="submit"
+                      disabled={isLoading}
+                      className="w-full h-12 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 group disabled:opacity-50"
                     >
-                      Forgot password?
-                    </button>
-                  </div>
+                      {isLoading ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Signing in...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <span>Sign In to Dashboard</span>
+                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </Form>
 
-                  {/* Submit Button */}
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full h-12 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 group disabled:opacity-50"
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Signing in...</span>
-                      </div>
-                    ) : (
-                      <>
-                        <span>Sign In to Dashboard</span>
-                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </Form>
-
-              <Separator className="my-6" />
-            </CardContent>
-          </Card>
+                <Separator className="my-6" />
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* Footer */}
           <div className="text-center mt-8 text-sm text-slate-400">
