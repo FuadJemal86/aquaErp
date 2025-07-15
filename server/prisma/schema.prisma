@@ -186,17 +186,18 @@ model Bank_transaction {
 
 model Buy_credit_transaction {
   id                  Int            @id @default(autoincrement())
-  Bank_id             Int
+  Bank_id             Int?
   transaction_id      String
   amount_payed        Float
   outstanding_balance Float
+  CTID                String?
   image               String
   payment_method      payment_method
   isActive            Boolean        @default(true)
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 
-  bank_list Bank_list @relation(fields: [Bank_id], references: [id])
+  bank_list Bank_list? @relation(fields: [Bank_id], references: [id])
 
   @@index([transaction_id])
   @@map("buy_credit_transaction")
