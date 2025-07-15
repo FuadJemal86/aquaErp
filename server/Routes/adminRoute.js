@@ -55,12 +55,12 @@ const {
 const {
   getSalesReport,
   getSalesDetails,
-  getBuyReport,
-  getBuyDetails,
 } = require("../Controllers/Report.controller");
 const { cashReport } = require("../Controllers/Report/Cash.controller");
 const { bankTransaction } = require("../Controllers/Report/BankTransaction");
 const { bankBalance } = require("../Controllers/Report/BankBalance.controller");
+const { getBuyReport, getBuyDetails } = require("../controllers/Report/BuyTransaction");
+const { productTransactions } = require("../controllers/Report/productTransaction");
 
 router.post("/add-product-category", addProductCategory);
 router.post("/add-product-type", addProductType);
@@ -153,5 +153,9 @@ router.get("/get-bank-transaction", bankTransaction);
 
 // Bank balance
 router.get("/get-bank-balance", bankBalance);
+
+// product transaction
+
+router.get('/get-product-transaction', productTransactions)
 
 module.exports = router;
