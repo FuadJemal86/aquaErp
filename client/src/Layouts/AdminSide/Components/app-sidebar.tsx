@@ -32,13 +32,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Dashboard",
         url: "/admin/",
         icon: LayoutDashboardIcon,
-        isActive: true,
       },
       {
         title: "Sales",
         url: "#",
         icon: ShoppingCart,
-        isActive: false,
         items: [
           {
             title: "Sales products",
@@ -54,7 +52,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Buy",
         url: "#",
         icon: Package,
-        isActive: false,
         items: [
           {
             title: "Buy products",
@@ -70,7 +67,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Reports",
         url: "#",
         icon: FileText,
-        isActive: false,
         items: [
           {
             title: "sales report",
@@ -98,7 +94,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Repay credit",
         url: "#",
         icon: CreditCard,
-        isActive: false,
         items: [
           {
             title: "Sales credit repay",
@@ -114,7 +109,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Bank Transfer",
         url: "#",
         icon: Banknote,
-        isActive: false,
         items: [
           {
             title: "Deposit",
@@ -130,7 +124,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Add Customer",
         url: "#",
         icon: UserPlus,
-        isActive: false,
         items: [
           {
             title: "Add Customer",
@@ -146,7 +139,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Settings",
         url: "#",
         icon: Settings,
-        isActive: false,
         items: [
           {
             title: "My Profile",
@@ -172,7 +164,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Notifications",
         url: "/admin/notifications",
         icon: Bell,
-        isActive: false,
         badgeCount: 0,
       },
     ],

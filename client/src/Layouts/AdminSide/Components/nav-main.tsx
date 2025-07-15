@@ -1,4 +1,6 @@
 import { ChevronRight, type LucideIcon } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 import {
   Collapsible,
@@ -34,12 +36,73 @@ export function NavMain({
     }[];
   }[];
 }) {
+  const location = useLocation();
+  const [openItems, setOpenItems] = useState<Set<string>>(new Set());
+
+  // Determine which items should be open based on current location
+  useEffect(() => {
+    const newOpenItems = new Set<string>();
+
+    items.forEach((item) => {
+      // Check if current path matches the main item URL
+      if (item.url !== "#" && location.pathname === item.url) {
+        newOpenItems.add(item.title);
+      }
+
+      // Check if current path matches any sub-item URL
+      if (item.items) {
+        item.items.forEach((subItem) => {
+          if (location.pathname === subItem.url) {
+            newOpenItems.add(item.title);
+          }
+        });
+      }
+    });
+
+    setOpenItems(newOpenItems);
+  }, [location.pathname, items]);
+
+  const toggleItem = (itemTitle: string) => {
+    setOpenItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemTitle)) {
+        newSet.delete(itemTitle);
+      } else {
+        newSet.add(itemTitle);
+      }
+      return newSet;
+    });
+  };
+
+  // Check if an item is active
+  const isItemActive = (item: any) => {
+    if (item.url !== "#" && location.pathname === item.url) {
+      return true;
+    }
+    if (item.items) {
+      return item.items.some(
+        (subItem: any) => location.pathname === subItem.url
+      );
+    }
+    return false;
+  };
+
+  // Check if a sub-item is active
+  const isSubItemActive = (subItemUrl: string) => {
+    return location.pathname === subItemUrl;
+  };
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Pages</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
-          <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
+          <Collapsible
+            key={item.title}
+            asChild
+            open={openItems.has(item.title)}
+            onOpenChange={() => toggleItem(item.title)}
+          >
             <SidebarMenuItem>
               <div className="flex items-center w-full">
                 <CollapsibleTrigger asChild>
@@ -56,7 +119,15 @@ export function NavMain({
                           </Badge>
                         ) : null}
                       </div>
-                      <span>{item.title}</span>
+                      <span
+                        className={
+                          isItemActive(item)
+                            ? "text-muted-foreground"
+                            : "text-primary"
+                        }
+                      >
+                        {item.title}
+                      </span>
                     </Link>
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
@@ -75,9 +146,17 @@ export function NavMain({
                     {item.items?.map((subItem) => (
                       <SidebarMenuSubItem key={subItem.title}>
                         <SidebarMenuSubButton asChild>
-                          <a href={subItem.url}>
-                            <span>{subItem.title}</span>
-                          </a>
+                          <Link to={subItem.url}>
+                            <span
+                              className={
+                                isSubItemActive(subItem.url)
+                                  ? "text-blue-500"
+                                  : "text-primary"
+                              }
+                            >
+                              {subItem.title}
+                            </span>
+                          </Link>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     ))}
