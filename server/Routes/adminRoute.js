@@ -58,6 +58,7 @@ const {
 } = require("../Controllers/Report.controller");
 const { cashReport } = require("../Controllers/Report/Cash.controller");
 const { bankTransaction } = require("../Controllers/Report/BankTransaction");
+const { bankBalance } = require("../Controllers/Report/BankBalance.controller");
 
 router.post("/add-product-category", addProductCategory);
 router.post("/add-product-type", addProductType);
@@ -143,5 +144,8 @@ router.get("/get-cash-transaction", cashReport);
 
 // Bank transaction
 router.get("/get-bank-transaction", bankTransaction);
+
+// Bank balance
+router.get("/get-bank-balance", bankBalance);
 
 module.exports = router;
