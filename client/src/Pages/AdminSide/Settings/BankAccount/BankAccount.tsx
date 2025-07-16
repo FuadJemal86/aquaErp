@@ -444,7 +444,6 @@ function BankAccount() {
         </Card>
       </div>
 
-      {/* Delete Confirmation Modal */}
 
       {/* Delete Bank Account Dialog */}
       {deleteDialogOpen && (
