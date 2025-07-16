@@ -445,62 +445,59 @@ function BankAccount() {
       </div>
 
       {/* Delete Confirmation Modal */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="z-[9999] max-w-md mx-auto bg-white border border-gray-200 shadow-2xl rounded-xl overflow-hidden">
-          <div className="p-6">
-            <AlertDialogHeader className="text-center mb-4">
-              <div className="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
-                <Trash2 className="h-8 w-8 text-red-600" />
-              </div>
-              <AlertDialogTitle className="text-xl font-bold text-gray-900 mb-2">
-                Delete Bank Account
-              </AlertDialogTitle>
-              <AlertDialogDescription className="text-gray-600 leading-relaxed">
-                This action cannot be undone. This will permanently delete the bank account:
-              </AlertDialogDescription>
-            </AlertDialogHeader>
 
-            <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-500">Account Holder:</span>
-                  <span className="text-sm font-semibold text-gray-900">{accountToDelete?.owner}</span>
+      {/* Delete Bank Account Dialog */}
+      {deleteDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Custom Tailwind Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setDeleteDialogOpen(false)}
+          />
+
+          {/* Inner Content using shadcn/ui */}
+          <div className="relative bg-white border border-gray-200 shadow-2xl rounded-xl overflow-hidden max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="text-center mb-4">
+                <div className="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
+                  <Trash2 className="h-8 w-8 text-red-600" />
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-500">Account Number:</span>
-                  <span className="text-sm font-semibold text-gray-900">{accountToDelete?.account_number}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-500">Branch:</span>
-                  <span className="text-sm font-semibold text-gray-900">{accountToDelete?.branch}</span>
-                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Delete Bank Account
+                </h3>
+                <p className="text-gray-600 leading-relaxed">
+                  This action cannot be undone. This will permanently delete the bank account:
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-0">
+                <Button
+                  variant="outline"
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300 rounded-lg py-2.5 font-medium transition-colors"
+                  onClick={() => setDeleteDialogOpen(false)}
+                  disabled={isLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleDeleteConfirm}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2.5 font-medium transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Deleting...
+                    </div>
+                  ) : (
+                    "Delete Account"
+                  )}
+                </Button>
               </div>
             </div>
-
-            <AlertDialogFooter className="flex gap-3 pt-0">
-              <AlertDialogCancel className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300 rounded-lg py-2.5 font-medium transition-colors">
-                Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteConfirm}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2.5 font-medium transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Deleting...
-                  </div>
-                ) : (
-                  <>
-                    Delete Account
-                  </>
-                )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
           </div>
-        </AlertDialogContent>
-      </AlertDialog>
+        </div>
+      )}
     </div>
   );
 }
