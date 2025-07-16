@@ -263,13 +263,92 @@ const sellProduct = async (req, res) => {
 // sales credit report
 const salesCreditReport = async (req, res) => {
   try {
-    // Get all sales credit entries
-    const getSalesCreditReport = await prisma.sales_credit.findMany();
+    // Extract query parameters for pagination and filtering
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Build filter conditions
+    const whereConditions = {
+      isActive: true,
+    };
+
+    // Add filter conditions based on query parameters
+    if (req.query.transactionId) {
+      whereConditions.transaction_id = {
+        contains: req.query.transactionId,
+      };
+    }
+
+    if (req.query.customerName) {
+      // First find customer IDs that match the name
+      const customers = await prisma.customer.findMany({
+        where: {
+          full_name: {
+            contains: req.query.customerName,
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      const customerIds = customers.map(c => c.id);
+      whereConditions.customer_id = {
+        in: customerIds,
+      };
+    }
+
+    if (req.query.status) {
+      whereConditions.status = req.query.status;
+    }
+
+    if (req.query.startDate) {
+      whereConditions.issued_date = {
+        gte: new Date(req.query.startDate),
+      };
+    }
+
+    if (req.query.endDate) {
+      whereConditions.issued_date = {
+        ...whereConditions.issued_date,
+        lte: new Date(req.query.endDate),
+      };
+    }
+
+    // Get total count of records (for pagination)
+    const totalCount = await prisma.sales_credit.count({
+      where: whereConditions,
+    });
+
+    // Calculate total pages
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Get paginated sales credit entries
+    const getSalesCreditReport = await prisma.sales_credit.findMany({
+      where: whereConditions,
+      skip,
+      take: limit,
+      orderBy: {
+        issued_date: 'desc',
+      },
+    });
 
     if (getSalesCreditReport.length === 0) {
-      return res
-        .status(404)
-        .json({ status: false, error: "Sales credit report not found" });
+      return res.status(200).json({
+        status: true,
+        data: {
+          credits: [],
+          pagination: {
+            currentPage: page,
+            pageSize: limit,
+            totalCount: 0,
+            totalPages: 0,
+            hasNextPage: false,
+            hasPreviousPage: false,
+          },
+        },
+      });
     }
 
     // Extract all unique customer_ids
@@ -300,7 +379,20 @@ const salesCreditReport = async (req, res) => {
       customer_name: customerMap[report.customer_id] || "Unknown",
     }));
 
-    return res.status(200).json({ status: true, data: reportWithCustomerName });
+    return res.status(200).json({
+      status: true,
+      data: {
+        credits: reportWithCustomerName,
+        pagination: {
+          currentPage: page,
+          pageSize: limit,
+          totalCount,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1,
+        },
+      },
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({

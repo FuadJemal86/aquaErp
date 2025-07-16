@@ -115,10 +115,34 @@ const BuyCreditReport: React.FC = () => {
     hasPreviousPage: false,
   });
 
+  // Debounce state
+  const [debouncedFilters, setDebouncedFilters] = useState<FilterForm>(filters);
+  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Update debounced filters after typing stops
+  useEffect(() => {
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      setDebouncedFilters(filters);
+      setCurrentPage(1); // Reset to first page when filters change
+    }, 500);
+
+    setTypingTimeout(timeout);
+
+    return () => {
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
+      }
+    };
+  }, [filters]);
+
   // Fetch buy credit report with pagination and filtering
   const fetchBuyCredits = async () => {
     try {
-      setLoading(true);
+      // setLoading(true);
       setError(null);
 
       // Build query parameters
@@ -128,10 +152,10 @@ const BuyCreditReport: React.FC = () => {
       };
 
       // Add filter parameters only if they have values
-      if (filters.transactionId) params.transactionId = filters.transactionId;
-      if (filters.status) params.status = filters.status;
-      if (filters.startDate) params.startDate = filters.startDate;
-      if (filters.endDate) params.endDate = filters.endDate;
+      if (debouncedFilters.transactionId) params.transactionId = debouncedFilters.transactionId;
+      if (debouncedFilters.status) params.status = debouncedFilters.status;
+      if (debouncedFilters.startDate) params.startDate = debouncedFilters.startDate;
+      if (debouncedFilters.endDate) params.endDate = debouncedFilters.endDate;
 
       const response = await api.get("/admin/get-all-buy-credits", { params });
 
@@ -241,7 +265,6 @@ const BuyCreditReport: React.FC = () => {
   const handleFilterChange = (field: keyof FilterForm, value: string) => {
     const actualValue = field === "status" && value === "ALL" ? "" : value;
     setFilters((prev) => ({ ...prev, [field]: actualValue }));
-    setCurrentPage(1);
   };
 
   const clearFilters = () => {
@@ -320,7 +343,7 @@ const BuyCreditReport: React.FC = () => {
   // Fetch data when dependencies change
   useEffect(() => {
     fetchBuyCredits();
-  }, [currentPage, pageSize, filters]);
+  }, [currentPage, pageSize, debouncedFilters]);
 
   if (loading) {
     return (
