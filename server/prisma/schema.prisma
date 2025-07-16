@@ -70,7 +70,8 @@ model Product_type {
   sales_transaction Sales_transaction[]
 
   product_category_id Int
-  Product_category    Product_category @relation(fields: [product_category_id], references: [id])
+  Product_category    Product_category      @relation(fields: [product_category_id], references: [id])
+  Product_transaction Product_transaction[]
 
   @@map("product_type")
 }
@@ -298,6 +299,28 @@ model Sales_credit_transaction {
 
   @@index([transaction_id, amount_payed, payment_method, outstanding_balance, image])
   @@map("sales_credit_transaction")
+}
+
+model Product_transaction {
+  id                 Int      @id @default(autoincrement())
+  transaction_id     String
+  type_id            Int
+  quantity           Int
+  price_per_quantity Float
+  method             Method
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  Product_type Product_type @relation(fields: [type_id], references: [id])
+
+  @@index([transaction_id, type_id, quantity, price_per_quantity, method])
+  @@map("product_transaction")
+}
+
+enum Method {
+  IN
+  OUT
 }
 
 enum role {
