@@ -333,7 +333,8 @@ const salesCreditReport = async (req, res) => {
 
 // detail sales credit report
 const detailSalesCredit = async (req, res) => {
-  const transaction_id = req.params.id;
+  const transaction_id = req.params.transaction_id;
+  console.log(transaction_id);
 
   try {
     // Fetch sales transactions
@@ -367,7 +368,10 @@ const detailSalesCredit = async (req, res) => {
 
     const userIds = Array.from(
       new Set(
-        getDetailSalesCredit.flatMap((item) => [item.manager_id, item.customer_id])
+        getDetailSalesCredit.flatMap((item) => [
+          item.manager_id,
+          item.customer_id,
+        ])
       )
     ).filter(Boolean);
 
@@ -395,7 +399,6 @@ const detailSalesCredit = async (req, res) => {
     });
   }
 };
-
 
 // List of credit
 

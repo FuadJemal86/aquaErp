@@ -44,7 +44,6 @@ const {
 } = require("../Utils/fileUtils");
 const {
   repaySalesCredit,
-  getSalesCreditDetailTransaction,
   salesCreditReportForRepay,
   getSalesCreditDetails,
   buyCreditReportForRepay,
@@ -104,6 +103,8 @@ router.get("/get-buy-transaction-details/:id", detailBuyCredit);
 
 // Sales Routes
 router.post("/sell-product", sellProduct);
+
+router.get("/get-sales-transaction-details/:transaction_id", detailSalesCredit);
 
 //sales and buy repay credit
 router.post(
