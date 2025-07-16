@@ -35,7 +35,6 @@ const sellProduct = async (req, res) => {
     // Check for duplicate product types in cart list
     const typeIds = cart_list.map((item) => item.type_id);
     const uniqueTypeIds = [...new Set(typeIds)];
-
     if (typeIds.length !== uniqueTypeIds.length) {
       return res.status(400).json({
         message:
@@ -43,16 +42,13 @@ const sellProduct = async (req, res) => {
       });
     }
 
-    // Use Prisma transaction for atomic operations
     const result = await prisma.$transaction(async (tx) => {
-      // Create Sales_transaction records for each cart item
       const salesTransactions = [];
+
       for (const item of cart_list) {
-        // Format return_date properly for Prisma
         let formattedReturnDate = null;
         if (payment_method === "CREDIT" && return_date) {
           try {
-            // Convert date string to ISO DateTime format
             const dateObj = new Date(return_date);
             if (!isNaN(dateObj.getTime())) {
               formattedReturnDate = dateObj.toISOString();
@@ -62,41 +58,36 @@ const sellProduct = async (req, res) => {
           }
         }
 
-        // get product stock
-        let available_quantity = 0;
+        // Fetch product stock
         const productStock = await tx.product_stock.findFirst({
           where: {
             product_type_id: item.type_id,
           },
         });
-        // if product stock is not found, throw an error
+
         if (!productStock) {
           throw new Error("Product stock not found");
         }
 
-        // Check if available quantity is sufficient
         if (productStock.quantity < item.quantity) {
           throw new Error(
             `Insufficient stock. Available: ${productStock.quantity}, Requested: ${item.quantity}`
           );
         }
 
-        // Calculate new quantity and amount_money
         const newQuantity = productStock.quantity - item.quantity;
-
         const newAmountMoney = newQuantity * productStock.price_per_quantity;
 
-        // Update the product stock
+        // Update stock
         await tx.product_stock.update({
-          where: {
-            id: productStock.id,
-          },
+          where: { id: productStock.id },
           data: {
             quantity: newQuantity,
             amount_money: newAmountMoney,
           },
         });
 
+        // Create sales transaction
         const salesTransaction = await tx.sales_transaction.create({
           data: {
             price_per_quantity: item.price,
@@ -108,17 +99,27 @@ const sellProduct = async (req, res) => {
             type_id: item.type_id,
             customer_id: customer_type === "REGULAR" ? customer_id : null,
             walker_id: customer_type === "WALKER" ? generateWalkingId() : null,
-            // manager_id: 1, // You might want to get from auth
-            // casher_id: 1, // You might want to get from auth
-            bank_id: payment_method === "BANK" ? bank_id : null, // Default bank for CASH/CREDIT
+            bank_id: payment_method === "BANK" ? bank_id : null,
           },
         });
+
         salesTransactions.push(salesTransaction);
+
+        // Create product transaction (OUT)
+        await tx.product_transaction.create({
+          data: {
+            transaction_id,
+            type_id: item.type_id,
+            quantity: item.quantity,
+            price_per_quantity: item.price,
+            method: "OUT",
+            isActive: true,
+          },
+        });
       }
 
-      // Handle payment method specific logic
+      // Handle CREDIT payment
       if (payment_method === "CREDIT") {
-        // Format return_date for Sales_credit
         let formattedCreditReturnDate = null;
         if (return_date) {
           try {
@@ -134,9 +135,8 @@ const sellProduct = async (req, res) => {
           }
         }
 
-        // Create Sales_credit record (only for REGULAR customers)
         if (customer_type === "REGULAR" && customer_id) {
-          const salesCredit = await tx.sales_credit.create({
+          await tx.sales_credit.create({
             data: {
               customer_id,
               transaction_id,
@@ -148,19 +148,18 @@ const sellProduct = async (req, res) => {
             },
           });
         }
-      } else if (payment_method === "BANK") {
-        // Check bank balance
+      }
+
+      // Handle BANK payment
+      else if (payment_method === "BANK") {
         const check_bank_balance = await tx.bank_balance.findFirst({
-          where: {
-            bank_id: bank_id,
-          },
+          where: { bank_id },
         });
 
         if (!check_bank_balance) {
           throw new Error("Bank balance not found");
         }
 
-        // Create Bank_transaction (money coming in for sales)
         await tx.bank_transaction.create({
           data: {
             in: total_money,
@@ -171,24 +170,21 @@ const sellProduct = async (req, res) => {
           },
         });
 
-        // Update bank balance
         await tx.bank_balance.update({
-          where: {
-            id: check_bank_balance.id,
-          },
+          where: { id: check_bank_balance.id },
           data: {
             balance: check_bank_balance.balance + total_money,
           },
         });
-      } else if (payment_method === "CASH") {
-        // Create Cash_transaction (money coming in for sales)
+      }
+
+      // Handle CASH payment
+      else if (payment_method === "CASH") {
         let currentCashBalance = 0;
 
         try {
           const check_cash_balance = await tx.cash_balance.findFirst({
-            where: {
-              id: 1,
-            },
+            where: { id: 1 },
           });
 
           if (check_cash_balance) {
@@ -204,27 +200,24 @@ const sellProduct = async (req, res) => {
             out: 0,
             balance: total_money + currentCashBalance,
             transaction_id,
-            manager_id: 1, // You might want to get from auth
-            casher_id: 1, // You might want to get from auth
+            manager_id: 1,
+            casher_id: 1,
           },
         });
 
-        // Update cash balance if it exists
-        try {
-          await tx.cash_balance.upsert({
-            where: { id: 1 },
-            update: {
-              balance: total_money + currentCashBalance,
-            },
-            create: {
-              id: 1,
-              balance: total_money + currentCashBalance,
-            },
-          });
-        } catch (error) {
-          console.log("Could not update cash balance");
-        }
-      } else {
+        await tx.cash_balance.upsert({
+          where: { id: 1 },
+          update: {
+            balance: total_money + currentCashBalance,
+          },
+          create: {
+            id: 1,
+            balance: total_money + currentCashBalance,
+          },
+        });
+      }
+
+      else {
         throw new Error("Invalid payment method");
       }
 
@@ -240,9 +233,7 @@ const sellProduct = async (req, res) => {
   } catch (error) {
     console.error("Error in sellProduct:", error);
 
-    // Handle specific error types
     if (error.message) {
-      // Handle transaction errors (bank balance, invalid payment method, etc.)
       if (error.message.includes("Bank balance not found")) {
         return res.status(400).json({ message: "Bank balance not found" });
       }
@@ -257,27 +248,15 @@ const sellProduct = async (req, res) => {
       if (error.message.includes("Product stock not found")) {
         return res.status(400).json({ message: "Product stock not found" });
       }
-
-      // Handle validation errors
-      if (error.message.includes("validation")) {
-        return res.status(400).json({ message: error.message });
-      }
-
-      // Handle timeout errors
       if (error.code === "P1008") {
         return res
           .status(408)
           .json({ message: "Request timeout. Please try again." });
       }
-
-      // For other known errors, return the specific message
       return res.status(500).json({ message: error.message });
     }
 
-    // Fallback for unknown errors
-    res.status(500).json({
-      message: "Network error.",
-    });
+    res.status(500).json({ message: "Network error." });
   }
 };
 
@@ -333,7 +312,7 @@ const salesCreditReport = async (req, res) => {
 
 // detail sales credit report
 const detailSalesCredit = async (req, res) => {
-  const transaction_id = req.params.id;
+  const transaction_id = req.params.transactionId;
 
   try {
     // Fetch sales transactions

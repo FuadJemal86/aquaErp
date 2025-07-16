@@ -22,8 +22,6 @@ import {
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
-    Eye,
-    Package,
 } from "lucide-react";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -46,20 +44,29 @@ interface ProductStock {
 interface ProductCategory {
     id: number;
     name: string;
-    description: string;
-    isActive: boolean;
+}
+
+interface ProductType {
+    id: number;
+    name: string;
+    measurement: string;
+    Product_category: ProductCategory;
+    product_Stock: ProductStock[];
     createdAt: string;
     updatedAt: string;
 }
 
 interface ProductTransactionData {
     id: number;
-    name: string;
-    measurement: string;
+    transaction_id: string;
+    type_id: number;
+    quantity: number;
+    price_per_quantity: number;
+    method: "IN" | "OUT";
+    isActive: boolean;
+    createdAt: string;
     updatedAt: string;
-    product_Stock: ProductStock[];
-    Product_category: ProductCategory;
-    createdAt: string
+    Product_type: ProductType;
 }
 
 interface PaginationData {
@@ -72,8 +79,8 @@ interface PaginationData {
 }
 
 interface FilterForm {
+    transactionId: string;
     productName: string;
-    categoryName: string;
     startDate: string;
     endDate: string;
 }
@@ -87,8 +94,8 @@ function ProductTransaction() {
     const [pageSize, setPageSize] = useState(10);
     const [isFilterEnabled, setIsFilterEnabled] = React.useState(false);
     const [filters, setFilters] = useState<FilterForm>({
+        transactionId: "",
         productName: "",
-        categoryName: "",
         startDate: "",
         endDate: "",
     });
@@ -111,29 +118,20 @@ function ProductTransaction() {
         });
     };
 
-    const getStatusBadge = (stocks: ProductStock[]) => {
-        const activeStocks = stocks.filter(stock => stock.isActive);
-        if (activeStocks.length === 0) {
-            return <Badge className="bg-red-500 text-white">Inactive</Badge>;
-        } else if (activeStocks.length === stocks.length) {
-            return <Badge className="bg-green-500 text-white">Active</Badge>;
+    const getTransactionTypeBadge = (method: "IN" | "OUT") => {
+        if (method === "IN") {
+            return <Badge className="bg-green-500 text-white">IN</Badge>;
         } else {
-            return <Badge className="bg-yellow-500 text-white">Partial</Badge>;
+            return <Badge className="bg-red-500 text-white">OUT</Badge>;
         }
     };
 
-    const getTotalValue = (stocks: ProductStock[]) => {
-        return stocks.reduce((total, stock) => total + stock.amount_money, 0);
+    const getInQuantity = (transaction: ProductTransactionData) => {
+        return transaction.method === "IN" ? transaction.quantity : 0;
     };
 
-    const getTotalQuantity = (stocks: ProductStock[]) => {
-        return stocks.reduce((total, stock) => total + stock.quantity, 0);
-    };
-
-    const getAveragePrice = (stocks: ProductStock[]) => {
-        if (stocks.length === 0) return 0;
-        const totalPrice = stocks.reduce((total, stock) => total + stock.price_per_quantity, 0);
-        return totalPrice / stocks.length;
+    const getOutQuantity = (transaction: ProductTransactionData) => {
+        return transaction.method === "OUT" ? transaction.quantity : 0;
     };
 
     const fetchProductTransactions = async () => {
@@ -148,15 +146,15 @@ function ProductTransaction() {
             };
 
             // Add filter parameters only if they have values
+            if (filters.transactionId) params.transactionId = filters.transactionId;
             if (filters.productName) params.productName = filters.productName;
-            if (filters.categoryName) params.categoryName = filters.categoryName;
             if (filters.startDate) params.startDate = filters.startDate;
             if (filters.endDate) params.endDate = filters.endDate;
 
             const response = await api.get("/admin/get-product-transaction", {
                 params,
             });
-            setProductData(response.data.productTransaction);
+            setProductData(response.data.productTransactions);
             setPaginationData(response.data.pagination);
 
             // Fetch all data for summary (with same filters but no pagination)
@@ -168,7 +166,7 @@ function ProductTransaction() {
             const summaryResponse = await api.get("/admin/get-product-transaction", {
                 params: summaryParams,
             });
-            setSummaryData(summaryResponse.data.productTransaction);
+            setSummaryData(summaryResponse.data.productTransactions);
         } catch (err: any) {
             setError("Failed to fetch product transactions");
             console.error(err);
@@ -191,8 +189,8 @@ function ProductTransaction() {
 
     const clearFilters = () => {
         setFilters({
+            transactionId: "",
             productName: "",
-            categoryName: "",
             startDate: "",
             endDate: "",
         });
@@ -224,8 +222,8 @@ function ProductTransaction() {
         }
     }, [hasActiveFilters, isFilterEnabled]);
 
-    const handleViewDetails = (productId: number) => {
-        // Implementation for viewing product details
+    const handleViewDetails = (transactionId: string) => {
+        // Implementation for viewing transaction details
     };
 
     if (error) {
@@ -249,9 +247,9 @@ function ProductTransaction() {
     }
 
     return (
-        <div className="p-4 md:p-6 space-y-4 md:space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
-                <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">Product Transaction Report</h1>
+        <div className="p-6 space-y-6">
+            <div className="flex items-center justify-between">
+                <h1 className="text-3xl font-bold">Product Transaction Report</h1>
                 <div className="text-sm text-muted-foreground">
                     Last updated: {new Date().toLocaleDateString()}
                 </div>
@@ -262,7 +260,7 @@ function ProductTransaction() {
 
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-lg md:text-xl">Product Transactions</CardTitle>
+                    <CardTitle>Product Transactions</CardTitle>
                     <div className="flex items-center space-x-2">
                         {/* Show "Filter" text only on large devices */}
                         <span className="hidden md:inline text-sm font-medium">Filter</span>
@@ -294,8 +292,23 @@ function ProductTransaction() {
 
                 {/* Filter Form */}
                 {isFilterEnabled && (
-                    <div className="px-4 md:px-6 pb-4 border-b">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="px-6 pb-4 border-b">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {/* Transaction ID */}
+                            <div className="space-y-2">
+                                <Label htmlFor="transactionId" className="text-sm font-medium">
+                                    Transaction ID
+                                </Label>
+                                <Input
+                                    id="transactionId"
+                                    placeholder="Enter transaction ID"
+                                    value={filters.transactionId}
+                                    onChange={(e) =>
+                                        handleFilterChange("transactionId", e.target.value)
+                                    }
+                                />
+                            </div>
+
                             {/* Product Name */}
                             <div className="space-y-2">
                                 <Label htmlFor="productName" className="text-sm font-medium">
@@ -307,21 +320,6 @@ function ProductTransaction() {
                                     value={filters.productName}
                                     onChange={(e) =>
                                         handleFilterChange("productName", e.target.value)
-                                    }
-                                />
-                            </div>
-
-                            {/* Category Name */}
-                            <div className="space-y-2">
-                                <Label htmlFor="categoryName" className="text-sm font-medium">
-                                    Category
-                                </Label>
-                                <Input
-                                    id="categoryName"
-                                    placeholder="Enter category name"
-                                    value={filters.categoryName}
-                                    onChange={(e) =>
-                                        handleFilterChange("categoryName", e.target.value)
                                     }
                                 />
                             </div>
@@ -359,149 +357,89 @@ function ProductTransaction() {
                     </div>
                 )}
 
-                <CardContent className="px-4 md:px-6">
-                    {/* Desktop Table View */}
-                    <div className="hidden lg:block">
-                        <div className="rounded-md border">
-                            <Table>
-                                <TableHeader>
+                <CardContent>
+                    <div className="rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>#</TableHead>
+                                    <TableHead>Transaction ID</TableHead>
+                                    <TableHead>Product Name</TableHead>
+                                    <TableHead>Category</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead>Measurement</TableHead>
+                                    <TableHead>Price per Unit</TableHead>
+                                    <TableHead>IN</TableHead>
+                                    <TableHead>OUT</TableHead>
+                                    <TableHead>Date</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {loading ? (
                                     <TableRow>
-                                        <TableHead className="w-12">#</TableHead>
-                                        <TableHead>Product Name</TableHead>
-                                        <TableHead>Category</TableHead>
-                                        <TableHead>Measurement</TableHead>
-                                        <TableHead>Total Quantity</TableHead>
-                                        <TableHead>Total Value</TableHead>
-                                        <TableHead>Avg Price</TableHead>
-                                        <TableHead>Date</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {loading ? (
-                                        <TableRow>
-                                            <TableCell colSpan={8} className="text-center py-8">
-                                                <div className="flex items-center justify-center">
-                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                                                    <span className="ml-2">Loading...</span>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : productData.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={8} className="text-center py-8">
-                                                No product transactions found
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        productData.map((product, index) => (
-                                            <TableRow key={product.id}>
-                                                <TableCell>
-                                                    {(paginationData.currentPage - 1) *
-                                                        paginationData.pageSize +
-                                                        index +
-                                                        1}
-                                                </TableCell>
-                                                <TableCell className="font-medium">
-                                                    {product.name}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {product.Product_category.name}
-                                                </TableCell>
-                                                <TableCell className="uppercase">
-                                                    {product.measurement}
-                                                </TableCell>
-                                                <TableCell className="font-medium">
-                                                    {getTotalQuantity(product.product_Stock).toLocaleString()}
-                                                </TableCell>
-                                                <TableCell className="font-medium text-green-600">
-                                                    {getTotalValue(product.product_Stock).toLocaleString()} Birr
-                                                </TableCell>
-                                                <TableCell className="font-medium">
-                                                    {getAveragePrice(product.product_Stock).toFixed(2)} Birr
-                                                </TableCell>
-                                                <TableCell className="text-muted-foreground">
-                                                    {formatDate(product.createdAt)}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </div>
-
-                    {/* Mobile/Tablet Card View */}
-                    <div className="lg:hidden space-y-4">
-                        {loading ? (
-                            <div className="text-center py-8">
-                                <div className="flex items-center justify-center">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                                    <span className="ml-2">Loading...</span>
-                                </div>
-                            </div>
-                        ) : productData.length === 0 ? (
-                            <div className="text-center py-8">
-                                No product transactions found
-                            </div>
-                        ) : (
-                            productData.map((product, index) => (
-                                <div key={product.id} className="border rounded-lg p-4 space-y-3">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex-1">
-                                            <div className="flex items-center space-x-2 mb-1">
-                                                <span className="text-sm text-muted-foreground">
-                                                    #{(paginationData.currentPage - 1) *
-                                                        paginationData.pageSize +
-                                                        index +
-                                                        1}
-                                                </span>
+                                        <TableCell colSpan={9} className="text-center py-8">
+                                            <div className="flex items-center justify-center">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                                <span className="ml-2">Loading...</span>
                                             </div>
-                                            <h3 className="font-medium text-lg">{product.name}</h3>
-                                            <p className="text-sm text-muted-foreground">
-                                                {product.Product_category.name}
-                                            </p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-sm text-muted-foreground uppercase">
-                                                {product.measurement}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Total Quantity</p>
-                                            <p className="font-medium">
-                                                {getTotalQuantity(product.product_Stock).toLocaleString()}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Total Value</p>
-                                            <p className="font-medium text-green-600">
-                                                {getTotalValue(product.product_Stock).toLocaleString()} Birr
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Avg Price</p>
-                                            <p className="font-medium">
-                                                {getAveragePrice(product.product_Stock).toFixed(2)} Birr
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Date</p>
-                                            <p className="text-sm">
-                                                {formatDate(product.createdAt)}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
-                        )}
+                                        </TableCell>
+                                    </TableRow>
+                                ) : productData.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={9} className="text-center py-8">
+                                            No product transactions found
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    productData.map((transaction, index) => (
+                                        <TableRow key={transaction.id}>
+                                            <TableCell>
+                                                {(paginationData.currentPage - 1) *
+                                                    paginationData.pageSize +
+                                                    index +
+                                                    1}
+                                            </TableCell>
+                                            <TableCell className="font-mono text-sm">
+                                                {transaction.transaction_id}
+                                            </TableCell>
+                                            <TableCell className="font-medium">
+                                                {transaction.Product_type.name}
+                                            </TableCell>
+                                            <TableCell>
+                                                {transaction.Product_type.Product_category.name}
+                                            </TableCell>
+                                            <TableCell>
+                                                {getTransactionTypeBadge(transaction.method)}
+                                            </TableCell>
+                                            <TableCell>
+                                                {transaction.Product_type.measurement}
+                                            </TableCell>
+                                            <TableCell className="font-medium">
+                                                {transaction.price_per_quantity.toLocaleString()} Birr
+                                            </TableCell>
+                                            <TableCell className="font-medium text-green-600">
+                                                {getInQuantity(transaction) > 0
+                                                    ? `${getInQuantity(transaction).toLocaleString()}`
+                                                    : "-"}
+                                            </TableCell>
+                                            <TableCell className="font-medium text-red-600">
+                                                {getOutQuantity(transaction) > 0
+                                                    ? `${getOutQuantity(transaction).toLocaleString()}`
+                                                    : "-"}
+                                            </TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">
+                                                {formatDate(transaction.updatedAt)}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
                     </div>
 
                     {/* Pagination */}
                     {productData.length > 0 && (
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 sm:space-x-2 pt-4 border-t mt-6">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 sm:space-x-2 py-4">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
                                 <div className="flex items-center space-x-2">
                                     <span className="text-sm text-muted-foreground">Show</span>
@@ -534,13 +472,12 @@ function ProductTransaction() {
                                 </div>
                             </div>
                             {paginationData.totalPages > 1 && (
-                                <div className="flex items-center justify-center sm:justify-end space-x-1 sm:space-x-2 w-full sm:w-auto">
+                                <div className="flex items-center justify-center sm:justify-end space-x-2 w-full sm:w-auto">
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={goToFirstPage}
                                         disabled={currentPage === 1}
-                                        className="h-8 w-8 p-0 sm:w-auto sm:px-2"
                                     >
                                         <ChevronsLeft className="h-4 w-4" />
                                     </Button>
@@ -549,24 +486,14 @@ function ProductTransaction() {
                                         size="sm"
                                         onClick={goToPreviousPage}
                                         disabled={currentPage === 1}
-                                        className="h-8 w-8 p-0 sm:w-auto sm:px-2"
                                     >
                                         <ChevronLeft className="h-4 w-4" />
                                     </Button>
                                     <div className="flex items-center space-x-1">
                                         {Array.from(
-                                            { length: Math.min(3, paginationData.totalPages) },
+                                            { length: Math.min(5, paginationData.totalPages) },
                                             (_, i) => {
-                                                let page;
-                                                if (paginationData.totalPages <= 3) {
-                                                    page = i + 1;
-                                                } else if (currentPage <= 2) {
-                                                    page = i + 1;
-                                                } else if (currentPage >= paginationData.totalPages - 1) {
-                                                    page = paginationData.totalPages - 2 + i;
-                                                } else {
-                                                    page = currentPage - 1 + i;
-                                                }
+                                                const page = i + 1;
                                                 return (
                                                     <Button
                                                         key={page}
@@ -588,7 +515,6 @@ function ProductTransaction() {
                                         size="sm"
                                         onClick={goToNextPage}
                                         disabled={currentPage === paginationData.totalPages}
-                                        className="h-8 w-8 p-0 sm:w-auto sm:px-2"
                                     >
                                         <ChevronRight className="h-4 w-4" />
                                     </Button>
@@ -597,7 +523,6 @@ function ProductTransaction() {
                                         size="sm"
                                         onClick={goToLastPage}
                                         disabled={currentPage === paginationData.totalPages}
-                                        className="h-8 w-8 p-0 sm:w-auto sm:px-2"
                                     >
                                         <ChevronsRight className="h-4 w-4" />
                                     </Button>

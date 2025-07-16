@@ -92,7 +92,7 @@ const SalesCreditReport: React.FC = () => {
             }
         } catch (err: any) {
             if (err.response?.status === 404) {
-                setError("Sales credit report not found");
+                console.log("Sales credit report not found");
             } else if (err.response?.status === 500) {
                 setError("Internal server error");
             } else {
@@ -110,7 +110,7 @@ const SalesCreditReport: React.FC = () => {
         try {
             setDetailLoading(true);
             const response = await api.get(
-                `/admin/get-sales-transaction-details/${transactionId}`
+                `/admin/get-sales-credit-details/${transactionId}`
             );
 
             // Axios wraps response in .data property
@@ -128,7 +128,7 @@ const SalesCreditReport: React.FC = () => {
             }
         } catch (err: any) {
             if (err.response?.status === 404) {
-                setError("Sales credit detail not found");
+                console.log("Sales credit detail not found");
             } else if (err.response?.status === 500) {
                 setError("Internal server error");
             } else {

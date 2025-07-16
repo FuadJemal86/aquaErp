@@ -17,28 +17,11 @@ const productTransactions = async (req, res) => {
         const pageSize = parseInt(limit);
         const skip = (pageNumber - 1) * pageSize;
 
-        // Build where clause for filtering
+        // Build where clause for filtering product_transaction
         const whereClause = {
             isActive: true,
         };
 
-        if (categoryName) {
-            whereClause.Product_category = {
-                name: {
-                    contains: categoryName,
-                },
-            };
-        }
-
-        if (productName) {
-            whereClause.name = {
-                contains: productName,
-            };
-        }
-
-
-
-        // Add filters if they are provided
         if (transactionId) {
             whereClause.transaction_id = {
                 contains: transactionId,
@@ -55,35 +38,61 @@ const productTransactions = async (req, res) => {
             }
         }
 
-        // Get total count for pagination
-        const totalCount = await prisma.product_type.count({
-            where: whereClause,
-        });
+        // Get all matching product transactions
+        const [totalCount, productTransactions] = await Promise.all([
+            prisma.product_transaction.count({
+                where: whereClause,
+            }),
 
-        // Get paginated cash transactions
-        const productTransaction = await prisma.product_type.findMany({
-            where: whereClause,
-            orderBy: {
-                updatedAt: "desc",
-            },
-            skip,
-            take: pageSize,
-            select: {
-                id: true,
-                name: true,
-                measurement: true,
-                updatedAt: true,
-                product_Stock: true,
-                Product_category: true,
-                createdAt: true,
-            },
-        });
+            prisma.product_transaction.findMany({
+                where: whereClause,
+                orderBy: {
+                    updatedAt: "desc",
+                },
+                skip,
+                take: pageSize,
+                include: {
+                    Product_type: {
+                        select: {
+                            id: true,
+                            name: true,
+                            measurement: true,
+                            Product_category: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                },
+                            },
+                            product_Stock: true,
+                            createdAt: true,
+                            updatedAt: true,
+                        },
+                    },
+                },
+            }),
+        ]);
 
+        // Optional filtering by categoryName or productName after join
+        const filtered = productTransactions.filter((tx) => {
+            const categoryMatch = categoryName
+                ? tx.Product_type?.Product_category?.name
+                    ?.toLowerCase()
+                    .includes(categoryName.toLowerCase())
+                : true;
+
+            const productMatch = productName
+                ? tx.Product_type?.name
+                    ?.toLowerCase()
+                    .includes(productName.toLowerCase())
+                : true;
+
+            return categoryMatch && productMatch;
+        });
 
         const totalPages = Math.ceil(totalCount / pageSize);
 
         res.status(200).json({
-            productTransaction,
+            productTransactions: filtered,
             pagination: {
                 currentPage: pageNumber,
                 pageSize,
@@ -94,8 +103,8 @@ const productTransactions = async (req, res) => {
             },
         });
     } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "server error" });
+        console.error("Error in productTransactions:", error);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
