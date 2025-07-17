@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   Card,
   CardContent,
@@ -11,39 +11,112 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Lock, Mail, Phone, Shield } from "lucide-react";
+import { AuthContext } from "@/Context/AuthContext";
+import { toast } from "sonner";
+import api from "@/services/api";
 
 function MyProfile() {
-  // Dummy user data
-  const dummyUser = {
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phoneNumber: "+1 (555) 123-4567",
-    role: "ADMIN",
-    avatar: "https://github.com/shadcn.png",
-  };
+  const { user, setUser, logout } = useContext(AuthContext)!;
 
   // Form states for profile info
-  const [phoneNumber, setPhoneNumber] = useState(dummyUser.phoneNumber);
+  const [name, setName] = useState(user?.name || "");
+  const [phoneNumber, setPhoneNumber] = useState(user?.phone || "");
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
   // Form states for password change
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  const handleUpdateProfile = () => {
-    // Handle profile update logic here
-    console.log("Profile updated:", { phoneNumber });
+  const handleUpdateProfile = async () => {
+    if (!name.trim()) {
+      toast.error("Name is required");
+      return;
+    }
+
+    try {
+      setIsUpdatingProfile(true);
+
+      const response = await api.put("/auth/update", {
+        name: name.trim(),
+        phone: phoneNumber,
+      });
+
+      const result = response.data;
+
+      if (result.status) {
+        toast.success("Profile updated successfully");
+        // Update the user context with new data
+        if (setUser && result.data) {
+          setUser(result.data);
+        }
+      } else {
+        toast.error(result.message || "Failed to update profile");
+      }
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
+      toast.error(error.response?.data?.message || "Failed to update profile");
+    } finally {
+      setIsUpdatingProfile(false);
+    }
   };
 
-  const handleChangePassword = () => {
-    if (newPassword === confirmPassword && newPassword.length >= 6) {
-      // Handle password change logic here
-      console.log("Password changed successfully");
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } else {
-      alert("Passwords don't match or are too short!");
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error("All password fields are required");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords don't match");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters long");
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+
+      const response = await api.put("/auth/update", {
+        currentPassword,
+        newPassword,
+      });
+
+      const result = response.data;
+
+      if (result.status) {
+        toast.success(
+          "Password changed successfully. You will be logged out for security."
+        );
+
+        // Clear password fields
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+
+        // Wait a moment for the user to see the success message, then logout
+        setTimeout(async () => {
+          try {
+            await logout();
+            window.location.href = "/login";
+          } catch (error) {
+            console.error("Logout error:", error);
+            // Force redirect even if logout API fails
+            window.location.href = "/login";
+          }
+        }, 2000); // 2 second delay to show the success message
+      } else {
+        toast.error(result.message || "Failed to change password");
+      }
+    } catch (error: any) {
+      console.error("Error changing password:", error);
+      toast.error(error.response?.data?.message || "Failed to change password");
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -52,6 +125,23 @@ function MyProfile() {
       ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
       : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
   };
+
+  // If user is not available, show loading or error state
+  if (!user) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center gap-2 mb-6">
+          <User className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold">My Profile</h1>
+        </div>
+        <div className="text-center py-12">
+          <div className="text-muted-foreground">
+            Loading profile information...
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -74,22 +164,22 @@ function MyProfile() {
             {/* Avatar and Basic Info */}
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16">
-                <AvatarImage src={dummyUser.avatar} alt={dummyUser.name} />
+                <AvatarImage src={user.image} alt={user.name} />
                 <AvatarFallback className="text-lg">
-                  {dummyUser.name
+                  {user.name
                     .split(" ")
                     .map((n) => n[0])
                     .join("")}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h3 className="text-lg font-semibold">{dummyUser.name}</h3>
+                <h3 className="text-lg font-semibold">{user.name}</h3>
                 <span
                   className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(
-                    dummyUser.role
+                    user.role
                   )}`}
                 >
-                  {dummyUser.role}
+                  {user.role}
                 </span>
               </div>
             </div>
@@ -98,7 +188,12 @@ function MyProfile() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
-                <Input id="name" value={dummyUser.name} className="bg-muted" />
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your full name"
+                />
               </div>
 
               <div className="space-y-2">
@@ -107,7 +202,7 @@ function MyProfile() {
                   <Mail className="h-4 w-4 text-muted-foreground" />
                   <Input
                     id="email"
-                    value={dummyUser.email}
+                    value={user.email}
                     disabled
                     className="bg-muted"
                   />
@@ -120,7 +215,7 @@ function MyProfile() {
                   <Shield className="h-4 w-4 text-muted-foreground" />
                   <Input
                     id="role"
-                    value={dummyUser.role}
+                    value={user.role}
                     disabled
                     className="bg-muted"
                   />
@@ -141,8 +236,19 @@ function MyProfile() {
               </div>
             </div>
 
-            <Button onClick={handleUpdateProfile} className="w-full">
-              Update Profile
+            <Button
+              onClick={handleUpdateProfile}
+              className="w-full"
+              disabled={isUpdatingProfile}
+            >
+              {isUpdatingProfile ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Updating...
+                </div>
+              ) : (
+                "Update Profile"
+              )}
             </Button>
           </CardContent>
         </Card>
@@ -198,8 +304,19 @@ function MyProfile() {
               </ul>
             </div>
 
-            <Button onClick={handleChangePassword} className="w-full mt-21">
-              Change Password
+            <Button
+              onClick={handleChangePassword}
+              className="w-full"
+              disabled={isChangingPassword}
+            >
+              {isChangingPassword ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Changing Password...
+                </div>
+              ) : (
+                "Change Password"
+              )}
             </Button>
           </CardContent>
         </Card>

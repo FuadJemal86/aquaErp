@@ -3,6 +3,7 @@ const {
   login,
   getMe,
   logout,
+  updateUser,
   verifyToken,
 } = require("../Controllers/Auth.controller");
 
@@ -13,6 +14,9 @@ router.post("/login", login);
 
 // Get current user (protected route)
 router.get("/me", verifyToken, getMe);
+
+// Update user profile (protected route)
+router.put("/update", verifyToken, updateUser);
 
 // Logout route
 router.post("/logout", logout);

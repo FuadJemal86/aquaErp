@@ -170,4 +170,118 @@ const logout = async (req, res) => {
   }
 };
 
-module.exports = { login, getMe, logout, verifyToken };
+// Update user profile
+const updateUser = async (req, res) => {
+  try {
+    // Get token from cookies
+    const token = req.cookies.token;
+
+    if (!token) {
+      return res.status(401).json({
+        status: false,
+        message: "Access denied. No token provided.",
+      });
+    }
+
+    // Decode the token to get user ID
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key");
+    } catch (error) {
+      return res.status(401).json({
+        status: false,
+        message: "Invalid token.",
+      });
+    }
+
+    const userId = decoded.userId;
+    const { name, phone, currentPassword, newPassword } = req.body;
+
+    // Find the user
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+        isActive: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        status: false,
+        message: "User not found",
+      });
+    }
+
+    // Prepare update data
+    const updateData = {};
+
+    // Update name if provided
+    if (name && name.trim() !== "") {
+      updateData.name = name.trim();
+    }
+
+    // Update phone if provided
+    if (phone !== undefined) {
+      updateData.phone = phone;
+    }
+
+    // Handle password change if provided
+    if (currentPassword && newPassword) {
+      // Verify current password
+      const isCurrentPasswordValid = await bcrypt.compare(
+        currentPassword,
+        user.password
+      );
+
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({
+          status: false,
+          message: "Current password is incorrect",
+        });
+      }
+
+      // Validate new password
+      if (newPassword.length < 6) {
+        return res.status(400).json({
+          status: false,
+          message: "New password must be at least 6 characters long",
+        });
+      }
+
+      // Hash new password
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+      updateData.password = hashedNewPassword;
+    }
+
+    // Update the user
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        phone: true,
+        image: true,
+        createdAt: true,
+      },
+    });
+
+    res.status(200).json({
+      status: true,
+      message: "Profile updated successfully",
+      data: updatedUser,
+    });
+  } catch (error) {
+    console.error("Update user error:", error);
+    res.status(500).json({
+      status: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+module.exports = { login, getMe, logout, updateUser, verifyToken };
