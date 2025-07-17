@@ -216,7 +216,6 @@ const buyProduct = async (req, res) => {
   }
 };
 
-
 // buy credit report
 const buyCreditReport = async (req, res) => {
   try {
@@ -227,7 +226,8 @@ const buyCreditReport = async (req, res) => {
       status,
       startDate,
       endDate,
-      isActive = true
+      supplierName,
+      isActive = true,
     } = req.query;
 
     // Convert page and limit to numbers
@@ -237,7 +237,7 @@ const buyCreditReport = async (req, res) => {
 
     // Build where clause for filtering
     const whereClause = {
-      isActive: isActive === 'true' || isActive === true,
+      isActive: isActive === "true" || isActive === true,
     };
 
     // Add filters if provided
@@ -266,18 +266,46 @@ const buyCreditReport = async (req, res) => {
 
     // Get total count for pagination
     const totalCount = await prisma.buy_credit.count({
-      where: whereClause
+      where: whereClause,
     });
 
     // Get paginated data
     const getBuyCreditReport = await prisma.buy_credit.findMany({
       where: whereClause,
       orderBy: {
-        createdAt: 'desc'
+        createdAt: "desc",
       },
       skip: offset,
-      take: limitNumber
+      take: limitNumber,
     });
+
+    // Manually join with buy_transaction to get supplier_name
+    const buyCreditWithSupplier = await Promise.all(
+      getBuyCreditReport.map(async (credit) => {
+        const buyTransactions = await prisma.buy_transaction.findMany({
+          where: {
+            transaction_id: credit.transaction_id,
+          },
+          select: {
+            supplier_name: true,
+          },
+          take: 1, // Get first one since supplier_name should be same for all in same transaction
+        });
+
+        return {
+          ...credit,
+          supplier_name: buyTransactions[0]?.supplier_name || null,
+        };
+      })
+    );
+
+    // Filter by supplier name if provided
+    let filteredResults = buyCreditWithSupplier;
+    if (supplierName) {
+      filteredResults = buyCreditWithSupplier.filter((credit) =>
+        credit.supplier_name?.toLowerCase().includes(supplierName.toLowerCase())
+      );
+    }
 
     // Calculate pagination metadata
     const totalPages = Math.ceil(totalCount / limitNumber);
@@ -290,32 +318,30 @@ const buyCreditReport = async (req, res) => {
       totalCount,
       totalPages,
       hasNextPage,
-      hasPreviousPage
+      hasPreviousPage,
     };
 
-    if (getBuyCreditReport.length === 0 && totalCount === 0) {
+    if (filteredResults.length === 0 && totalCount === 0) {
       return res.status(404).json({
         status: false,
-        error: 'Buy credit report not found',
-        pagination: paginationData
+        error: "Buy credit report not found",
+        pagination: paginationData,
       });
     }
 
     return res.status(200).json({
       status: true,
-      data: getBuyCreditReport,
-      pagination: paginationData
+      data: filteredResults,
+      pagination: paginationData,
     });
-
   } catch (err) {
     console.error(err);
     return res.status(500).json({
       status: false,
-      error: 'Internal server error'
+      error: "Internal server error",
     });
   }
 };
-
 
 // detail buy credit report
 const detailBuyCredit = async (req, res) => {
@@ -324,31 +350,34 @@ const detailBuyCredit = async (req, res) => {
   try {
     const getDetailBuyCreditReport = await prisma.buy_transaction.findMany({
       where: {
-        transaction_id: transaction_id
+        transaction_id: transaction_id,
       },
       include: {
         Product_type: {
           select: {
             id: true,
-            name: true
-          }
-        }
-      }
+            name: true,
+          },
+        },
+      },
     });
 
     if (getDetailBuyCreditReport.length === 0) {
-      return res.status(404).json({ status: false, error: 'Buy credit detail not found' });
+      return res
+        .status(404)
+        .json({ status: false, error: "Buy credit detail not found" });
     }
 
-    return res.status(200).json({ status: true, data: getDetailBuyCreditReport });
+    return res
+      .status(200)
+      .json({ status: true, data: getDetailBuyCreditReport });
   } catch (err) {
     console.error(err);
     return res.status(500).json({
       status: false,
-      error: 'Internal server error'
+      error: "Internal server error",
     });
   }
 };
-
 
 module.exports = { buyProduct, buyCreditReport, detailBuyCredit };

@@ -47,6 +47,7 @@ interface BuyCredit {
   issued_date: string;
   return_date: string;
   status: "ACCEPTED" | "PAYED" | "OVERDUE";
+  supplier_name: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -85,6 +86,7 @@ interface FilterForm {
   status: string;
   startDate: string;
   endDate: string;
+  supplierName: string;
 }
 
 const BuyCreditReport: React.FC = () => {
@@ -105,6 +107,7 @@ const BuyCreditReport: React.FC = () => {
     status: "",
     startDate: "",
     endDate: "",
+    supplierName: "",
   });
   const [paginationData, setPaginationData] = useState<PaginationData>({
     currentPage: 1,
@@ -117,7 +120,9 @@ const BuyCreditReport: React.FC = () => {
 
   // Debounce state
   const [debouncedFilters, setDebouncedFilters] = useState<FilterForm>(filters);
-  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(
+    null
+  );
 
   // Update debounced filters after typing stops
   useEffect(() => {
@@ -152,10 +157,14 @@ const BuyCreditReport: React.FC = () => {
       };
 
       // Add filter parameters only if they have values
-      if (debouncedFilters.transactionId) params.transactionId = debouncedFilters.transactionId;
+      if (debouncedFilters.transactionId)
+        params.transactionId = debouncedFilters.transactionId;
       if (debouncedFilters.status) params.status = debouncedFilters.status;
-      if (debouncedFilters.startDate) params.startDate = debouncedFilters.startDate;
+      if (debouncedFilters.startDate)
+        params.startDate = debouncedFilters.startDate;
       if (debouncedFilters.endDate) params.endDate = debouncedFilters.endDate;
+      if (debouncedFilters.supplierName)
+        params.supplierName = debouncedFilters.supplierName;
 
       const response = await api.get("/admin/get-all-buy-credits", { params });
 
@@ -273,6 +282,7 @@ const BuyCreditReport: React.FC = () => {
       status: "",
       startDate: "",
       endDate: "",
+      supplierName: "",
     });
     setCurrentPage(1);
   };
@@ -409,12 +419,14 @@ const BuyCreditReport: React.FC = () => {
             <span className="hidden md:inline text-sm font-medium">Filter</span>
             <button
               onClick={() => setIsFilterEnabled(!isFilterEnabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${isFilterEnabled ? "bg-primary" : "bg-input"
-                }`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                isFilterEnabled ? "bg-primary" : "bg-input"
+              }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${isFilterEnabled ? "translate-x-6" : "translate-x-1"
-                  }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
+                  isFilterEnabled ? "translate-x-6" : "translate-x-1"
+                }`}
               />
             </button>
             {hasActiveFilters && (
@@ -434,7 +446,22 @@ const BuyCreditReport: React.FC = () => {
         {/* Filter Form */}
         {isFilterEnabled && (
           <div className="px-6 pb-4 border-b">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+              {/* Supplier Name */}
+              <div className="space-y-2">
+                <Label htmlFor="supplierName" className="text-sm font-medium">
+                  Supplier Name
+                </Label>
+                <Input
+                  id="supplierName"
+                  placeholder="Enter supplier name"
+                  value={filters.supplierName}
+                  onChange={(e) =>
+                    handleFilterChange("supplierName", e.target.value)
+                  }
+                />
+              </div>
+
               {/* Transaction ID */}
               <div className="space-y-2">
                 <Label htmlFor="transactionId" className="text-sm font-medium">
@@ -459,12 +486,11 @@ const BuyCreditReport: React.FC = () => {
                   value={filters.status}
                   onValueChange={(value) => handleFilterChange("status", value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ALL">All Statuses</SelectItem>
-                    <SelectItem value="ACCEPTED">ACCEPTED</SelectItem>
                     <SelectItem value="PAYED">PAYED</SelectItem>
                     <SelectItem value="OVERDUE">OVERDUE</SelectItem>
                   </SelectContent>
@@ -517,6 +543,7 @@ const BuyCreditReport: React.FC = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[80px]">#</TableHead>
+                    <TableHead>Supplier</TableHead>
                     <TableHead>Total Amount</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Issued Date</TableHead>
@@ -529,8 +556,12 @@ const BuyCreditReport: React.FC = () => {
                   {activeCredits.map((credit, index) => (
                     <TableRow key={credit.id}>
                       <TableCell className="font-medium">
-                        {(paginationData.currentPage - 1) * paginationData.pageSize + index + 1}
+                        {(paginationData.currentPage - 1) *
+                          paginationData.pageSize +
+                          index +
+                          1}
                       </TableCell>
+                      <TableCell>{credit.supplier_name}</TableCell>
                       <TableCell className="font-semibold">
                         {formatCurrency(credit.total_money)}
                       </TableCell>
@@ -590,7 +621,8 @@ const BuyCreditReport: React.FC = () => {
                 </div>
                 <div className="text-sm text-muted-foreground">
                   Showing{" "}
-                  {(paginationData.currentPage - 1) * paginationData.pageSize + 1}{" "}
+                  {(paginationData.currentPage - 1) * paginationData.pageSize +
+                    1}{" "}
                   to{" "}
                   {Math.min(
                     paginationData.currentPage * paginationData.pageSize,
@@ -711,7 +743,9 @@ const BuyCreditReport: React.FC = () => {
                     {/* Credit Summary Card */}
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-lg">Credit Summary</CardTitle>
+                        <CardTitle className="text-lg">
+                          Credit Summary
+                        </CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-2 gap-4">
