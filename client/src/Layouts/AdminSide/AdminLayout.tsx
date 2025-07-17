@@ -13,7 +13,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-import { useContext, useState } from "react";
+import { useContext } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AppSidebar } from "./Components/app-sidebar";
 import { AuthContext } from "@/Context/AuthContext";
@@ -21,7 +21,6 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 function AdminLayout() {
   const { user, loading } = useContext(AuthContext)!;
-  const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Wait for loading to complete
   if (loading) {
