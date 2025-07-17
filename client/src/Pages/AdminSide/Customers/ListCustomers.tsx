@@ -24,6 +24,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Edit,
   Trash2,
   Search,
@@ -39,6 +46,11 @@ import {
   Image as ImageIcon,
   File,
   AlertCircle,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import {
   Dialog,
@@ -47,18 +59,11 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import api from "@/services/api";
+import { toast } from "sonner";
 
 interface Customer {
   id: number;
@@ -76,36 +81,23 @@ interface ValidationErrors {
   address: boolean;
 }
 
+interface PaginationData {
+  currentPage: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+interface FilterForm {
+  search: string;
+  startDate: string;
+  endDate: string;
+}
+
 function ListCustomers() {
-  const [customers, setCustomers] = useState<Customer[]>([
-    {
-      id: 1,
-      full_name: "John Doe",
-      phone: "+1234567890",
-      address: "123 Main St, City, State 12345",
-      id_card: "john_doe_id.jpg",
-      createdAt: "2024-01-15T10:30:00Z",
-      updatedAt: "2024-01-15T10:30:00Z",
-    },
-    {
-      id: 2,
-      full_name: "Jane Smith",
-      phone: "+9876543210",
-      address: "456 Oak Ave, Town, State 67890",
-      createdAt: "2024-01-16T14:20:00Z",
-      updatedAt: "2024-01-16T14:20:00Z",
-    },
-    {
-      id: 3,
-      full_name: "Bob Johnson",
-      phone: "+1122334455",
-      address: "789 Pine Rd, Village, State 11111",
-      id_card: "bob_johnson_id.pdf",
-      createdAt: "2024-01-17T09:15:00Z",
-      updatedAt: "2024-01-17T09:15:00Z",
-    },
-  ]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
@@ -120,7 +112,109 @@ function ListCustomers() {
     address: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Pagination and filtering states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [isFilterEnabled, setIsFilterEnabled] = useState(false);
+  const [filters, setFilters] = useState<FilterForm>({
+    search: "",
+    startDate: "",
+    endDate: "",
+  });
+  const [paginationData, setPaginationData] = useState<PaginationData>({
+    currentPage: 1,
+    pageSize: 10,
+    totalCount: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  });
+
+  // Debounce state
+  const [debouncedFilters, setDebouncedFilters] = useState<FilterForm>(filters);
+  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(
+    null
+  );
+
+  // Update debounced filters after typing stops
+  useEffect(() => {
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      setDebouncedFilters(filters);
+      setCurrentPage(1); // Reset to first page when filters change
+    }, 500);
+
+    setTypingTimeout(timeout);
+
+    return () => {
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
+      }
+    };
+  }, [filters]);
+
+  // Fetch customers with pagination and filtering
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Build query parameters
+      const params: any = {
+        page: currentPage,
+        limit: pageSize,
+      };
+
+      // Add filter parameters only if they have values
+      if (debouncedFilters.search) params.search = debouncedFilters.search;
+      if (debouncedFilters.startDate)
+        params.startDate = debouncedFilters.startDate;
+      if (debouncedFilters.endDate) params.endDate = debouncedFilters.endDate;
+
+      const response = await api.get("/admin/get-all-customer", { params });
+
+      // Axios wraps response in .data property
+      const result = response.data;
+
+      console.log("API Response:", result); // Debug log
+
+      if (result.status && result.data) {
+        setCustomers(result.data);
+        setPaginationData(result.pagination);
+        setError(null);
+      } else if (result.status === false) {
+        setError(result.error || "Failed to fetch customers");
+        setCustomers([]);
+      } else {
+        setError("Invalid response format");
+        setCustomers([]);
+      }
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        console.log("No customers found");
+        setCustomers([]);
+      } else if (err.response?.status === 500) {
+        setError("Internal server error");
+      } else {
+        setError("Network error occurred");
+      }
+      setCustomers([]);
+      console.error("Error fetching customers:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data when dependencies change
+  useEffect(() => {
+    fetchCustomers();
+  }, [currentPage, pageSize, debouncedFilters]);
 
   const validateForm = (customer: Customer): ValidationErrors => {
     return {
@@ -131,7 +225,7 @@ function ListCustomers() {
   };
 
   const hasValidationErrors = (errors: ValidationErrors): boolean => {
-    return Object.values(errors).some(error => error);
+    return Object.values(errors).some((error) => error);
   };
 
   const handleDeleteClick = (id: number) => {
@@ -144,13 +238,22 @@ function ListCustomers() {
 
     try {
       setIsDeleting(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      setCustomers(customers.filter(c => c.id !== customerToDelete));
-      console.log("Customer deleted successfully");
+      const response = await api.put(
+        `/admin/delete-customer/${customerToDelete}`
+      );
+      const result = response.data;
+
+      if (result.status) {
+        toast.success("Customer deleted successfully");
+        // Refresh the customer list
+        fetchCustomers();
+      } else {
+        toast.error(result.error || "Failed to delete customer");
+      }
     } catch (error: any) {
       console.error("Error deleting customer:", error);
+      toast.error("Failed to delete customer");
     } finally {
       setIsDeleting(false);
       setDeleteDialogOpen(false);
@@ -205,7 +308,7 @@ function ListCustomers() {
 
     // Clear validation error for this field if it now has a value
     if (value.trim() !== "") {
-      setValidationErrors(prev => ({
+      setValidationErrors((prev) => ({
         ...prev,
         [field]: false,
       }));
@@ -228,25 +331,45 @@ function ListCustomers() {
     try {
       setIsSubmitting(true);
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const formData = new FormData();
+      formData.append("full_name", currentCustomer.full_name);
+      formData.append("phone", currentCustomer.phone);
+      formData.append("address", currentCustomer.address);
 
-      // Update customer in the list
-      setCustomers(customers.map(c =>
-        c.id === currentCustomer.id ? currentCustomer : c
-      ));
+      if (selectedFile) {
+        formData.append("id_card", selectedFile);
+      }
 
-      console.log("Customer updated successfully");
-      setEditModalOpen(false);
-      setSelectedFile(null);
-      setPreviewUrl(null);
-      setValidationErrors({
-        full_name: false,
-        phone: false,
-        address: false,
-      });
+      const response = await api.put(
+        `/admin/update-customer/${currentCustomer.id}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      const result = response.data;
+
+      if (result.status) {
+        toast.success("Customer updated successfully");
+        setEditModalOpen(false);
+        setSelectedFile(null);
+        setPreviewUrl(null);
+        setValidationErrors({
+          full_name: false,
+          phone: false,
+          address: false,
+        });
+        // Refresh the customer list
+        fetchCustomers();
+      } else {
+        toast.error(result.error || "Failed to update customer");
+      }
     } catch (error: any) {
       console.error("Error updating customer:", error);
+      toast.error("Failed to update customer");
     } finally {
       setIsSubmitting(false);
     }
@@ -259,8 +382,10 @@ function ListCustomers() {
     try {
       // Simulate download
       console.log(`Downloading ID card for ${customerName}: ${idCardPath}`);
+      toast.success("Download started");
     } catch (error: any) {
       console.error("Error downloading file:", error);
+      toast.error("Failed to download file");
     }
   };
 
@@ -272,12 +397,44 @@ function ListCustomers() {
     });
   };
 
-  const filteredCustomers = customers.filter(
-    (customer) =>
-      customer.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.includes(searchTerm) ||
-      customer.address.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter handling
+  const handleFilterChange = (field: keyof FilterForm, value: string) => {
+    setFilters((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      search: "",
+      startDate: "",
+      endDate: "",
+    });
+    setCurrentPage(1);
+  };
+
+  // Pagination functions
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, paginationData.totalPages)));
+  };
+
+  const goToFirstPage = () => setCurrentPage(1);
+  const goToLastPage = () => setCurrentPage(paginationData.totalPages);
+  const goToPreviousPage = () => setCurrentPage(Math.max(1, currentPage - 1));
+  const goToNextPage = () =>
+    setCurrentPage(Math.min(paginationData.totalPages, currentPage + 1));
+
+  const handlePageSizeChange = (newPageSize: string) => {
+    setPageSize(Number(newPageSize));
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
+
+  const hasActiveFilters = Object.values(filters).some((value) => value !== "");
+
+  // Keep filter open when there are active filters
+  useEffect(() => {
+    if (hasActiveFilters && !isFilterEnabled) {
+      setIsFilterEnabled(true);
+    }
+  }, [hasActiveFilters, isFilterEnabled]);
 
   if (loading) {
     return (
@@ -287,8 +444,39 @@ function ListCustomers() {
           <h1 className="text-2xl font-bold">Customer List</h1>
         </div>
         <Card>
-          <CardContent className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <CardHeader>
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-48" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-1">
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Error</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={fetchCustomers}
+              variant="outline"
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -296,43 +484,109 @@ function ListCustomers() {
   }
 
   return (
-    <div className="container mx-auto p-1 space-y-6">
-      <div className="flex items-center gap-2 mb-6">
-        <Users className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold">Customer List</h1>
-      </div>
-
+    <div className="container mx-auto p-1 pt-3 space-y-6">
       <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Customers ({customers.length})
-              </CardTitle>
-              <CardDescription>
-                Manage and view all your customers
-              </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-2xl font-bold">Customer List</CardTitle>
+            <CardDescription>
+              Manage and view all your customers
+            </CardDescription>
+            <div className="flex items-center gap-2 mt-2">
+              <Badge variant="outline" className="gap-1">
+                Total Customers: {paginationData.totalCount}
+              </Badge>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="hidden md:inline text-sm font-medium">Filter</span>
+            <button
+              onClick={() => setIsFilterEnabled(!isFilterEnabled)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                isFilterEnabled ? "bg-primary" : "bg-input"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
+                  isFilterEnabled ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearFilters}
+                className="h-8 px-2"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+
+        {/* Filter Form */}
+        {isFilterEnabled && (
+          <div className="px-6 pb-4 border-b">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Search */}
+              <div className="space-y-2">
+                <Label htmlFor="search" className="text-sm font-medium">
+                  Search
+                </Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="search"
+                    placeholder="Search by name, phone, or address..."
+                    value={filters.search}
+                    onChange={(e) =>
+                      handleFilterChange("search", e.target.value)
+                    }
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* Start Date */}
+              <div className="space-y-2">
+                <Label htmlFor="startDate" className="text-sm font-medium">
+                  Start Date
+                </Label>
                 <Input
-                  placeholder="Search customers..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full md:w-64"
+                  id="startDate"
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) =>
+                    handleFilterChange("startDate", e.target.value)
+                  }
+                />
+              </div>
+
+              {/* End Date */}
+              <div className="space-y-2">
+                <Label htmlFor="endDate" className="text-sm font-medium">
+                  End Date
+                </Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) =>
+                    handleFilterChange("endDate", e.target.value)
+                  }
                 />
               </div>
             </div>
           </div>
-        </CardHeader>
+        )}
         <CardContent>
           {customers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-lg font-medium">No customers found</p>
-              <p className="text-sm">Add your first customer to get started</p>
+            <div className="text-center py-12">
+              <div className="text-muted-foreground mb-4">
+                No customers found.
+              </div>
             </div>
           ) : (
             <div className="border rounded-lg">
@@ -379,9 +633,14 @@ function ListCustomers() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCustomers.map((customer, index) => (
+                  {customers.map((customer: Customer, index: number) => (
                     <TableRow key={customer.id}>
-                      <TableCell>{index + 1}</TableCell>
+                      <TableCell className="font-medium">
+                        {(paginationData.currentPage - 1) *
+                          paginationData.pageSize +
+                          index +
+                          1}
+                      </TableCell>
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium">
@@ -465,6 +724,100 @@ function ListCustomers() {
               </Table>
             </div>
           )}
+
+          {/* Pagination */}
+          {customers.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 sm:space-x-2 py-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-muted-foreground">Show</span>
+                  <Select
+                    value={pageSize.toString()}
+                    onValueChange={handlePageSizeChange}
+                  >
+                    <SelectTrigger className="w-20 h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-muted-foreground">entries</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Showing{" "}
+                  {(paginationData.currentPage - 1) * paginationData.pageSize +
+                    1}{" "}
+                  to{" "}
+                  {Math.min(
+                    paginationData.currentPage * paginationData.pageSize,
+                    paginationData.totalCount
+                  )}{" "}
+                  of {paginationData.totalCount} results
+                </div>
+              </div>
+              {paginationData.totalPages > 1 && (
+                <div className="flex items-center justify-center sm:justify-end space-x-2 w-full sm:w-auto">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToFirstPage}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToPreviousPage}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div className="flex items-center space-x-1">
+                    {Array.from(
+                      { length: Math.min(5, paginationData.totalPages) },
+                      (_, i) => {
+                        const page = i + 1;
+                        return (
+                          <Button
+                            key={page}
+                            variant={
+                              currentPage === page ? "default" : "outline"
+                            }
+                            size="sm"
+                            onClick={() => goToPage(page)}
+                            className="h-8 w-8 p-0"
+                          >
+                            {page}
+                          </Button>
+                        );
+                      }
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToNextPage}
+                    disabled={currentPage === paginationData.totalPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToLastPage}
+                    disabled={currentPage === paginationData.totalPages}
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -488,8 +841,14 @@ function ListCustomers() {
                     <Input
                       id="full_name"
                       value={currentCustomer.full_name}
-                      onChange={(e) => handleInputChange('full_name', e.target.value)}
-                      className={`${validationErrors.full_name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+                      onChange={(e) =>
+                        handleInputChange("full_name", e.target.value)
+                      }
+                      className={`${
+                        validationErrors.full_name
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : ""
+                      }`}
                       placeholder="Enter full name"
                     />
                     {validationErrors.full_name && (
@@ -514,8 +873,14 @@ function ListCustomers() {
                     <Input
                       id="phone"
                       value={currentCustomer.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className={`${validationErrors.phone ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+                      onChange={(e) =>
+                        handleInputChange("phone", e.target.value)
+                      }
+                      className={`${
+                        validationErrors.phone
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : ""
+                      }`}
                       placeholder="Enter phone number"
                     />
                     {validationErrors.phone && (
@@ -540,8 +905,14 @@ function ListCustomers() {
                     <Textarea
                       id="address"
                       value={currentCustomer.address}
-                      onChange={(e) => handleInputChange('address', e.target.value)}
-                      className={`${validationErrors.address ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+                      onChange={(e) =>
+                        handleInputChange("address", e.target.value)
+                      }
+                      className={`${
+                        validationErrors.address
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : ""
+                      }`}
                       placeholder="Enter address"
                       rows={3}
                     />
@@ -627,7 +998,8 @@ function ListCustomers() {
                                 {selectedFile.name}
                               </p>
                               <p className="text-xs text-gray-500">
-                                {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                                {(selectedFile.size / 1024 / 1024).toFixed(2)}{" "}
+                                MB
                               </p>
                             </div>
                           </div>
@@ -695,7 +1067,6 @@ function ListCustomers() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       {/* Delete Confirmation Dialog */}
       {deleteDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
