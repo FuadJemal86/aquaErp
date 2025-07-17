@@ -13,24 +13,27 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { useContext, useState } from "react";
+import { Outlet, useLocation } from "react-router-dom";
 import { AppSidebar } from "./Components/app-sidebar";
+import { AuthContext } from "@/Context/AuthContext";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 function AdminLayout() {
+  const { user, loading } = useContext(AuthContext)!;
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // // Wait for loading to complete
-  // if (loading) {
-  //   return <LoadingSpinner size="lg" />;
-  // }
-  // console.log("User:", user);
-  // // Check for the correct role
-  // if (!user || user.role !== "ADMIN") {
-  //   console.log("Unauthorized user:", user);
-  //   window.location.href = "/login";
-  // }
-  // const location = useLocation();
+  // Wait for loading to complete
+  if (loading) {
+    return <LoadingSpinner size="lg" />;
+  }
+  console.log("User:", user);
+  // Check for the correct role
+  if (!user || user.role !== "ADMIN") {
+    console.log("Unauthorized user:", user);
+    window.location.href = "/login";
+  }
+  const location = useLocation();
 
   // Function to get page title from path
   const getPageTitle = (path: string) => {

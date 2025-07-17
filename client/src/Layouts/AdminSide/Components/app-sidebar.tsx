@@ -24,6 +24,8 @@ import {
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
 import { ThemeToggle } from "./theme-toggle";
+import { AuthContext } from "@/Context/AuthContext";
+import { useContext } from "react";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const data = {
@@ -173,19 +175,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     ],
   };
 
-  let passdata = {
+  const { user } = useContext(AuthContext)!;
+  const passdata = {
     user: {
-      name: "",
-      email: "",
-      avatar: "",
-    },
-  };
-
-  passdata = {
-    user: {
-      name: "John Doe",
-      email: "john.doe@example.com",
-      avatar: "https://github.com/shadcn.png",
+      name: user?.name || "",
+      email: user?.email || "",
+      avatar: user?.image || "",
     },
   };
 

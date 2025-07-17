@@ -9,6 +9,7 @@ const {
   Add_account_list,
   Edit_account,
 } = require("../Model/Validation");
+const bcrypt = require("bcrypt");
 
 // Add Product  catagory
 const addProductCategory = async (req, res) => {
@@ -229,12 +230,19 @@ const addUser = async (req, res) => {
         .json({ status: false, error: "user already exist" });
     }
 
+    // check if the role is valid
+    if (role !== "ADMIN" && role !== "CASHIER") {
+      return res.status(400).json({ status: false, error: "Invalid role" });
+    }
+    // password hash
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     // create the user
     await prisma.user.create({
       data: {
         name: name,
         email: email,
-        password: password,
+        password: hashedPassword,
         phone: phone,
         role: role,
       },

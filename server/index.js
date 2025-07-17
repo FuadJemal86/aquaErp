@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const adminRouter = require("./Routes/adminRoute.js");
+const authRouter = require("./Routes/authRoute.js");
 const cookieParser = require("cookie-parser");
 
 dotenv.config();
@@ -19,6 +20,7 @@ app.use(cookieParser());
 app.use(express.json());
 
 app.use("/api/admin", adminRouter);
+app.use("/api/auth", authRouter);
 
 const prisma = require("./prisma/prisma");
 

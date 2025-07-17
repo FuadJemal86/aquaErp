@@ -17,7 +17,7 @@ datasource db {
 model User {
   id        Int      @id @default(autoincrement())
   name      String
-  email     String   @unique(map: "Admin_email_key")
+  email     String   @unique
   password  String
   phone     String
   image     String?
@@ -325,7 +325,7 @@ enum Method {
 
 enum role {
   ADMIN
-  CASHER
+  CASHIER
 }
 
 enum payment_method {

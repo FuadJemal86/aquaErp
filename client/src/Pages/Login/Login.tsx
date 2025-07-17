@@ -1,5 +1,5 @@
 import type React from "react";
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -47,6 +47,9 @@ import {
   BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
+import api from "@/services/api";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "@/Context/AuthContext";
 
 // Form validation schema
 const loginSchema = z.object({
@@ -81,6 +84,8 @@ const cardVariants = {
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { login } = useContext(AuthContext)!;
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -96,10 +101,29 @@ export default function Login() {
     setIsLoading(true);
     try {
       console.log("Login data:", data);
-      // Add your login logic here
-      toast.success("Login successful!");
-    } catch (error) {
-      toast.error("Login failed. Please try again.");
+
+      const response = await api.post("/auth/login", {
+        email: data.email,
+        password: data.password,
+        role: data.role.toUpperCase(),
+      });
+
+      if (response.data.message === "Login successful") {
+        // Use AuthContext login function
+        login(response.data.user);
+
+        // Redirect based on role
+        if (response.data.user.role === "ADMIN") {
+          navigate("/admin");
+        } else if (response.data.user.role === "CASHIER") {
+          navigate("/admin/dashboard"); // You can change this to a different route for cashiers
+        }
+      }
+    } catch (error: any) {
+      console.error("Login error:", error);
+      const errorMessage =
+        error.response?.data?.message || "Login failed. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -249,7 +273,7 @@ export default function Login() {
                       name="role"
                       render={({ field }: { field: any }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-semibold text-slate-700 ">
+                          <FormLabel className="text-sm font-semibold text-slate-700">
                             Select Role
                           </FormLabel>
                           <Select
@@ -257,33 +281,50 @@ export default function Login() {
                             defaultValue={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger className="h-12 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 w-full">
-                                <div className="flex items-center gap-3">
-                                  <User className="w-4 h-4 text-slate-500" />
-                                  <SelectValue placeholder="Choose your role" />
+                              <SelectTrigger className="h-14 sm:h-12 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500 w-full bg-white hover:bg-slate-50 transition-colors text-left">
+                                <div className="flex items-center gap-3 w-full">
+                                  <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0">
+                                    <User className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-white" />
+                                  </div>
+                                  <SelectValue
+                                    placeholder="Choose your role"
+                                    className="flex-1 text-left"
+                                  />
                                 </div>
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent className="border-slate-200 min-w-[var(--radix-select-trigger-width)]">
-                              <SelectItem value="admin" className="py-3">
-                                <div className="flex items-center gap-3">
-                                  <Shield className="w-4 h-4 text-red-500" />
-                                  <div>
-                                    <div className="font-medium">
+                            <SelectContent className="border-slate-200 min-w-[var(--radix-select-trigger-width)] bg-white shadow-xl rounded-lg max-h-[300px] overflow-y-auto">
+                              <SelectItem
+                                value="admin"
+                                className="py-4 px-4 hover:bg-emerald-50 focus:bg-emerald-50 cursor-pointer data-[state=checked]:bg-emerald-50"
+                              >
+                                <div className="flex items-center gap-3 sm:gap-4">
+                                  <div className="w-12 h-12 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center flex-shrink-0">
+                                    <Shield className="w-6 h-6 sm:w-5 sm:h-5 text-white" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-semibold text-slate-900 text-sm sm:text-base">
                                       Administrator
                                     </div>
-                                    <div className="text-xs text-slate-500">
+                                    <div className="text-xs text-slate-500 mt-1 leading-relaxed">
                                       Full system access & management
                                     </div>
                                   </div>
                                 </div>
                               </SelectItem>
-                              <SelectItem value="cashier" className="py-3">
-                                <div className="flex items-center gap-3">
-                                  <Users className="w-4 h-4 text-blue-500" />
-                                  <div>
-                                    <div className="font-medium">Cashier</div>
-                                    <div className="text-xs text-slate-500">
+                              <SelectItem
+                                value="cashier"
+                                className="py-4 px-4 hover:bg-emerald-50 focus:bg-emerald-50 cursor-pointer data-[state=checked]:bg-emerald-50"
+                              >
+                                <div className="flex items-center gap-3 sm:gap-4">
+                                  <div className="w-12 h-12 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+                                    <Users className="w-6 h-6 sm:w-5 sm:h-5 text-white" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-semibold text-slate-900 text-sm sm:text-base">
+                                      Cashier
+                                    </div>
+                                    <div className="text-xs text-slate-500 mt-1 leading-relaxed">
                                       Sales, payments & credit management
                                     </div>
                                   </div>
