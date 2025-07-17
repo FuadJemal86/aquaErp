@@ -38,9 +38,12 @@ const bankAccountSchema = z.object({
   branch: z.string().min(1, "Branch name is required"),
   account_number: z.string().min(1, "Account number is required"),
   owner: z.string().min(1, "Owner name is required"),
-  balance: z.string().min(1, "Balance is required").refine((val) => !isNaN(Number(val)) && Number(val) >= 0, {
-    message: "Balance must be a valid positive number"
-  })
+  balance: z
+    .string()
+    .min(1, "Balance is required")
+    .refine((val) => !isNaN(Number(val)) && Number(val) >= 0, {
+      message: "Balance must be a valid positive number",
+    }),
 });
 
 function BankAccount() {
@@ -48,7 +51,9 @@ function BankAccount() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [accountToDelete, setAccountToDelete] = useState<BankAccount | null>(null);
+  const [accountToDelete, setAccountToDelete] = useState<BankAccount | null>(
+    null
+  );
 
   // Form states
   const [branch, setBranch] = useState("");
@@ -76,7 +81,9 @@ function BankAccount() {
       setBankAccounts(response.data || []);
     } catch (error: any) {
       console.error("Failed to fetch bank accounts:", error);
-      toast.error(error.response?.data?.error || "Failed to fetch bank accounts");
+      toast.error(
+        error.response?.data?.error || "Failed to fetch bank accounts"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -137,7 +144,7 @@ function BankAccount() {
         branch: branch.trim(),
         account_number: account_number.trim(),
         owner: owner.trim(),
-        balance: balance.trim()
+        balance: balance.trim(),
       });
 
       if (response.data.status || response.status === 201) {
@@ -154,7 +161,9 @@ function BankAccount() {
       }
     } catch (error: any) {
       console.error("Error creating bank account:", error);
-      toast.error(error.response?.data?.error || "Failed to create bank account");
+      toast.error(
+        error.response?.data?.error || "Failed to create bank account"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -191,7 +200,9 @@ function BankAccount() {
       }
     } catch (error: any) {
       console.error("Error updating bank account:", error);
-      toast.error(error.response?.data?.error || "Failed to update bank account");
+      toast.error(
+        error.response?.data?.error || "Failed to update bank account"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -207,7 +218,9 @@ function BankAccount() {
 
     try {
       setIsLoading(true);
-      const response = await api.put(`/admin/delete-bank-list/${accountToDelete.id}`);
+      const response = await api.put(
+        `/admin/delete-bank-list/${accountToDelete.id}`
+      );
 
       if (response.data.status || response.status === 200) {
         toast.success("Bank account deleted successfully");
@@ -217,7 +230,9 @@ function BankAccount() {
       }
     } catch (error: any) {
       console.error("Error deleting bank account:", error);
-      toast.error(error.response?.data?.error || "Failed to delete bank account");
+      toast.error(
+        error.response?.data?.error || "Failed to delete bank account"
+      );
     } finally {
       setIsLoading(false);
       setDeleteDialogOpen(false);
@@ -236,7 +251,7 @@ function BankAccount() {
 
   const clearFieldError = (field: string): void => {
     if (errors[field as keyof typeof errors]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
@@ -270,10 +285,14 @@ function BankAccount() {
                 value={branch}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setBranch(e.target.value);
-                  clearFieldError('branch');
+                  clearFieldError("branch");
                 }}
                 disabled={isLoading}
-                className={errors.branch ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+                className={
+                  errors.branch
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    : ""
+                }
               />
               {errors.branch && (
                 <p className="text-sm text-red-600 mt-1">{errors.branch}</p>
@@ -287,13 +306,19 @@ function BankAccount() {
                 value={account_number}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setAccountNumber(e.target.value);
-                  clearFieldError('account_number');
+                  clearFieldError("account_number");
                 }}
                 disabled={isLoading}
-                className={errors.account_number ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+                className={
+                  errors.account_number
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    : ""
+                }
               />
               {errors.account_number && (
-                <p className="text-sm text-red-600 mt-1">{errors.account_number}</p>
+                <p className="text-sm text-red-600 mt-1">
+                  {errors.account_number}
+                </p>
               )}
             </div>
             <div className="space-y-2">
@@ -304,10 +329,14 @@ function BankAccount() {
                 value={owner}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setOwner(e.target.value);
-                  clearFieldError('owner');
+                  clearFieldError("owner");
                 }}
                 disabled={isLoading}
-                className={errors.owner ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+                className={
+                  errors.owner
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    : ""
+                }
               />
               {errors.owner && (
                 <p className="text-sm text-red-600 mt-1">{errors.owner}</p>
@@ -323,10 +352,14 @@ function BankAccount() {
                   value={balance}
                   onChange={(e) => {
                     setBalance(e.target.value);
-                    clearFieldError('balance');
+                    clearFieldError("balance");
                   }}
                   disabled={isLoading}
-                  className={errors.balance ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+                  className={
+                    errors.balance
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                      : ""
+                  }
                 />
                 {errors.balance && (
                   <p className="text-sm text-red-600 mt-1">{errors.balance}</p>
@@ -394,24 +427,38 @@ function BankAccount() {
             ) : (
               <div className="border rounded-lg overflow-hidden">
                 <table className="w-full">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-muted">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Branch</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Account Number</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Holder Name</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Created</th>
-                      <th className="px-4 py-3 text-right text-sm font-medium text-gray-900">Actions</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-foreground">
+                        Branch
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-foreground">
+                        Account Number
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-foreground">
+                        Holder Name
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-foreground">
+                        Created
+                      </th>
+                      <th className="px-4 py-3 text-right text-sm font-medium text-foreground">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-border">
                     {bankAccounts.map((account) => (
-                      <tr key={account.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                      <tr key={account.id} className="hover:bg-muted/50">
+                        <td className="px-4 py-3 text-sm font-medium text-foreground">
                           {account.branch}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{account.account_number}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{account.owner}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
+                          {account.account_number}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
+                          {account.owner}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
                           {new Date(account.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-3 text-right">
@@ -444,63 +491,60 @@ function BankAccount() {
         </Card>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="z-[9999] max-w-md mx-auto bg-white border border-gray-200 shadow-2xl rounded-xl overflow-hidden">
-          <div className="p-6">
-            <AlertDialogHeader className="text-center mb-4">
-              <div className="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
-                <Trash2 className="h-8 w-8 text-red-600" />
-              </div>
-              <AlertDialogTitle className="text-xl font-bold text-gray-900 mb-2">
-                Delete Bank Account
-              </AlertDialogTitle>
-              <AlertDialogDescription className="text-gray-600 leading-relaxed">
-                This action cannot be undone. This will permanently delete the bank account:
-              </AlertDialogDescription>
-            </AlertDialogHeader>
+      {/* Delete Bank Account Dialog */}
+      {deleteDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Custom Tailwind Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setDeleteDialogOpen(false)}
+          />
 
-            <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-500">Account Holder:</span>
-                  <span className="text-sm font-semibold text-gray-900">{accountToDelete?.owner}</span>
+          {/* Inner Content using shadcn/ui */}
+          <div className="relative bg-card border border-border shadow-2xl rounded-xl overflow-hidden max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="text-center mb-4">
+                <div className="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10 mb-4">
+                  <Trash2 className="h-8 w-8 text-destructive" />
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-500">Account Number:</span>
-                  <span className="text-sm font-semibold text-gray-900">{accountToDelete?.account_number}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-500">Branch:</span>
-                  <span className="text-sm font-semibold text-gray-900">{accountToDelete?.branch}</span>
-                </div>
+                <h3 className="text-xl font-bold text-card-foreground mb-2">
+                  Delete Bank Account
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  This action cannot be undone. This will permanently delete the
+                  bank account:
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-0">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setDeleteDialogOpen(false)}
+                  disabled={isLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleDeleteConfirm}
+                  variant="destructive"
+                  className="flex-1"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                      Deleting...
+                    </div>
+                  ) : (
+                    "Delete Account"
+                  )}
+                </Button>
               </div>
             </div>
-
-            <AlertDialogFooter className="flex gap-3 pt-0">
-              <AlertDialogCancel className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300 rounded-lg py-2.5 font-medium transition-colors">
-                Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteConfirm}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2.5 font-medium transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Deleting...
-                  </div>
-                ) : (
-                  <>
-                    Delete Account
-                  </>
-                )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
           </div>
-        </AlertDialogContent>
-      </AlertDialog>
+        </div>
+      )}
     </div>
   );
 }

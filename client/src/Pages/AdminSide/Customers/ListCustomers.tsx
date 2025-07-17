@@ -38,9 +38,8 @@ import {
   X,
   Image as ImageIcon,
   File,
+  AlertCircle,
 } from "lucide-react";
-import api from "@/services/api";
-import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -71,10 +70,43 @@ interface Customer {
   updatedAt: string;
 }
 
+interface ValidationErrors {
+  full_name: boolean;
+  phone: boolean;
+  address: boolean;
+}
+
 function ListCustomers() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([
+    {
+      id: 1,
+      full_name: "John Doe",
+      phone: "+1234567890",
+      address: "123 Main St, City, State 12345",
+      id_card: "john_doe_id.jpg",
+      createdAt: "2024-01-15T10:30:00Z",
+      updatedAt: "2024-01-15T10:30:00Z",
+    },
+    {
+      id: 2,
+      full_name: "Jane Smith",
+      phone: "+9876543210",
+      address: "456 Oak Ave, Town, State 67890",
+      createdAt: "2024-01-16T14:20:00Z",
+      updatedAt: "2024-01-16T14:20:00Z",
+    },
+    {
+      id: 3,
+      full_name: "Bob Johnson",
+      phone: "+1122334455",
+      address: "789 Pine Rd, Village, State 11111",
+      id_card: "bob_johnson_id.pdf",
+      createdAt: "2024-01-17T09:15:00Z",
+      updatedAt: "2024-01-17T09:15:00Z",
+    },
+  ]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -82,23 +114,24 @@ function ListCustomers() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({
+    full_name: false,
+    phone: false,
+    address: false,
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
+  const validateForm = (customer: Customer): ValidationErrors => {
+    return {
+      full_name: !customer.full_name || customer.full_name.trim() === "",
+      phone: !customer.phone || customer.phone.trim() === "",
+      address: !customer.address || customer.address.trim() === "",
+    };
+  };
 
-  const fetchCustomers = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get("/admin/get-all-customer");
-      setCustomers(response.data);
-    } catch (error: any) {
-      console.error("Error fetching customers:", error);
-      toast.error("Failed to fetch customers");
-    } finally {
-      setLoading(false);
-    }
+  const hasValidationErrors = (errors: ValidationErrors): boolean => {
+    return Object.values(errors).some(error => error);
   };
 
   const handleDeleteClick = (id: number) => {
@@ -111,12 +144,13 @@ function ListCustomers() {
 
     try {
       setIsDeleting(true);
-      await api.put(`/admin/delete-customer/${customerToDelete}`);
-      toast.success("Customer deleted successfully");
-      fetchCustomers(); // Refresh the list
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      setCustomers(customers.filter(c => c.id !== customerToDelete));
+      console.log("Customer deleted successfully");
     } catch (error: any) {
       console.error("Error deleting customer:", error);
-      toast.error("Failed to delete customer");
     } finally {
       setIsDeleting(false);
       setDeleteDialogOpen(false);
@@ -128,6 +162,11 @@ function ListCustomers() {
     setCurrentCustomer(customer);
     setPreviewUrl(null);
     setSelectedFile(null);
+    setValidationErrors({
+      full_name: false,
+      phone: false,
+      address: false,
+    });
     setEditModalOpen(true);
   };
 
@@ -154,34 +193,62 @@ function ListCustomers() {
     }
   };
 
+  const handleInputChange = (field: keyof Customer, value: string) => {
+    if (!currentCustomer) return;
+
+    const updatedCustomer = {
+      ...currentCustomer,
+      [field]: value,
+    };
+
+    setCurrentCustomer(updatedCustomer);
+
+    // Clear validation error for this field if it now has a value
+    if (value.trim() !== "") {
+      setValidationErrors(prev => ({
+        ...prev,
+        [field]: false,
+      }));
+    }
+  };
+
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentCustomer) return;
 
+    // Validate form
+    const errors = validateForm(currentCustomer);
+    setValidationErrors(errors);
+
+    // If there are validation errors, don't submit
+    if (hasValidationErrors(errors)) {
+      return;
+    }
+
     try {
-      const formData = new FormData();
-      formData.append("full_name", currentCustomer.full_name);
-      formData.append("phone", currentCustomer.phone);
-      formData.append("address", currentCustomer.address);
+      setIsSubmitting(true);
 
-      if (selectedFile) {
-        formData.append("id_card", selectedFile);
-      }
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      await api.put(`/admin/update-customer/${currentCustomer.id}`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      // Update customer in the list
+      setCustomers(customers.map(c =>
+        c.id === currentCustomer.id ? currentCustomer : c
+      ));
 
-      toast.success("Customer updated successfully");
-      fetchCustomers(); // Refresh the list
+      console.log("Customer updated successfully");
       setEditModalOpen(false);
       setSelectedFile(null);
       setPreviewUrl(null);
+      setValidationErrors({
+        full_name: false,
+        phone: false,
+        address: false,
+      });
     } catch (error: any) {
       console.error("Error updating customer:", error);
-      toast.error("Failed to update customer");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -190,29 +257,10 @@ function ListCustomers() {
     customerName: string
   ) => {
     try {
-      const response = await api.get(
-        `/admin/download-file?path=${encodeURIComponent(idCardPath)}`,
-        {
-          responseType: "blob",
-        }
-      );
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute(
-        "download",
-        `${customerName}_id_card.${idCardPath.split(".").pop()}`
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
-      toast.success("ID card downloaded successfully");
+      // Simulate download
+      console.log(`Downloading ID card for ${customerName}: ${idCardPath}`);
     } catch (error: any) {
       console.error("Error downloading file:", error);
-      toast.error("Failed to download ID card");
     }
   };
 
@@ -433,45 +481,84 @@ function ListCustomers() {
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="full_name">Full Name</Label>
-                  <Input
-                    id="full_name"
-                    value={currentCustomer.full_name}
-                    onChange={(e) =>
-                      setCurrentCustomer({
-                        ...currentCustomer,
-                        full_name: e.target.value,
-                      })
-                    }
-                  />
+                  <Label htmlFor="full_name">
+                    Full Name <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="full_name"
+                      value={currentCustomer.full_name}
+                      onChange={(e) => handleInputChange('full_name', e.target.value)}
+                      className={`${validationErrors.full_name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+                      placeholder="Enter full name"
+                    />
+                    {validationErrors.full_name && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <AlertCircle className="h-4 w-4 text-red-500" />
+                      </div>
+                    )}
+                  </div>
+                  {validationErrors.full_name && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      Full name is required
+                    </p>
+                  )}
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    value={currentCustomer.phone}
-                    onChange={(e) =>
-                      setCurrentCustomer({
-                        ...currentCustomer,
-                        phone: e.target.value,
-                      })
-                    }
-                  />
+                  <Label htmlFor="phone">
+                    Phone Number <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="phone"
+                      value={currentCustomer.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      className={`${validationErrors.phone ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+                      placeholder="Enter phone number"
+                    />
+                    {validationErrors.phone && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <AlertCircle className="h-4 w-4 text-red-500" />
+                      </div>
+                    )}
+                  </div>
+                  {validationErrors.phone && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      Phone number is required
+                    </p>
+                  )}
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Textarea
-                    id="address"
-                    value={currentCustomer.address}
-                    onChange={(e) =>
-                      setCurrentCustomer({
-                        ...currentCustomer,
-                        address: e.target.value,
-                      })
-                    }
-                    rows={3}
-                  />
+                  <Label htmlFor="address">
+                    Address <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="relative">
+                    <Textarea
+                      id="address"
+                      value={currentCustomer.address}
+                      onChange={(e) => handleInputChange('address', e.target.value)}
+                      className={`${validationErrors.address ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
+                      placeholder="Enter address"
+                      rows={3}
+                    />
+                    {validationErrors.address && (
+                      <div className="absolute right-3 top-3">
+                        <AlertCircle className="h-4 w-4 text-red-500" />
+                      </div>
+                    )}
+                  </div>
+                  {validationErrors.address && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      Address is required
+                    </p>
+                  )}
                 </div>
+
                 <div className="space-y-2">
                   <Label>ID Card</Label>
                   {currentCustomer.id_card && !selectedFile && (
@@ -584,10 +671,24 @@ function ListCustomers() {
                   type="button"
                   variant="outline"
                   onClick={() => setEditModalOpen(false)}
+                  disabled={isSubmitting}
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Save Changes</Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="min-w-[120px]"
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Saving...
+                    </div>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </Button>
               </div>
             </form>
           )}
@@ -595,29 +696,42 @@ function ListCustomers() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="z-[9999] max-w-md mx-auto bg-white border border-gray-200 shadow-2xl rounded-xl overflow-hidden">
-          <div className="p-6">
-            <AlertDialogHeader className="text-center mb-4">
+      {/* Delete Confirmation Dialog */}
+      {deleteDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Custom Tailwind Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setDeleteDialogOpen(false)}
+          />
+
+          {/* Inner Content using shadcn/ui */}
+          <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <div className="text-center">
               <div className="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
                 <Trash2 className="h-8 w-8 text-red-600" />
               </div>
-              <AlertDialogTitle className="text-xl font-bold text-gray-900 mb-2">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
                 Delete Customer
-              </AlertDialogTitle>
-              <AlertDialogDescription className="text-gray-600 leading-relaxed">
+              </h3>
+              <p className="text-gray-600 mb-6">
                 This action cannot be undone. This will permanently delete the
                 customer and all associated data.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
+              </p>
+            </div>
 
-            <AlertDialogFooter className="flex gap-3 pt-0">
-              <AlertDialogCancel className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300 rounded-lg py-2.5 font-medium transition-colors">
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setDeleteDialogOpen(false)}
+                disabled={isDeleting}
+              >
                 Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction
+              </Button>
+              <Button
                 onClick={handleDeleteConfirm}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2.5 font-medium transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
+                className="flex-1 bg-red-600 hover:bg-red-700"
                 disabled={isDeleting}
               >
                 {isDeleting ? (
@@ -628,11 +742,11 @@ function ListCustomers() {
                 ) : (
                   "Delete Customer"
                 )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
+              </Button>
+            </div>
           </div>
-        </AlertDialogContent>
-      </AlertDialog>
+        </div>
+      )}
     </div>
   );
 }

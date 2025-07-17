@@ -14,7 +14,6 @@ const buyProduct = async (req, res) => {
       description,
     } = req.body;
 
-    // Validate request body
     const validate = Buy_product.validate(req.body);
     if (validate.error) {
       return res
@@ -28,16 +27,13 @@ const buyProduct = async (req, res) => {
       0
     );
 
-    // Use Prisma transaction for atomic operations
     const result = await prisma.$transaction(async (tx) => {
-      // Create Buy_transaction records for each cart item
       const buyTransactions = [];
+
       for (const item of cart_list) {
-        // Format return_date properly for Prisma
         let formattedReturnDate = null;
         if (payment_method === "CREDIT" && return_date) {
           try {
-            // Convert date string to ISO DateTime format
             const dateObj = new Date(return_date);
             if (!isNaN(dateObj.getTime())) {
               formattedReturnDate = dateObj.toISOString();
@@ -52,17 +48,14 @@ const buyProduct = async (req, res) => {
             product_type_id: item.product_type_id,
           },
         });
-        // if product stock is not found, throw an error
+
         if (!productStock) {
           throw new Error("Product stock not found");
         }
 
-        // Calculate new quantity and amount_money
         const newQuantity = productStock.quantity + item.quantity;
-
         const newAmountMoney = newQuantity * productStock.price_per_quantity;
 
-        // Update the product stock
         await tx.product_stock.update({
           where: {
             id: productStock.id,
@@ -87,12 +80,23 @@ const buyProduct = async (req, res) => {
               payment_method === "CREDIT" ? formattedReturnDate : null,
           },
         });
+
         buyTransactions.push(buyTransaction);
+
+        // ✅ Track product inflow in product_transaction
+        await tx.product_transaction.create({
+          data: {
+            transaction_id,
+            type_id: item.product_type_id,
+            quantity: item.quantity,
+            price_per_quantity: item.price_per_quantity,
+            method: "IN",
+            isActive: true,
+          },
+        });
       }
 
-      // Handle payment method specific logic
       if (payment_method === "CREDIT") {
-        // Format return_date for Buy_credit
         let formattedCreditReturnDate = null;
         if (return_date) {
           try {
@@ -108,7 +112,6 @@ const buyProduct = async (req, res) => {
           }
         }
 
-        // Create Buy_credit record
         await tx.buy_credit.create({
           data: {
             transaction_id,
@@ -120,7 +123,6 @@ const buyProduct = async (req, res) => {
           },
         });
       } else if (payment_method === "BANK") {
-        // Check bank balance
         const check_bank_balance = await tx.bank_balance.findFirst({
           where: {
             bank_id: bank_id,
@@ -135,7 +137,6 @@ const buyProduct = async (req, res) => {
           throw new Error("Bank balance not enough");
         }
 
-        // Create Bank_transaction
         await tx.bank_transaction.create({
           data: {
             out: total_money,
@@ -146,7 +147,6 @@ const buyProduct = async (req, res) => {
           },
         });
 
-        // Update bank balance
         await tx.bank_balance.update({
           where: {
             id: check_bank_balance.id,
@@ -156,15 +156,14 @@ const buyProduct = async (req, res) => {
           },
         });
       } else if (payment_method === "CASH") {
-        // Create Cash_transaction
         await tx.cash_transaction.create({
           data: {
             out: total_money,
             in: 0,
-            balance: 0, // You might want to get current cash balance
+            balance: 0, // optional: fetch & update actual cash balance
             transaction_id,
-            manager_id: 1, // You might want to get from auth
-            casher_id: 1, // You might want to get from auth
+            manager_id: 1,
+            casher_id: 1,
           },
         });
       } else {
@@ -183,9 +182,7 @@ const buyProduct = async (req, res) => {
   } catch (error) {
     console.error("Error in buyProduct:", error);
 
-    // Handle specific error types
     if (error.message) {
-      // Handle transaction errors (bank balance, invalid payment method, etc.)
       if (error.message.includes("Bank balance not found")) {
         return res.status(400).json({ message: "Bank balance not found" });
       }
@@ -199,29 +196,20 @@ const buyProduct = async (req, res) => {
           .status(400)
           .json({ message: "Invalid payment method provided" });
       }
-      if (error.message.includes("Bank balance not found")) {
-        return res
-          .status(400)
-          .json({ message: "Selected bank account not found" });
-      }
 
-      // Handle validation errors
       if (error.message.includes("validation")) {
         return res.status(400).json({ message: error.message });
       }
 
-      // Handle timeout errors
       if (error.code === "P1008") {
         return res
           .status(408)
           .json({ message: "Request timeout. Please try again." });
       }
 
-      // For other known errors, return the specific message
       return res.status(500).json({ message: error.message });
     }
 
-    // Fallback for unknown errors
     res.status(500).json({
       message: "Network error.",
     });
@@ -231,22 +219,129 @@ const buyProduct = async (req, res) => {
 // buy credit report
 const buyCreditReport = async (req, res) => {
   try {
-    const getBuyCreditReport = await prisma.buy_credit.findMany();
+    const {
+      page = 1,
+      limit = 10,
+      transactionId,
+      status,
+      startDate,
+      endDate,
+      supplierName,
+      isActive = true,
+    } = req.query;
 
-    if (getBuyCreditReport.length === 0) {
-      return res.status(404).json({ status: false, error: 'Buy credit report not found' });
+    // Convert page and limit to numbers
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+    const offset = (pageNumber - 1) * limitNumber;
+
+    // Build where clause for filtering
+    const whereClause = {
+      isActive: isActive === "true" || isActive === true,
+    };
+
+    // Add filters if provided
+    if (transactionId) {
+      whereClause.transaction_id = {
+        contains: transactionId,
+      };
     }
 
-    return res.status(200).json({ status: true, data: getBuyCreditReport });
+    if (status) {
+      whereClause.status = status;
+    }
+
+    if (startDate || endDate) {
+      whereClause.createdAt = {};
+      if (startDate) {
+        whereClause.createdAt.gte = new Date(startDate);
+      }
+      if (endDate) {
+        // Add 1 day to endDate to include the entire end date
+        const endDateTime = new Date(endDate);
+        endDateTime.setDate(endDateTime.getDate() + 1);
+        whereClause.createdAt.lt = endDateTime;
+      }
+    }
+
+    // Get total count for pagination
+    const totalCount = await prisma.buy_credit.count({
+      where: whereClause,
+    });
+
+    // Get paginated data
+    const getBuyCreditReport = await prisma.buy_credit.findMany({
+      where: whereClause,
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip: offset,
+      take: limitNumber,
+    });
+
+    // Manually join with buy_transaction to get supplier_name
+    const buyCreditWithSupplier = await Promise.all(
+      getBuyCreditReport.map(async (credit) => {
+        const buyTransactions = await prisma.buy_transaction.findMany({
+          where: {
+            transaction_id: credit.transaction_id,
+          },
+          select: {
+            supplier_name: true,
+          },
+          take: 1, // Get first one since supplier_name should be same for all in same transaction
+        });
+
+        return {
+          ...credit,
+          supplier_name: buyTransactions[0]?.supplier_name || null,
+        };
+      })
+    );
+
+    // Filter by supplier name if provided
+    let filteredResults = buyCreditWithSupplier;
+    if (supplierName) {
+      filteredResults = buyCreditWithSupplier.filter((credit) =>
+        credit.supplier_name?.toLowerCase().includes(supplierName.toLowerCase())
+      );
+    }
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalCount / limitNumber);
+    const hasNextPage = pageNumber < totalPages;
+    const hasPreviousPage = pageNumber > 1;
+
+    const paginationData = {
+      currentPage: pageNumber,
+      pageSize: limitNumber,
+      totalCount,
+      totalPages,
+      hasNextPage,
+      hasPreviousPage,
+    };
+
+    if (filteredResults.length === 0 && totalCount === 0) {
+      return res.status(404).json({
+        status: false,
+        error: "Buy credit report not found",
+        pagination: paginationData,
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      data: filteredResults,
+      pagination: paginationData,
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({
       status: false,
-      error: 'Internal server error'
+      error: "Internal server error",
     });
   }
 };
-
 
 // detail buy credit report
 const detailBuyCredit = async (req, res) => {
@@ -255,31 +350,34 @@ const detailBuyCredit = async (req, res) => {
   try {
     const getDetailBuyCreditReport = await prisma.buy_transaction.findMany({
       where: {
-        transaction_id: transaction_id
+        transaction_id: transaction_id,
       },
       include: {
         Product_type: {
           select: {
             id: true,
-            name: true
-          }
-        }
-      }
+            name: true,
+          },
+        },
+      },
     });
 
     if (getDetailBuyCreditReport.length === 0) {
-      return res.status(404).json({ status: false, error: 'Buy credit detail not found' });
+      return res
+        .status(404)
+        .json({ status: false, error: "Buy credit detail not found" });
     }
 
-    return res.status(200).json({ status: true, data: getDetailBuyCreditReport });
+    return res
+      .status(200)
+      .json({ status: true, data: getDetailBuyCreditReport });
   } catch (err) {
     console.error(err);
     return res.status(500).json({
       status: false,
-      error: 'Internal server error'
+      error: "Internal server error",
     });
   }
 };
-
 
 module.exports = { buyProduct, buyCreditReport, detailBuyCredit };

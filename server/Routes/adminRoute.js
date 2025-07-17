@@ -44,7 +44,6 @@ const {
 } = require("../Utils/fileUtils");
 const {
   repaySalesCredit,
-  getSalesCreditDetailTransaction,
   salesCreditReportForRepay,
   getSalesCreditDetails,
   buyCreditReportForRepay,
@@ -55,12 +54,17 @@ const {
 const {
   getSalesReport,
   getSalesDetails,
-  getBuyReport,
-  getBuyDetails,
 } = require("../Controllers/Report.controller");
 const { cashReport } = require("../Controllers/Report/Cash.controller");
 const { bankTransaction } = require("../Controllers/Report/BankTransaction");
 const { bankBalance } = require("../Controllers/Report/BankBalance.controller");
+const {
+  getBuyReport,
+  getBuyDetails,
+} = require("../Controllers/Report/BuyTransaction");
+const {
+  productTransactions,
+} = require("../Controllers/Report/productTransaction");
 
 router.post("/add-product-category", addProductCategory);
 router.post("/add-product-type", addProductType);
@@ -100,6 +104,8 @@ router.get("/get-buy-transaction-details/:id", detailBuyCredit);
 // Sales Routes
 router.post("/sell-product", sellProduct);
 
+router.get("/get-sales-transaction-details/:transaction_id", detailSalesCredit);
+
 //sales and buy repay credit
 router.post(
   "/repay-credit-sales",
@@ -132,8 +138,8 @@ router.get("/get-sales-report", getSalesReport);
 router.get("/get-sales-details/:transaction_id", getSalesDetails);
 
 // buy report
-router.get("/get-buy-report", getBuyReport)
-router.get("/get-buy-details/:transaction_id", getBuyDetails)
+router.get("/get-buy-report", getBuyReport);
+router.get("/get-buy-details/:transaction_id", getBuyDetails);
 
 // for buy credit
 router.get("/get-all-buy-credits", buyCreditReport);
@@ -153,5 +159,9 @@ router.get("/get-bank-transaction", bankTransaction);
 
 // Bank balance
 router.get("/get-bank-balance", bankBalance);
+
+// product transaction
+
+router.get("/get-product-transaction", productTransactions);
 
 module.exports = router;
