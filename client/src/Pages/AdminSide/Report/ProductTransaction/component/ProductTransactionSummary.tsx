@@ -1,6 +1,5 @@
-import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, Package, DollarSign, TrendingUp, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowDown, ArrowUp, Package, TrendingUp } from "lucide-react";
 
 interface ProductStock {
     id: number;

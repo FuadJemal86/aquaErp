@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, ShoppingCart, TrendingDown } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import BuyReportTable from "./components/BuyReportTable";
 import ShowBuyDetails from "./components/ShowDetail";
 

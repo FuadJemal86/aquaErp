@@ -1,13 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from "@/components/ui/table";
+
 import { ReceiptText, XCircle, Loader2 } from "lucide-react";
 import api from "@/services/api";
 import { toast } from "sonner";
@@ -16,7 +9,6 @@ import NotificationModal from "./NotificationModal";
 function ConfirmPaymentModal({
   open,
   onClose,
-  onConfirm,
   cartList,
   supplierName,
   paymentMethod,

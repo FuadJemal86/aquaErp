@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -6,21 +6,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   Table,
-  TableHeader,
-  TableRow,
-  TableHead,
   TableBody,
   TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { List, RefreshCw, ShoppingCart } from "lucide-react";
+import { useState } from "react";
 import ConfirmPaymentModal from "./ConfirmPaymentModal";
 
 function CartList({
   cartList,
-  onBuyCart,
   categories,
   productTypes,
   onBuyAll,

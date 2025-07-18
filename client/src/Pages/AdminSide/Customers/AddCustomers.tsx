@@ -1,8 +1,4 @@
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import api from "@/services/api";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,22 +6,26 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import api from "@/services/api";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  Plus,
-  UserPlus,
+  File,
+  FileText,
+  Image as ImageIcon,
   MapPin,
   Phone,
+  Plus,
   Upload,
-  FileText,
+  UserPlus,
   X,
-  Image as ImageIcon,
-  File,
 } from "lucide-react";
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
 
 // Zod schema for customer validation
 const customerSchema = z.object({

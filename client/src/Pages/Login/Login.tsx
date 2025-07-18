@@ -1,9 +1,3 @@
-import type React from "react";
-import { useState, useContext } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -28,28 +23,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+import { AuthContext } from "@/Context/AuthContext";
+import api from "@/services/api";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { motion } from "framer-motion";
 import {
+  ArrowRight,
+  BarChart3,
   Droplets,
-  Lock,
-  Mail,
-  User,
-  Shield,
-  Truck,
-  Users,
-  Package,
   Eye,
   EyeOff,
-  ArrowRight,
-  CheckCircle,
-  BarChart3,
+  Lock,
+  Mail,
+  Package,
+  Shield,
+  Truck,
+  User,
+  Users
 } from "lucide-react";
-import { toast } from "sonner";
-import api from "@/services/api";
+import { useContext, useState } from "react";
+import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from "@/Context/AuthContext";
+import { toast } from "sonner";
+import * as z from "zod";
 
 // Form validation schema
 const loginSchema = z.object({

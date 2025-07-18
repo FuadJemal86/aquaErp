@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import api from "@/services/api";
+import { ShoppingCart } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import AddCart from "./components/AddCart";
 import CartList from "./components/CartList";
-import { ShoppingCart } from "lucide-react";
-import api from "@/services/api";
-import { toast } from "sonner";
 
 function BuyProducts() {
   const [cartList, setCartList] = useState<any[]>([]);

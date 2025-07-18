@@ -1,10 +1,7 @@
-import React from 'react';
 import {
     Card,
     CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+    CardHeader
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
