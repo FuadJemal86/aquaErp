@@ -19,6 +19,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   TrendingUp,
   TrendingDown,
@@ -33,7 +49,11 @@ import {
   Activity,
   Eye,
   EyeOff,
+  Calendar as CalendarIcon,
+  Filter,
 } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 // import api from "@/services/api";
 // import { toast } from "sonner";
 
@@ -216,6 +236,10 @@ function AdminDashboard() {
     totalAssets: false,
   });
 
+  // Filter states
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedFilter, setSelectedFilter] = useState<string>("all-time");
+
   const toggleVisibility = (cardType: keyof typeof hiddenStates) => {
     setHiddenStates((prev) => ({
       ...prev,
@@ -236,16 +260,76 @@ function AdminDashboard() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
             Overview of your business performance
           </p>
         </div>
-        <Badge variant="secondary" className="text-sm">
-          {new Date().toLocaleDateString()}
-        </Badge>
+
+        {/* Filter Controls */}
+        <div className="flex items-center gap-16 sm:gap-4">
+          {/* Date Filter */}
+          <div className="flex items-center gap-2 pl-3">
+            <Label
+              htmlFor="date-filter"
+              className="hidden sm:block text-sm font-medium"
+            >
+              Date:
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-[140px] sm:w-[200px] justify-start text-left font-normal ",
+                    !selectedDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className=" h-4 w-3" />
+                  {selectedDate ? (
+                    format(selectedDate, "PPP")
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Quick Filter Dropdown */}
+          <div className="flex items-center gap-2">
+            <Label
+              htmlFor="quick-filter"
+              className="hidden sm:block text-sm font-medium"
+            >
+              Filter:
+            </Label>
+            <Select value={selectedFilter} onValueChange={setSelectedFilter}>
+              <SelectTrigger className="w-[120px] sm:w-[160px]">
+                <SelectValue placeholder="Select filter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-time">All Time</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="yesterday">Yesterday</SelectItem>
+                <SelectItem value="this-week">This Week</SelectItem>
+                <SelectItem value="last-week">Last Week</SelectItem>
+                <SelectItem value="this-month">This Month</SelectItem>
+                <SelectItem value="last-month">Last Month</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
       {/* Summary Cards Section */}

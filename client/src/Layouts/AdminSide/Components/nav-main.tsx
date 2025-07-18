@@ -74,6 +74,22 @@ export function NavMain({
     });
   };
 
+  const handleItemClick = (
+    e: React.MouseEvent,
+    itemTitle: string,
+    hasSubItems: boolean,
+    itemUrl: string
+  ) => {
+    if (hasSubItems) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleItem(itemTitle);
+    } else if (itemUrl !== "#") {
+      // Navigate to the URL if it's not a placeholder
+      window.location.href = itemUrl;
+    }
+  };
+
   // Check if an item is active
   const isItemActive = (item: any) => {
     if (item.url !== "#" && location.pathname === item.url) {
@@ -99,45 +115,47 @@ export function NavMain({
         {items.map((item) => (
           <Collapsible
             key={item.title}
-            asChild
             open={openItems.has(item.title)}
             onOpenChange={() => toggleItem(item.title)}
           >
             <SidebarMenuItem>
-              <div className="flex items-center w-full">
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <Link to={item.url}>
-                      <div className="relative">
-                        <item.icon />
-                        {item.badgeCount ? (
-                          <Badge
-                            variant="destructive"
-                            className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
-                          >
-                            {item.badgeCount}
-                          </Badge>
-                        ) : null}
-                      </div>
-                      <span
-                        className={
-                          isItemActive(item)
-                            ? "text-foreground font-bold "
-                            : "text-foreground"
-                        }
+              <div
+                className="flex items-center w-full cursor-pointer"
+                onClick={(e) =>
+                  handleItemClick(e, item.title, !!item.items?.length, item.url)
+                }
+              >
+                <SidebarMenuButton tooltip={item.title}>
+                  <div className="relative">
+                    <item.icon />
+                    {item.badgeCount ? (
+                      <Badge
+                        variant="destructive"
+                        className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
                       >
-                        {item.title}
-                      </span>
-                    </Link>
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
+                        {item.badgeCount}
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <span
+                    className={
+                      isItemActive(item)
+                        ? "text-foreground font-bold "
+                        : "text-foreground"
+                    }
+                  >
+                    {item.title}
+                  </span>
+                </SidebarMenuButton>
                 {item.items?.length ? (
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuAction className="data-[state=open]:rotate-90">
-                      <ChevronRight />
-                      <span className="sr-only">Toggle</span>
-                    </SidebarMenuAction>
-                  </CollapsibleTrigger>
+                  <SidebarMenuAction
+                    className={`transition-transform duration-200 ${
+                      openItems.has(item.title) ? "rotate-90" : ""
+                    }`}
+                  >
+                    <ChevronRight />
+                    <span className="sr-only">Toggle</span>
+                  </SidebarMenuAction>
                 ) : null}
               </div>
               {item.items?.length ? (
@@ -145,18 +163,18 @@ export function NavMain({
                   <SidebarMenuSub>
                     {item.items?.map((subItem) => (
                       <SidebarMenuSubItem key={subItem.title}>
-                        <SidebarMenuSubButton asChild>
-                          <Link to={subItem.url}>
-                            <span
-                              className={
-                                isSubItemActive(subItem.url)
-                                  ? "text-foreground font-bold font-mono "
-                                  : "text-foreground"
-                              }
-                            >
-                              {subItem.title}
-                            </span>
-                          </Link>
+                        <SidebarMenuSubButton
+                          onClick={() => (window.location.href = subItem.url)}
+                        >
+                          <span
+                            className={
+                              isSubItemActive(subItem.url)
+                                ? "text-foreground font-bold font-mono "
+                                : "text-foreground"
+                            }
+                          >
+                            {subItem.title}
+                          </span>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     ))}
