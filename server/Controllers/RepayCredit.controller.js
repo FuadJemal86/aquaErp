@@ -5,7 +5,6 @@ const { deleteFileIfExists } = require("../Utils/fileUtils");
 const {
   generateSalesCreditTransactionId,
 } = require("../Utils/GenerateTransactionId");
-const jwt = require('jsonwebtoken')
 
 // const getSalesCreditDetailTransaction = async (req, res) => {
 //   const transaction_id = req.params.id;
@@ -59,18 +58,19 @@ const getSalesCreditDetails = async (req, res) => {
     });
 
     // Fetch related sales credit repayments
-    const salesCreditTransactions = await prisma.sales_credit_transaction.findMany({
-      where: { transaction_id },
-      select: {
-        id: true,
-        amount_payed: true,
-        payment_method: true,
-        CTID: true,
-        outstanding_balance: true,
-        image: true,
-        createdAt: true,
-      },
-    });
+    const salesCreditTransactions =
+      await prisma.sales_credit_transaction.findMany({
+        where: { transaction_id },
+        select: {
+          id: true,
+          amount_payed: true,
+          payment_method: true,
+          CTID: true,
+          outstanding_balance: true,
+          image: true,
+          createdAt: true,
+        },
+      });
 
     if (salesTransactions.length === 0) {
       return res
@@ -80,7 +80,9 @@ const getSalesCreditDetails = async (req, res) => {
 
     // Extract unique user IDs (manager + casher)
     const userIds = Array.from(
-      new Set(salesTransactions.flatMap((item) => [item.manager_id, item.casher_id]))
+      new Set(
+        salesTransactions.flatMap((item) => [item.manager_id, item.casher_id])
+      )
     ).filter(Boolean);
 
     // Fetch names for these user IDs
@@ -113,7 +115,6 @@ const getSalesCreditDetails = async (req, res) => {
     });
   }
 };
-
 
 const salesCreditReportForRepay = async (req, res) => {
   try {
@@ -181,22 +182,9 @@ const repaySalesCredit = async (req, res) => {
 
   const bankId = bank_id ? parseInt(bank_id) : null;
 
-  // Get user info from JWT in cookies
-  const token = req.cookies?.token;
-  if (!token) {
-    return res.status(401).json({ status: false, error: "Unauthorized access" });
-  }
-
-  let userId = null;
-  let role = null;
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    userId = decoded.userId;
-    role = decoded.role;
-  } catch (err) {
-    return res.status(401).json({ status: false, error: "Invalid token" });
-  }
+  // Get user info from middleware
+  const userId = req.userId;
+  const role = req.role;
 
   // Image required for BANK
   if (payment_method === "BANK" && !req.file?.fullPath) {
@@ -337,7 +325,6 @@ const repaySalesCredit = async (req, res) => {
   }
 };
 
-
 // Buy repay credit
 
 const getBuyCreditDetails = async (req, res) => {
@@ -455,22 +442,9 @@ const repayBuyCredit = async (req, res) => {
 
   const bankId = bank_id ? parseInt(bank_id) : null;
 
-  // Extract user info from JWT token in cookies
-  const token = req.cookies?.token;
-  if (!token) {
-    return res.status(401).json({ status: false, error: "Unauthorized access" });
-  }
-
-  let userId = null;
-  let role = null;
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    userId = decoded.userId;
-    role = decoded.role;
-  } catch (err) {
-    return res.status(401).json({ status: false, error: "Invalid token" });
-  }
+  // Get user info from middleware
+  const userId = req.userId;
+  const role = req.role;
 
   // Require image only for BANK payments
   if (payment_method === "BANK" && !req.file?.fullPath) {
@@ -613,7 +587,6 @@ const repayBuyCredit = async (req, res) => {
       .json({ status: false, error: "Internal server error" });
   }
 };
-
 
 // get cash balance
 
