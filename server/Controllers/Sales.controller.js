@@ -468,6 +468,27 @@ const detailSalesCredit = async (req, res) => {
   }
 };
 
+// get all customer for sale
+const getAllCustomerForSale = async (req, res) => {
+  const customers = await prisma.customer.findMany({
+    where: {
+      isActive: true,
+    },
+    select: {
+      id: true,
+      full_name: true,
+      phone: true,
+      address: true,
+    },
+  });
+  return res.status(200).json({ status: true, customers: customers });
+};
+
 // List of credit
 
-module.exports = { sellProduct, salesCreditReport, detailSalesCredit };
+module.exports = {
+  sellProduct,
+  salesCreditReport,
+  detailSalesCredit,
+  getAllCustomerForSale,
+};

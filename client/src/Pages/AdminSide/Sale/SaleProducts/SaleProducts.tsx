@@ -31,8 +31,8 @@ function SaleProducts() {
       setBankList(res.data);
     };
     const fetchCustomers = async () => {
-      const res = await api.get("/admin/get-all-customer");
-      setCustomers(res.data);
+      const res = await api.get("/admin/get-all-customer-for-sale");
+      setCustomers(res.data.customers);
     };
 
     fetchCategories();
