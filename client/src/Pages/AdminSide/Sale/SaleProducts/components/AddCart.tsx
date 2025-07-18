@@ -1,8 +1,4 @@
-import React, { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import api from "@/services/api";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -20,8 +15,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, ShoppingCart, Package, Tag, Loader2, Users } from "lucide-react";
+import api from "@/services/api";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2, Plus, ShoppingCart } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import type { SingleValue } from "react-select";
+import ReactSelect from "react-select";
 import { toast } from "sonner";
+import { z } from "zod";
 
 // Zod schema for sales cart validation
 const salesCartSchema = z
@@ -172,9 +174,18 @@ function AddCart({
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isLoadingProductTypes, setIsLoadingProductTypes] = useState(false);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<
+    { value: number; label: string }[]
+  >([]);
   const [productTypes, setProductTypes] = useState<ProductType[]>([]);
+  const [productTypeOptions, setProductTypeOptions] = useState<
+    { value: number; label: string }[]
+  >([]);
   const [bankList, setBankList] = useState<BankList[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerOptions, setCustomerOptions] = useState<
+    { value: number; label: string }[]
+  >([]);
   const [quantityError, setQuantityError] = useState<string>("");
 
   const {
@@ -210,6 +221,13 @@ function AddCart({
     try {
       const response = await api.get("/admin/get-product-category");
       setCategories(response.data);
+
+      // Create options for react-select
+      const options = response.data.map((category: ProductCategory) => ({
+        value: category.id,
+        label: category.name,
+      }));
+      setCategoryOptions(options);
     } catch (error) {
       console.error("Error fetching categories:", error);
       toast.error("Failed to fetch categories");
@@ -224,6 +242,13 @@ function AddCart({
     try {
       const response = await api.get("/admin/get-product-type");
       setProductTypes(response.data);
+
+      // Create options for react-select
+      const options = response.data.map((type: ProductType) => ({
+        value: type.id,
+        label: `${type.name} (${type.measurement})`,
+      }));
+      setProductTypeOptions(options);
     } catch (error) {
       console.error("Error fetching product types:", error);
       toast.error("Failed to fetch product types");
@@ -248,16 +273,35 @@ function AddCart({
       const response = await api.get("/admin/get-all-customer-for-sale");
       const customersData = response.data?.customers;
       setCustomers(Array.isArray(customersData) ? customersData : []);
+
+      // Create options for react-select
+      const options = (Array.isArray(customersData) ? customersData : []).map(
+        (customer: Customer) => ({
+          value: customer.id,
+          label: `${customer.full_name} - ${customer.phone}`,
+        })
+      );
+      setCustomerOptions(options);
     } catch (error) {
       console.error("Error fetching customers:", error);
       setCustomers([]);
+      setCustomerOptions([]);
     }
   };
 
-  // Filter product types based on selected category
-  const filteredProductTypes = productTypes.filter(
-    (type) => type.product_category_id === parseInt(selectedCategory)
-  );
+  // // Filter product types based on selected category
+  // const filteredProductTypes = productTypes.filter(
+  //   (type) => type.product_category_id === parseInt(selectedCategory)
+  // );
+
+  // Filter product type options based on selected category
+  const filteredProductTypeOptions = productTypeOptions.filter((option) => {
+    const productType = productTypes.find((type) => type.id === option.value);
+    return (
+      productType &&
+      productType.product_category_id === parseInt(selectedCategory)
+    );
+  });
 
   // Get available payment methods based on customer type
   const getAvailablePaymentMethods = () => {
@@ -286,16 +330,30 @@ function AddCart({
   };
 
   // Handle category change
-  const handleCategoryChange = (categoryId: string) => {
-    setValue("product_category_id", categoryId);
-    setValue("product_type_id", ""); // Reset product type when category changes
+  const handleCategoryChange = (
+    selectedOption: SingleValue<{ value: number; label: string }>
+  ) => {
+    if (selectedOption) {
+      setValue("product_category_id", selectedOption.value.toString());
+      setValue("product_type_id", ""); // Reset product type when category changes
+    } else {
+      setValue("product_category_id", "");
+      setValue("product_type_id", "");
+    }
   };
 
   // Handle product type change
-  const handleProductTypeChange = (productTypeId: string) => {
-    setValue("product_type_id", productTypeId);
-    // Clear quantity error when product type changes
-    setQuantityError("");
+  const handleProductTypeChange = (
+    selectedOption: SingleValue<{ value: number; label: string }>
+  ) => {
+    if (selectedOption) {
+      setValue("product_type_id", selectedOption.value.toString());
+      // Clear quantity error when product type changes
+      setQuantityError("");
+    } else {
+      setValue("product_type_id", "");
+      setQuantityError("");
+    }
   };
 
   // Handle payment method change
@@ -316,8 +374,14 @@ function AddCart({
   };
 
   // Handle customer selection change
-  const handleCustomerChange = (customerId: string) => {
-    setValue("customer_id", customerId);
+  const handleCustomerChange = (
+    selectedOption: SingleValue<{ value: number; label: string }>
+  ) => {
+    if (selectedOption) {
+      setValue("customer_id", selectedOption.value.toString());
+    } else {
+      setValue("customer_id", "");
+    }
   };
 
   // Function to validate quantity against available stock
@@ -523,27 +587,32 @@ function AddCart({
           {selectedCustomerType === "REGULAR" && (
             <div className="space-y-2">
               <Label htmlFor="customer_id">Select Customer *</Label>
-              <Select
-                value={selectedCustomerId || watch("customer_id")}
-                onValueChange={handleCustomerChange}
-                disabled={!!selectedCustomerId}
-              >
-                <SelectTrigger
-                  className={errors.customer_id ? "border-red-500" : ""}
-                >
-                  <SelectValue placeholder="Choose a customer" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map((customer) => (
-                    <SelectItem
-                      key={customer.id}
-                      value={customer.id.toString()}
-                    >
-                      {customer.full_name} - {customer.phone}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ReactSelect
+                options={customerOptions}
+                onChange={handleCustomerChange}
+                placeholder="Search and select customer..."
+                isDisabled={!!selectedCustomerId}
+                value={customerOptions.find(
+                  (option) =>
+                    option.value.toString() ===
+                    (selectedCustomerId || watch("customer_id"))
+                )}
+                className={errors.customer_id ? "border-red-500" : ""}
+                classNamePrefix="react-select"
+                styles={{
+                  control: (provided, state) => ({
+                    ...provided,
+                    borderColor: errors.customer_id
+                      ? "#ef4444"
+                      : provided.borderColor,
+                    "&:hover": {
+                      borderColor: errors.customer_id
+                        ? "#ef4444"
+                        : provided.borderColor,
+                    },
+                  }),
+                }}
+              />
               {errors.customer_id && (
                 <p className="text-sm text-red-500">
                   {errors.customer_id.message}
@@ -556,34 +625,30 @@ function AddCart({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="product_category_id">Product Category *</Label>
-              <Select
-                value={selectedCategory}
-                onValueChange={handleCategoryChange}
-              >
-                <SelectTrigger
-                  className={
-                    errors.product_category_id ? "border-red-500" : " w-full"
-                  }
-                >
-                  <SelectValue placeholder="Choose a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {isLoadingCategories ? (
-                    <div className="flex items-center justify-center p-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    </div>
-                  ) : (
-                    categories.map((category) => (
-                      <SelectItem
-                        key={category.id}
-                        value={category.id.toString()}
-                      >
-                        {category.name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+              <ReactSelect
+                options={categoryOptions}
+                onChange={handleCategoryChange}
+                placeholder="Search and select category..."
+                value={categoryOptions.find(
+                  (option) => option.value.toString() === selectedCategory
+                )}
+                className={errors.product_category_id ? "border-red-500" : ""}
+                classNamePrefix="react-select"
+                isLoading={isLoadingCategories}
+                styles={{
+                  control: (provided, state) => ({
+                    ...provided,
+                    borderColor: errors.product_category_id
+                      ? "#ef4444"
+                      : provided.borderColor,
+                    "&:hover": {
+                      borderColor: errors.product_category_id
+                        ? "#ef4444"
+                        : provided.borderColor,
+                    },
+                  }),
+                }}
+              />
               {errors.product_category_id && (
                 <p className="text-sm text-red-500">
                   {errors.product_category_id.message}
@@ -593,32 +658,32 @@ function AddCart({
 
             <div className="space-y-2">
               <Label htmlFor="product_type_id">Product Type *</Label>
-              <Select
-                value={watch("product_type_id")}
-                onValueChange={handleProductTypeChange}
-                disabled={!selectedCategory}
-              >
-                <SelectTrigger
-                  className={
-                    errors.product_type_id ? "border-red-500" : " w-full"
-                  }
-                >
-                  <SelectValue placeholder="Choose a product type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {isLoadingProductTypes ? (
-                    <div className="flex items-center justify-center p-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    </div>
-                  ) : (
-                    filteredProductTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id.toString()}>
-                        {type.name} ({type.measurement})
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+              <ReactSelect
+                options={filteredProductTypeOptions}
+                onChange={handleProductTypeChange}
+                placeholder="Search and select product type..."
+                isDisabled={!selectedCategory}
+                value={filteredProductTypeOptions.find(
+                  (option) =>
+                    option.value.toString() === watch("product_type_id")
+                )}
+                className={errors.product_type_id ? "border-red-500" : ""}
+                classNamePrefix="react-select"
+                isLoading={isLoadingProductTypes}
+                styles={{
+                  control: (provided, state) => ({
+                    ...provided,
+                    borderColor: errors.product_type_id
+                      ? "#ef4444"
+                      : provided.borderColor,
+                    "&:hover": {
+                      borderColor: errors.product_type_id
+                        ? "#ef4444"
+                        : provided.borderColor,
+                    },
+                  }),
+                }}
+              />
               {errors.product_type_id && (
                 <p className="text-sm text-red-500">
                   {errors.product_type_id.message}
@@ -723,76 +788,76 @@ function AddCart({
             {/* Conditional field based on payment method */}
             {(selectedPaymentMethod === "BANK" ||
               presetPaymentMethod === "BANK") && (
-                <div className="space-y-2">
-                  <Label htmlFor="bank_id">Select Bank *</Label>
-                  <Select
-                    value={selectedBankId || watch("bank_id")}
-                    onValueChange={handleBankChange}
-                    disabled={!!selectedBankId}
+              <div className="space-y-2">
+                <Label htmlFor="bank_id">Select Bank *</Label>
+                <Select
+                  value={selectedBankId || watch("bank_id")}
+                  onValueChange={handleBankChange}
+                  disabled={!!selectedBankId}
+                >
+                  <SelectTrigger
+                    className={errors.bank_id ? "border-red-500" : " w-full"}
                   >
-                    <SelectTrigger
-                      className={errors.bank_id ? "border-red-500" : " w-full"}
-                    >
-                      <SelectValue placeholder="Choose a bank account" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {bankList.map((bank) => (
-                        <SelectItem key={bank.id} value={bank.id.toString()}>
-                          {bank.branch} - {bank.account_number} ({bank.owner})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.bank_id && (
-                    <p className="text-sm text-red-500">
-                      {errors.bank_id.message}
-                    </p>
-                  )}
-                </div>
-              )}
+                    <SelectValue placeholder="Choose a bank account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bankList.map((bank) => (
+                      <SelectItem key={bank.id} value={bank.id.toString()}>
+                        {bank.branch} - {bank.account_number} ({bank.owner})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.bank_id && (
+                  <p className="text-sm text-red-500">
+                    {errors.bank_id.message}
+                  </p>
+                )}
+              </div>
+            )}
 
             {(selectedPaymentMethod === "CREDIT" ||
               presetPaymentMethod === "CREDIT") && (
-                <div className="space-y-2">
-                  <Label htmlFor="return_date">Return Date *</Label>
-                  <Input
-                    id="return_date"
-                    type="date"
-                    {...register("return_date")}
-                    className={errors.return_date ? "border-red-500" : ""}
-                    min={new Date().toISOString().split("T")[0]} // Set minimum date to today
-                    disabled={!!presetReturnDate}
-                    value={presetReturnDate || undefined}
-                  />
-                  {errors.return_date && (
-                    <p className="text-sm text-red-500">
-                      {errors.return_date.message}
-                    </p>
-                  )}
-                </div>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="return_date">Return Date *</Label>
+                <Input
+                  id="return_date"
+                  type="date"
+                  {...register("return_date")}
+                  className={errors.return_date ? "border-red-500" : ""}
+                  min={new Date().toISOString().split("T")[0]} // Set minimum date to today
+                  disabled={!!presetReturnDate}
+                  value={presetReturnDate || undefined}
+                />
+                {errors.return_date && (
+                  <p className="text-sm text-red-500">
+                    {errors.return_date.message}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Description field for CREDIT payment */}
           {(selectedPaymentMethod === "CREDIT" ||
             presetPaymentMethod === "CREDIT") && (
-              <div className="space-y-2">
-                <Label htmlFor="description">Description *</Label>
-                <Input
-                  id="description"
-                  placeholder="Enter description for credit payment"
-                  {...register("description")}
-                  className={errors.description ? "border-red-500" : ""}
-                  disabled={!!presetDescription}
-                  value={presetDescription || undefined}
-                />
-                {errors.description && (
-                  <p className="text-sm text-red-500">
-                    {errors.description.message}
-                  </p>
-                )}
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <Input
+                id="description"
+                placeholder="Enter description for credit payment"
+                {...register("description")}
+                className={errors.description ? "border-red-500" : ""}
+                disabled={!!presetDescription}
+                value={presetDescription || undefined}
+              />
+              {errors.description && (
+                <p className="text-sm text-red-500">
+                  {errors.description.message}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Total Calculation */}
           {watch("quantity") && watch("price") && (

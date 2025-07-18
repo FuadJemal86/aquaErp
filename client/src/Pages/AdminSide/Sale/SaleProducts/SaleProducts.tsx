@@ -71,12 +71,12 @@ function SaleProducts() {
         ...prev,
         {
           ...cart,
-          id: Date.now() + Math.random().toString(36).substring(2, 9)
+          id: Date.now() + Math.random().toString(36).substring(2, 9),
         },
       ]);
 
       // Update total amount
-      if (typeof cart.total_money === 'number') {
+      if (typeof cart.total_money === "number") {
         setTotalAmount((prev) => prev + cart.total_money);
       }
     } catch (error) {
