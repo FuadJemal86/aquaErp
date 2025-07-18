@@ -41,6 +41,8 @@ interface BankTransactionData {
   description: string | null;
   receipt_image: string | null;
   createdAt: string;
+  manager_name: string;
+  casher_name: string;
   Bank_list: {
     id: number;
     branch: string;
@@ -195,7 +197,7 @@ function BankTransaction() {
     }
   }, [hasActiveFilters, isFilterEnabled]);
 
-  const handleViewDetails = (transactionId: string) => {};
+  const handleViewDetails = (transactionId: string) => { };
 
   if (error) {
     return (
@@ -238,14 +240,12 @@ function BankTransaction() {
             {/* Toggle button for all devices */}
             <button
               onClick={() => setIsFilterEnabled(!isFilterEnabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                isFilterEnabled ? "bg-primary" : "bg-input"
-              }`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${isFilterEnabled ? "bg-primary" : "bg-input"
+                }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
-                  isFilterEnabled ? "translate-x-6" : "translate-x-1"
-                }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${isFilterEnabled ? "translate-x-6" : "translate-x-1"
+                  }`}
               />
             </button>
             {/* Clear filters button */}
@@ -337,6 +337,7 @@ function BankTransaction() {
                 <TableRow>
                   <TableHead>#</TableHead>
                   <TableHead>Transaction ID</TableHead>
+                  <TableHead>Responsible Person</TableHead>
                   <TableHead>Bank Branch</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>In</TableHead>
@@ -373,6 +374,9 @@ function BankTransaction() {
                       </TableCell>
                       <TableCell className="font-mono text-sm">
                         {transaction.transaction_id}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {transaction?.manager_name ?? transaction?.casher_name}
                       </TableCell>
                       <TableCell>
                         <div>

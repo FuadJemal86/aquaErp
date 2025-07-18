@@ -32,6 +32,14 @@ const sellProduct = async (req, res) => {
     const userId = req.userId;
     const role = req.role;
 
+    const responsibleField =
+      role === "ADMIN"
+        ? { manager_id: userId }
+        : role === "CASHER"
+          ? { casher_id: userId }
+          : {};
+
+
     const transaction_id = generateTransactionId();
     const total_money = cart_list.reduce(
       (acc, item) => acc + item.price * item.quantity,
@@ -102,8 +110,8 @@ const sellProduct = async (req, res) => {
             customer_id: customer_type === "REGULAR" ? customer_id : null,
             walker_id: customer_type === "WALKER" ? generateWalkingId() : null,
             bank_id: payment_method === "BANK" ? bank_id : null,
-            manager_id: role === "ADMIN" ? userId : undefined,
-            casher_id: role === "CASHER" ? userId : undefined,
+            ...responsibleField
+
           },
         });
 
@@ -115,6 +123,7 @@ const sellProduct = async (req, res) => {
             type_id: item.type_id,
             quantity: item.quantity,
             price_per_quantity: item.price,
+            ...responsibleField,
             method: "OUT",
             isActive: true,
           },
@@ -164,6 +173,7 @@ const sellProduct = async (req, res) => {
             in: total_money,
             out: 0,
             balance: check_bank_balance.balance + total_money,
+            ...responsibleField,
             transaction_id,
             bank_id,
           },
@@ -192,8 +202,7 @@ const sellProduct = async (req, res) => {
             out: 0,
             balance: total_money + currentCashBalance,
             transaction_id,
-            manager_id: role === "ADMIN" ? userId : undefined,
-            casher_id: role === "CASHER" ? userId : undefined,
+            ...responsibleField,
           },
         });
 

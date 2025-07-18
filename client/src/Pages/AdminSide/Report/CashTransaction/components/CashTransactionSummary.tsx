@@ -8,6 +8,8 @@ interface CashTransactionData {
   out: number;
   balance: number;
   transaction_id: string;
+  manager_name: string;
+  casher_name: string;
   manager_id: number | null;
   casher_id: number | null;
   updatedAt: string;

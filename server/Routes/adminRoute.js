@@ -100,7 +100,7 @@ router.put(
 );
 
 // Buy Routes
-router.post("/buy-product", buyProduct);
+router.post("/buy-product", getId, buyProduct);
 router.get("/get-all-buy-credits", buyCreditReport);
 router.get("/get-buy-transaction-details/:id", detailBuyCredit);
 

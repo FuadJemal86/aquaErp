@@ -63,6 +63,8 @@ interface ProductTransactionData {
     quantity: number;
     price_per_quantity: number;
     method: "IN" | "OUT";
+    manager_name: true,
+    casher_name: true,
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
@@ -364,6 +366,7 @@ function ProductTransaction() {
                                 <TableRow>
                                     <TableHead>#</TableHead>
                                     <TableHead>Transaction ID</TableHead>
+                                    <TableHead>Responsible Person</TableHead>
                                     <TableHead>Product Name</TableHead>
                                     <TableHead>Category</TableHead>
                                     <TableHead>Type</TableHead>
@@ -401,6 +404,9 @@ function ProductTransaction() {
                                             </TableCell>
                                             <TableCell className="font-mono text-sm">
                                                 {transaction.transaction_id}
+                                            </TableCell>
+                                            <TableCell className="font-medium">
+                                                {transaction?.manager_name ?? transaction?.casher_name}
                                             </TableCell>
                                             <TableCell className="font-medium">
                                                 {transaction.Product_type.name}

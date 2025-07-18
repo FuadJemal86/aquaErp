@@ -20,21 +20,16 @@ const buyProduct = async (req, res) => {
       return res.status(400).json({ message: validate.error.details[0].message });
     }
 
+    const userId = req.userId;
+    const role = req.role;
     // Get user info from JWT in cookies
-    const token = req.cookies?.token;
-    if (!token) {
-      return res.status(401).json({ message: "Unauthorized access" });
-    }
+    const responsibleField =
+      role === "ADMIN"
+        ? { manager_id: userId }
+        : role === "CASHER"
+          ? { casher_id: userId }
+          : {};
 
-    let userId = null;
-    let role = null;
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      userId = decoded.userId;
-      role = decoded.role;
-    } catch (err) {
-      return res.status(401).json({ message: "Invalid token" });
-    }
 
     const transaction_id = generateTransactionId();
     const total_money = cart_list.reduce(
@@ -90,8 +85,7 @@ const buyProduct = async (req, res) => {
             payment_method,
             total_money: item.price_per_quantity * item.quantity,
             supplier_name,
-            manager_id: managerId,
-            casher_id: casherId,
+            ...responsibleField,
             transaction_id,
             type_id: item.product_type_id,
             bank_id: payment_method === "BANK" ? bank_id : null,
@@ -108,6 +102,7 @@ const buyProduct = async (req, res) => {
             type_id: item.product_type_id,
             quantity: item.quantity,
             price_per_quantity: item.price_per_quantity,
+            ...responsibleField,
             method: "IN",
             isActive: true,
           },
@@ -156,6 +151,7 @@ const buyProduct = async (req, res) => {
             in: 0,
             balance: check_bank_balance.balance - total_money,
             transaction_id,
+            ...responsibleField,
             bank_id,
           },
         });
@@ -183,8 +179,7 @@ const buyProduct = async (req, res) => {
             in: 0,
             balance: currentCashBalance - total_money,
             transaction_id,
-            manager_id: managerId,
-            casher_id: casherId,
+            ...responsibleField
           },
         });
 

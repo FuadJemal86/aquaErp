@@ -15,12 +15,10 @@ const cashReport = async (req, res) => {
     const pageSize = parseInt(limit);
     const skip = (pageNumber - 1) * pageSize;
 
-    // Build where clause for filtering
     const whereClause = {
       isActive: true,
     };
 
-    // Add filters if they are provided
     if (transactionId) {
       whereClause.transaction_id = {
         contains: transactionId,
@@ -37,13 +35,11 @@ const cashReport = async (req, res) => {
       }
     }
 
-    // Get total count for pagination
     const totalCount = await prisma.cash_transaction.count({
       where: whereClause,
     });
 
-    // Get paginated cash transactions
-    const cashTransactions = await prisma.cash_transaction.findMany({
+    const cashTransactionsRaw = await prisma.cash_transaction.findMany({
       where: whereClause,
       orderBy: {
         updatedAt: "desc",
@@ -61,6 +57,28 @@ const cashReport = async (req, res) => {
         updatedAt: true,
       },
     });
+
+    // Get unique manager_ids
+    const managerIds = Array.from(
+      new Set(cashTransactionsRaw.map(t => t.manager_id).filter(Boolean))
+    );
+
+    // Get manager names
+    const managers = await prisma.user.findMany({
+      where: { id: { in: managerIds } },
+      select: { id: true, name: true },
+    });
+
+    const managerMap = Object.fromEntries(
+      managers.map(m => [m.id, m.name])
+    );
+
+    // Add manager_name to each transaction
+    const cashTransactions = cashTransactionsRaw.map(t => ({
+      ...t,
+      manager_name: t.manager_id ? managerMap[t.manager_id] || null : null,
+      casher_name: t.casher_id ? managerMap[t.casher_id] || null : null,
+    }));
 
     const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -80,6 +98,7 @@ const cashReport = async (req, res) => {
     res.status(500).json({ message: "server error" });
   }
 };
+
 
 module.exports = {
   cashReport,

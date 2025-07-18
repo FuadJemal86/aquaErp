@@ -16,12 +16,10 @@ const bankTransaction = async (req, res) => {
     const pageSize = parseInt(limit);
     const skip = (pageNumber - 1) * pageSize;
 
-    // Build where clause for filtering
     const whereClause = {
       isActive: true,
     };
 
-    // Add filters if they are provided
     if (transactionId) {
       whereClause.transaction_id = {
         contains: transactionId,
@@ -46,36 +44,59 @@ const bankTransaction = async (req, res) => {
       }
     }
 
-    // Get total count for pagination
-    const totalCount = await prisma.bank_transaction.count({
-      where: whereClause,
-    });
+    // Fetch paginated transactions
+    const [totalCount, bankTransactions] = await Promise.all([
+      prisma.bank_transaction.count({ where: whereClause }),
 
-    // Get paginated bank transactions
-    const bankTransactions = await prisma.bank_transaction.findMany({
-      where: whereClause,
-      orderBy: {
-        createdAt: "desc",
-      },
-      skip,
-      take: pageSize,
-      select: {
-        id: true,
-        in: true,
-        out: true,
-        balance: true,
-        transaction_id: true,
-        description: true,
-        receipt_image: true,
-        createdAt: true,
-        Bank_list: {
-          select: {
-            id: true,
-            branch: true,
-            account_number: true,
+      prisma.bank_transaction.findMany({
+        where: whereClause,
+        orderBy: {
+          createdAt: "desc",
+        },
+        skip,
+        take: pageSize,
+        select: {
+          id: true,
+          in: true,
+          out: true,
+          balance: true,
+          transaction_id: true,
+          description: true,
+          receipt_image: true,
+          createdAt: true,
+          manager_id: true,
+          casher_id: true,
+          Bank_list: {
+            select: {
+              id: true,
+              branch: true,
+              account_number: true,
+            },
           },
         },
-      },
+      }),
+    ]);
+
+    // Get distinct user IDs to fetch names
+    const userIds = [
+      ...new Set(
+        bankTransactions
+          .flatMap(tx => [tx.manager_id, tx.casher_id])
+          .filter(Boolean)
+      ),
+    ];
+
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true },
+    });
+
+    const userMap = Object.fromEntries(users.map(user => [user.id, user.name]));
+
+    // Inject manager_name and casher_name
+    bankTransactions.forEach(tx => {
+      tx.manager_name = tx.manager_id ? userMap[tx.manager_id] || null : null;
+      tx.casher_name = tx.casher_id ? userMap[tx.casher_id] || null : null;
     });
 
     const totalPages = Math.ceil(totalCount / pageSize);
@@ -92,10 +113,11 @@ const bankTransaction = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error);
+    console.log("Error in bankTransaction:", error);
     res.status(500).json({ message: "server error" });
   }
 };
+
 
 module.exports = {
   bankTransaction,
