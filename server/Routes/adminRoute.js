@@ -57,6 +57,7 @@ const {
   getSalesReport,
   getSalesDetails,
 } = require("../Controllers/Report.controller");
+const { getDashboardData } = require("../Controllers/Dashboard.controller");
 const { cashReport } = require("../Controllers/Report/Cash.controller");
 const { bankTransaction } = require("../Controllers/Report/BankTransaction");
 const { bankBalance } = require("../Controllers/Report/BankBalance.controller");
@@ -173,5 +174,8 @@ router.get("/get-bank-balance", bankBalance);
 // product transaction
 
 router.get("/get-product-transaction", productTransactions);
+
+// Dashboard
+router.get("/dashboard", getDashboardData);
 
 module.exports = router;
