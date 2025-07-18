@@ -346,9 +346,9 @@ function BankDeposti() {
                     {...register("amount")}
                     className={
                       errors.amount ||
-                      (selectedDepositMethod === "cash_to_bank" &&
-                        cashBalance !== null &&
-                        amountNumber > cashBalance)
+                        (selectedDepositMethod === "cash_to_bank" &&
+                          cashBalance !== null &&
+                          amountNumber > cashBalance)
                         ? "border-red-500"
                         : ""
                     }

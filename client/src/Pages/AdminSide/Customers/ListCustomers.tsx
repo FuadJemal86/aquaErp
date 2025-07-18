@@ -502,14 +502,12 @@ function ListCustomers() {
             <span className="hidden md:inline text-sm font-medium">Filter</span>
             <button
               onClick={() => setIsFilterEnabled(!isFilterEnabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                isFilterEnabled ? "bg-primary" : "bg-input"
-              }`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${isFilterEnabled ? "bg-primary" : "bg-input"
+                }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
-                  isFilterEnabled ? "translate-x-6" : "translate-x-1"
-                }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${isFilterEnabled ? "translate-x-6" : "translate-x-1"
+                  }`}
               />
             </button>
             {hasActiveFilters && (
@@ -844,11 +842,10 @@ function ListCustomers() {
                       onChange={(e) =>
                         handleInputChange("full_name", e.target.value)
                       }
-                      className={`${
-                        validationErrors.full_name
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                          : ""
-                      }`}
+                      className={`${validationErrors.full_name
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : ""
+                        }`}
                       placeholder="Enter full name"
                     />
                     {validationErrors.full_name && (
@@ -876,11 +873,10 @@ function ListCustomers() {
                       onChange={(e) =>
                         handleInputChange("phone", e.target.value)
                       }
-                      className={`${
-                        validationErrors.phone
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                          : ""
-                      }`}
+                      className={`${validationErrors.phone
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : ""
+                        }`}
                       placeholder="Enter phone number"
                     />
                     {validationErrors.phone && (
@@ -908,11 +904,10 @@ function ListCustomers() {
                       onChange={(e) =>
                         handleInputChange("address", e.target.value)
                       }
-                      className={`${
-                        validationErrors.address
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                          : ""
-                      }`}
+                      className={`${validationErrors.address
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : ""
+                        }`}
                       placeholder="Enter address"
                       rows={3}
                     />

@@ -527,8 +527,8 @@ function RepayBuyCredit() {
             <Card
               key={credit.id}
               className={`transition-all duration-200 hover:shadow-lg ${credit.status === "OVERDUE"
-                  ? "border-destructive/50 bg-destructive/5"
-                  : ""
+                ? "border-destructive/50 bg-destructive/5"
+                : ""
                 }`}
             >
               <CardHeader className="">
@@ -542,10 +542,10 @@ function RepayBuyCredit() {
                   <div className="relative">
                     <Badge
                       className={`text-white relative z-10 ${credit.status === "ACCEPTED"
-                          ? "bg-blue-500"
-                          : credit.status === "PAYED"
-                            ? "bg-green-500"
-                            : "bg-red-500"
+                        ? "bg-blue-500"
+                        : credit.status === "PAYED"
+                          ? "bg-green-500"
+                          : "bg-red-500"
                         }`}
                     >
                       {credit.status}
@@ -639,8 +639,8 @@ function RepayBuyCredit() {
                     </div>
                     <div
                       className={`text-sm ${isOverdue(credit.return_date)
-                          ? "text-destructive font-medium"
-                          : ""
+                        ? "text-destructive font-medium"
+                        : ""
                         }`}
                     >
                       {formatDate(credit.return_date)}
@@ -658,8 +658,8 @@ function RepayBuyCredit() {
                     </div>
                     <div
                       className={`text-sm font-medium ${calculateRemainingDays(credit.return_date) < 0
-                          ? "text-destructive"
-                          : "text-green-600 dark:text-green-400"
+                        ? "text-destructive"
+                        : "text-green-600 dark:text-green-400"
                         }`}
                     >
                       {calculateRemainingDays(credit.return_date) < 0

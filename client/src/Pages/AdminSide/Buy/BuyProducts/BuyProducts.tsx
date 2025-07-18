@@ -46,7 +46,7 @@ function BuyProducts() {
     ]);
     setTotalAmount(
       cartList.reduce((acc, curr) => acc + curr.total_money, 0) +
-        cart.total_money
+      cart.total_money
     );
   };
 
