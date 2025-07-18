@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/select";
 import { Plus, ShoppingCart, Package, Tag, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import ReactSelect from "react-select";
+import type { SingleValue } from "react-select";
 
 // Zod schema for cart validation
 const cartSchema = z
@@ -106,6 +108,12 @@ function AddCart({
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isLoadingProductTypes, setIsLoadingProductTypes] = useState(false);
   const [bankList, setBankList] = useState<BankList[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<
+    { value: number; label: string }[]
+  >([]);
+  const [productTypeOptions, setProductTypeOptions] = useState<
+    { value: number; label: string }[]
+  >([]);
 
   const {
     register,
@@ -149,15 +157,37 @@ function AddCart({
     (type) => type.product_category_id === parseInt(selectedCategory)
   );
 
+  // Filter product type options based on selected category
+  const filteredProductTypeOptions = productTypeOptions.filter((option) => {
+    const productType = productTypes.find((type) => type.id === option.value);
+    return (
+      productType &&
+      productType.product_category_id === parseInt(selectedCategory)
+    );
+  });
+
   // Handle category change
-  const handleCategoryChange = (categoryId: string) => {
-    setValue("product_category_id", categoryId);
-    setValue("product_type_id", ""); // Reset product type when category changes
+  const handleCategoryChange = (
+    selectedOption: SingleValue<{ value: number; label: string }>
+  ) => {
+    if (selectedOption) {
+      setValue("product_category_id", selectedOption.value.toString());
+      setValue("product_type_id", ""); // Reset product type when category changes
+    } else {
+      setValue("product_category_id", "");
+      setValue("product_type_id", "");
+    }
   };
 
   // Handle product type change
-  const handleProductTypeChange = (productTypeId: string) => {
-    setValue("product_type_id", productTypeId);
+  const handleProductTypeChange = (
+    selectedOption: SingleValue<{ value: number; label: string }>
+  ) => {
+    if (selectedOption) {
+      setValue("product_type_id", selectedOption.value.toString());
+    } else {
+      setValue("product_type_id", "");
+    }
   };
 
   // Handle payment method change
@@ -233,6 +263,27 @@ function AddCart({
     }
   }, [supplierName, paymentMethod, description, setValue]);
 
+  // Create options for react-select when categories and productTypes change
+  useEffect(() => {
+    if (categories && categories.length > 0) {
+      const options = categories.map((category: any) => ({
+        value: category.id,
+        label: category.name,
+      }));
+      setCategoryOptions(options);
+    }
+  }, [categories]);
+
+  useEffect(() => {
+    if (productTypes && productTypes.length > 0) {
+      const options = productTypes.map((type: any) => ({
+        value: type.id,
+        label: `${type.name} (${type.measurement})`,
+      }));
+      setProductTypeOptions(options);
+    }
+  }, [productTypes]);
+
   return (
     <Card>
       <CardHeader>
@@ -265,37 +316,33 @@ function AddCart({
           </div>
 
           {/* Product Category and Type in one row */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="product_category_id">Product Category *</Label>
-              <Select
-                value={selectedCategory}
-                onValueChange={handleCategoryChange}
-              >
-                <SelectTrigger
-                  className={
-                    errors.product_category_id ? "border-red-500" : " w-full"
-                  }
-                >
-                  <SelectValue placeholder="Choose a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {isLoadingCategories ? (
-                    <div className="flex items-center justify-center p-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    </div>
-                  ) : (
-                    categories.map((category) => (
-                      <SelectItem
-                        key={category.id}
-                        value={category.id.toString()}
-                      >
-                        {category.name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+              <ReactSelect
+                options={categoryOptions}
+                onChange={handleCategoryChange}
+                placeholder="Search and select category..."
+                value={categoryOptions.find(
+                  (option) => option.value.toString() === selectedCategory
+                )}
+                className={errors.product_category_id ? "border-red-500" : ""}
+                classNamePrefix="react-select"
+                isLoading={isLoadingCategories}
+                styles={{
+                  control: (provided, state) => ({
+                    ...provided,
+                    borderColor: errors.product_category_id
+                      ? "#ef4444"
+                      : provided.borderColor,
+                    "&:hover": {
+                      borderColor: errors.product_category_id
+                        ? "#ef4444"
+                        : provided.borderColor,
+                    },
+                  }),
+                }}
+              />
               {errors.product_category_id && (
                 <p className="text-sm text-red-500">
                   {errors.product_category_id.message}
@@ -305,32 +352,32 @@ function AddCart({
 
             <div className="space-y-2">
               <Label htmlFor="product_type_id">Product Type *</Label>
-              <Select
-                value={watch("product_type_id")}
-                onValueChange={handleProductTypeChange}
-                disabled={!selectedCategory}
-              >
-                <SelectTrigger
-                  className={
-                    errors.product_type_id ? "border-red-500" : " w-full"
-                  }
-                >
-                  <SelectValue placeholder="Choose a product type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {isLoadingProductTypes ? (
-                    <div className="flex items-center justify-center p-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    </div>
-                  ) : (
-                    filteredProductTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id.toString()}>
-                        {type.name} ({type.measurement})
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+              <ReactSelect
+                options={filteredProductTypeOptions}
+                onChange={handleProductTypeChange}
+                placeholder="Search and select product type..."
+                isDisabled={!selectedCategory}
+                value={filteredProductTypeOptions.find(
+                  (option) =>
+                    option.value.toString() === watch("product_type_id")
+                )}
+                className={errors.product_type_id ? "border-red-500" : ""}
+                classNamePrefix="react-select"
+                isLoading={isLoadingProductTypes}
+                styles={{
+                  control: (provided, state) => ({
+                    ...provided,
+                    borderColor: errors.product_type_id
+                      ? "#ef4444"
+                      : provided.borderColor,
+                    "&:hover": {
+                      borderColor: errors.product_type_id
+                        ? "#ef4444"
+                        : provided.borderColor,
+                    },
+                  }),
+                }}
+              />
               {errors.product_type_id && (
                 <p className="text-sm text-red-500">
                   {errors.product_type_id.message}

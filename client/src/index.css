@@ -160,3 +160,147 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* React Select Dark Mode Styles */
+.dark .react-select__control {
+  background-color: rgb(30, 41, 59) !important;
+  border-color: rgb(51, 65, 85) !important;
+  box-shadow: none !important;
+}
+
+.dark .react-select__control:hover {
+  border-color: rgb(59, 130, 246) !important;
+}
+
+.dark .react-select__control--is-focused {
+  border-color: rgb(59, 130, 246) !important;
+  box-shadow: 0 0 0 1px rgb(59, 130, 246) !important;
+}
+
+.dark .react-select__menu {
+  background-color: rgb(22, 30, 48) !important;
+  border: 1px solid rgb(51, 65, 85) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.dark .react-select__option {
+  background-color: rgb(22, 30, 48) !important;
+  color: rgb(248, 250, 252) !important;
+}
+
+.dark .react-select__option:hover {
+  background-color: rgb(30, 41, 59) !important;
+}
+
+.dark .react-select__option--is-focused {
+  background-color: rgb(30, 41, 59) !important;
+}
+
+.dark .react-select__option--is-selected {
+  background-color: rgb(59, 130, 246) !important;
+  color: rgb(248, 250, 252) !important;
+}
+
+.dark .react-select__single-value {
+  color: rgb(248, 250, 252) !important;
+}
+
+.dark .react-select__placeholder {
+  color: rgb(148, 163, 184) !important;
+}
+
+.dark .react-select__input-container {
+  color: rgb(248, 250, 252) !important;
+}
+
+.dark .react-select__indicator-separator {
+  background-color: rgb(51, 65, 85) !important;
+}
+
+.dark .react-select__indicator {
+  color: rgb(148, 163, 184) !important;
+}
+
+.dark .react-select__indicator:hover {
+  color: rgb(248, 250, 252) !important;
+}
+
+.dark .react-select__menu-notice {
+  color: rgb(148, 163, 184) !important;
+}
+
+.dark .react-select__loading-indicator {
+  color: rgb(59, 130, 246) !important;
+}
+
+/* Light mode styles for consistency */
+.react-select__control {
+  background-color: rgb(255, 255, 255) !important;
+  border-color: rgb(229, 231, 235) !important;
+  box-shadow: none !important;
+}
+
+.react-select__control:hover {
+  border-color: rgb(59, 130, 246) !important;
+}
+
+.react-select__control--is-focused {
+  border-color: rgb(59, 130, 246) !important;
+  box-shadow: 0 0 0 1px rgb(59, 130, 246) !important;
+}
+
+.react-select__menu {
+  background-color: rgb(255, 255, 255) !important;
+  border: 1px solid rgb(229, 231, 235) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.react-select__option {
+  background-color: rgb(255, 255, 255) !important;
+  color: rgb(17, 24, 39) !important;
+}
+
+.react-select__option:hover {
+  background-color: rgb(249, 250, 251) !important;
+}
+
+.react-select__option--is-focused {
+  background-color: rgb(249, 250, 251) !important;
+}
+
+.react-select__option--is-selected {
+  background-color: rgb(59, 130, 246) !important;
+  color: rgb(255, 255, 255) !important;
+}
+
+.react-select__single-value {
+  color: rgb(17, 24, 39) !important;
+}
+
+.react-select__placeholder {
+  color: rgb(156, 163, 175) !important;
+}
+
+.react-select__input-container {
+  color: rgb(17, 24, 39) !important;
+}
+
+.react-select__indicator-separator {
+  background-color: rgb(229, 231, 235) !important;
+}
+
+.react-select__indicator {
+  color: rgb(156, 163, 175) !important;
+}
+
+.react-select__indicator:hover {
+  color: rgb(17, 24, 39) !important;
+}
+
+.react-select__menu-notice {
+  color: rgb(156, 163, 175) !important;
+}
+
+.react-select__loading-indicator {
+  color: rgb(59, 130, 246) !important;
+}
