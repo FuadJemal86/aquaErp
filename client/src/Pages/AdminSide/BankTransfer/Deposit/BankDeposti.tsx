@@ -46,6 +46,7 @@ interface BankAccount {
 // Zod schema for deposit validation
 const depositSchema = z.object({
   bank_id: z.string().min(1, "Please select a bank branch"),
+  deposit_method: z.string().min(1, "Please select a deposit method"),
   amount: z
     .string()
     .min(1, "Amount is required")
@@ -64,6 +65,8 @@ function BankDeposti() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [isLoadingBanks, setIsLoadingBanks] = useState(false);
+  const [cashBalance, setCashBalance] = useState<number | null>(null);
+  const [isLoadingCashBalance, setIsLoadingCashBalance] = useState(false);
 
   const {
     register,
@@ -76,6 +79,7 @@ function BankDeposti() {
     resolver: zodResolver(depositSchema),
     defaultValues: {
       bank_id: "",
+      deposit_method: "",
       amount: "",
       description: "",
     },
@@ -85,6 +89,16 @@ function BankDeposti() {
   useEffect(() => {
     fetchBankAccounts();
   }, []);
+
+  // Fetch cash balance when deposit method changes
+  useEffect(() => {
+    const selectedMethod = watch("deposit_method");
+    if (selectedMethod === "cash_to_bank") {
+      fetchCashBalance();
+    } else {
+      setCashBalance(null);
+    }
+  }, [watch("deposit_method")]);
 
   const fetchBankAccounts = async () => {
     try {
@@ -98,6 +112,21 @@ function BankDeposti() {
       );
     } finally {
       setIsLoadingBanks(false);
+    }
+  };
+
+  const fetchCashBalance = async () => {
+    try {
+      setIsLoadingCashBalance(true);
+      const response = await api.get("/admin/get-cash-balance");
+      setCashBalance(response.data?.balance || 0);
+    } catch (error: any) {
+      console.error("Failed to fetch cash balance:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to fetch cash balance"
+      );
+    } finally {
+      setIsLoadingCashBalance(false);
     }
   };
 
@@ -130,11 +159,25 @@ function BankDeposti() {
   };
 
   const onSubmit = async (data: DepositFormData) => {
+    // Validate cash balance before submission
+    if (data.deposit_method === "cash_to_bank" && cashBalance !== null) {
+      const amount = Number(data.amount);
+      if (amount > cashBalance) {
+        toast.error(
+          `Amount cannot exceed available cash balance ($${cashBalance.toFixed(
+            2
+          )})`
+        );
+        return;
+      }
+    }
+
     try {
       setIsSubmitting(true);
 
       const formData = new FormData();
       formData.append("bank_id", data.bank_id);
+      formData.append("deposit_method", data.deposit_method);
       formData.append("amount", data.amount);
       formData.append("description", data.description);
 
@@ -163,7 +206,9 @@ function BankDeposti() {
     } catch (error: any) {
       console.error("Error adding deposit:", error);
       const errorMessage =
-        error.response?.data?.error || "Failed to add deposit";
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Failed to add deposit";
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -174,6 +219,9 @@ function BankDeposti() {
   const selectedBank = bankAccounts.find(
     (bank) => bank.id.toString() === selectedBankId
   );
+  const selectedDepositMethod = watch("deposit_method");
+  const amount = watch("amount");
+  const amountNumber = Number(amount) || 0;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -195,55 +243,99 @@ function BankDeposti() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="bank_id">Bank Branch *</Label>
-                <Select
-                  value={selectedBankId}
-                  onValueChange={(value) => setValue("bank_id", value)}
-                >
-                  <SelectTrigger
-                    className={errors.bank_id ? "border-red-500" : ""}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="bank_id">Bank Branch *</Label>
+                  <Select
+                    value={selectedBankId}
+                    onValueChange={(value) => setValue("bank_id", value)}
                   >
-                    <SelectValue placeholder="Select a bank branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {isLoadingBanks ? (
-                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                        Loading banks...
-                      </div>
-                    ) : bankAccounts.length === 0 ? (
-                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                        No banks available
-                      </div>
-                    ) : (
-                      bankAccounts.map((bank) => (
-                        <SelectItem key={bank.id} value={bank.id.toString()}>
-                          <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4" />
-                            <span>{bank.branch}</span>
-                            <span className="text-muted-foreground text-xs">
-                              ({bank.account_number})
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-                {errors.bank_id && (
-                  <p className="text-sm text-red-500">
-                    {errors.bank_id.message}
-                  </p>
-                )}
-                {selectedBank && (
-                  <div className="text-sm text-muted-foreground mt-1">
-                    Account Holder: {selectedBank.owner}
-                  </div>
-                )}
+                    <SelectTrigger
+                      className={errors.bank_id ? "border-red-500" : ""}
+                    >
+                      <SelectValue placeholder="Select a bank branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {isLoadingBanks ? (
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                          Loading banks...
+                        </div>
+                      ) : bankAccounts.length === 0 ? (
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                          No banks available
+                        </div>
+                      ) : (
+                        bankAccounts.map((bank) => (
+                          <SelectItem key={bank.id} value={bank.id.toString()}>
+                            <div className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4" />
+                              <span>{bank.branch}</span>
+                              <span className="text-muted-foreground text-xs">
+                                ({bank.account_number})
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {errors.bank_id && (
+                    <p className="text-sm text-red-500">
+                      {errors.bank_id.message}
+                    </p>
+                  )}
+                  {selectedBank && (
+                    <div className="text-sm text-muted-foreground mt-1">
+                      Account Holder: {selectedBank.owner}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="deposit_method">Deposit Method *</Label>
+                  <Select
+                    value={selectedDepositMethod}
+                    onValueChange={(value) => setValue("deposit_method", value)}
+                  >
+                    <SelectTrigger
+                      className={errors.deposit_method ? "border-red-500" : ""}
+                    >
+                      <SelectValue placeholder="Select deposit method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash_to_bank">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4" />
+                          <span>Cash to Bank</span>
+                        </div>
+                      </SelectItem>
+
+                      <SelectItem value="other">
+                        <div className="flex items-center gap-2">
+                          <Plus className="h-4 w-4" />
+                          <span>Other</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.deposit_method && (
+                    <p className="text-sm text-red-500">
+                      {errors.deposit_method.message}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="amount">Deposit Amount *</Label>
+                <Label htmlFor="amount">
+                  Deposit Amount *
+                  {selectedDepositMethod === "cash_to_bank" &&
+                    cashBalance !== null && (
+                      <span className="text-sm text-muted-foreground ml-2">
+                        (Available: ${cashBalance.toFixed(2)})
+                      </span>
+                    )}
+                </Label>
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                   <Input
@@ -252,7 +344,14 @@ function BankDeposti() {
                     step="0.01"
                     placeholder="0.00"
                     {...register("amount")}
-                    className={errors.amount ? "border-red-500" : ""}
+                    className={
+                      errors.amount ||
+                      (selectedDepositMethod === "cash_to_bank" &&
+                        cashBalance !== null &&
+                        amountNumber > cashBalance)
+                        ? "border-red-500"
+                        : ""
+                    }
                   />
                 </div>
                 {errors.amount && (
@@ -260,6 +359,20 @@ function BankDeposti() {
                     {errors.amount.message}
                   </p>
                 )}
+                {selectedDepositMethod === "cash_to_bank" &&
+                  cashBalance !== null &&
+                  amountNumber > cashBalance && (
+                    <p className="text-sm text-red-500">
+                      Amount cannot exceed available cash balance ($
+                      {cashBalance.toFixed(2)})
+                    </p>
+                  )}
+                {selectedDepositMethod === "cash_to_bank" &&
+                  isLoadingCashBalance && (
+                    <p className="text-sm text-muted-foreground">
+                      Loading cash balance...
+                    </p>
+                  )}
               </div>
 
               <div className="space-y-2">
@@ -376,7 +489,16 @@ function BankDeposti() {
                 <p>* Required fields</p>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={
+                  isSubmitting ||
+                  (selectedDepositMethod === "cash_to_bank" &&
+                    cashBalance !== null &&
+                    amountNumber > cashBalance)
+                }
+              >
                 {isSubmitting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>

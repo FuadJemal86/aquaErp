@@ -227,6 +227,7 @@ model Cash_transaction {
   manager_id               Int?
   casher_id                Int?
   isActive                 Boolean                    @default(true)
+  createdAt                DateTime                   @default(now())
   updatedAt                DateTime                   @updatedAt
   Sales_credit_transaction Sales_credit_transaction[]
 

@@ -80,20 +80,15 @@ const Sales_cart_item = Joi.object({
 const Sales_product = Joi.object({
   cart_list: Joi.array().items(Sales_cart_item).min(1).required(),
 
-  payment_method: Joi.string()
-    .valid("CASH", "BANK", "CREDIT")
-    .required(),
+  payment_method: Joi.string().valid("CASH", "BANK", "CREDIT").required(),
 
-  customer_type: Joi.string()
-    .valid("WALKER", "REGULAR")
-    .required(),
+  customer_type: Joi.string().valid("WALKER", "REGULAR").required(),
 
   customer_id: Joi.alternatives().conditional("customer_type", {
     is: "REGULAR",
     then: Joi.number().required(),
     otherwise: Joi.number().optional().allow(null),
   }),
-
 
   bank_id: Joi.when("payment_method", {
     is: "BANK",
@@ -114,8 +109,6 @@ const Sales_product = Joi.object({
   }),
 });
 
-
-
 const sales_repay_credit = Joi.object({
   amount_payed: Joi.number().required(),
   payment_method: Joi.string().valid("CASH", "BANK").required(),
@@ -125,7 +118,7 @@ const sales_repay_credit = Joi.object({
     is: "BANK",
     then: Joi.number().required(),
     otherwise: Joi.any().strip(),
-  })
+  }),
 });
 
 const buy_repay_credit = Joi.object({
@@ -137,15 +130,14 @@ const buy_repay_credit = Joi.object({
     is: "BANK",
     then: Joi.number().required(),
     otherwise: Joi.any().strip(),
-  })
+  }),
 });
-
-
 
 const Bank_deposit = Joi.object({
   bank_id: Joi.number().required(),
   amount: Joi.number().required(),
   description: Joi.string().optional(),
+  deposit_method: Joi.string().valid("cash_to_bank", "other").required(),
 });
 
 const Bank_withdraw = Joi.object({
@@ -169,5 +161,5 @@ module.exports = {
   buy_repay_credit,
   Bank_deposit,
   Bank_withdraw,
-  sales_repay_credit
+  sales_repay_credit,
 };

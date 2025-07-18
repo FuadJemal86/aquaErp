@@ -38,6 +38,7 @@ const {
 const {
   addBankDeposit,
   addBankWithdraw,
+  getCashBalance,
 } = require("../Controllers/BankTrasnfer.controller");
 const {
   uploadBankDepositReceiptMiddleware,
@@ -121,6 +122,7 @@ router.post(
 router.post(
   "/add-bank-deposit",
   uploadBankDepositReceiptMiddleware,
+  getId,
   addBankDeposit
 );
 router.post(
@@ -128,6 +130,9 @@ router.post(
   uploadBankWithdrawReceiptMiddleware,
   addBankWithdraw
 );
+
+// get cash balance
+router.get("/get-cash-balance", getCashBalance);
 
 // get cash balance
 router.get("/get-cash-balance", cashBalance);
