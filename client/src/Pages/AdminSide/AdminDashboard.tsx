@@ -346,11 +346,9 @@ function AdminDashboard() {
             </div>
             <div className="flex items-center text-xs text-muted-foreground">
               <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
-              {summary.totalSalesQuantity} items sold
+              Total sales product count
             </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              ${summary.totalSalesAmount.toLocaleString()}
-            </div>
+
             <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-green-400/20 to-green-600/20 rounded-bl-full" />
           </CardContent>
         </Card>
@@ -358,16 +356,16 @@ function AdminDashboard() {
         {/* Customer Count Card */}
         <Card className="relative overflow-hidden hover:shadow-xl transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Customers</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Buy</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {summary.customerCount.toLocaleString()}
+              {summary.totalBuy.toLocaleString()}
             </div>
             <div className="flex items-center text-xs text-muted-foreground">
               <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
-              Total registered customers
+              Total buy product count
             </div>
             <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-blue-400/20 to-blue-600/20 rounded-bl-full" />
           </CardContent>
@@ -410,7 +408,9 @@ function AdminDashboard() {
         {/* Total Income Card */}
         <Card className="relative overflow-hidden hover:shadow-xl transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Income</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Credit Pending{" "}
+            </CardTitle>
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -419,7 +419,7 @@ function AdminDashboard() {
             </div>
             <div className="flex items-center text-xs text-muted-foreground">
               <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
-              Cash + Bank balance
+              Total credit pending amount
             </div>
             <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-orange-400/20 to-orange-600/20 rounded-bl-full" />
           </CardContent>
