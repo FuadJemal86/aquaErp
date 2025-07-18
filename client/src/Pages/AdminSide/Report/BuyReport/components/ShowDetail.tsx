@@ -40,6 +40,8 @@ interface BuyDetail {
         branch: string;
     } | null;
     supplier_name: string
+    manager_name: string;
+    casher_name: string;
 }
 
 interface ShowBuyDetailsProps {
@@ -260,6 +262,7 @@ function BuyDetails({ transactionId, isOpen, onClose }: ShowBuyDetailsProps) {
                                             <TableHeader>
                                                 <TableRow>
                                                     <TableHead>#</TableHead>
+                                                    <TableHead>Responsible Person</TableHead>
                                                     <TableHead>Product</TableHead>
                                                     <TableHead>Quantity</TableHead>
                                                     <TableHead>Price per Unit</TableHead>
@@ -270,6 +273,9 @@ function BuyDetails({ transactionId, isOpen, onClose }: ShowBuyDetailsProps) {
                                                 {buyDetails.map((detail, index) => (
                                                     <TableRow key={detail.id}>
                                                         <TableCell>{index + 1}</TableCell>
+                                                        <TableCell>
+                                                            {detail?.manager_name ?? detail?.casher_name}
+                                                        </TableCell>
                                                         <TableCell className="font-medium">
                                                             {detail.Product_type.name}
                                                         </TableCell>

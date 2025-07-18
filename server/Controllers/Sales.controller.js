@@ -19,6 +19,9 @@ const sellProduct = async (req, res) => {
     } = req.body;
 
     // Validate request body
+    if (req.body.customer_id) {
+      req.body.customer_id = parseInt(req.body.customer_id);
+    }
     const validate = Sales_product.validate(req.body);
     if (validate.error) {
       return res

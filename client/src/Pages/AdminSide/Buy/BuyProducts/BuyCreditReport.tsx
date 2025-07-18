@@ -61,6 +61,8 @@ interface BuyTransaction {
   total_money: number;
   supplier_name: string;
   transaction_id: string;
+  manager_name: string;
+  casher_name: string;
   createdAt: string;
   updatedAt: string;
   type_id: number;
@@ -419,14 +421,12 @@ const BuyCreditReport: React.FC = () => {
             <span className="hidden md:inline text-sm font-medium">Filter</span>
             <button
               onClick={() => setIsFilterEnabled(!isFilterEnabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                isFilterEnabled ? "bg-primary" : "bg-input"
-              }`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${isFilterEnabled ? "bg-primary" : "bg-input"
+                }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
-                  isFilterEnabled ? "translate-x-6" : "translate-x-1"
-                }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${isFilterEnabled ? "translate-x-6" : "translate-x-1"
+                  }`}
               />
             </button>
             {hasActiveFilters && (
@@ -823,6 +823,7 @@ const BuyCreditReport: React.FC = () => {
                           <Table>
                             <TableHeader>
                               <TableRow>
+                                <TableHead>Responsible Person</TableHead>
                                 <TableHead>Product</TableHead>
                                 <TableHead>Quantity</TableHead>
                                 <TableHead>Price per Unit</TableHead>
@@ -833,6 +834,9 @@ const BuyCreditReport: React.FC = () => {
                             <TableBody>
                               {creditDetails.map((detail) => (
                                 <TableRow key={detail.id}>
+                                  <TableCell className="font-medium">
+                                    {detail?.manager_name ? detail?.manager_name : detail?.casher_name}
+                                  </TableCell>
                                   <TableCell className="font-medium">
                                     {detail.Product_type.name}
                                   </TableCell>

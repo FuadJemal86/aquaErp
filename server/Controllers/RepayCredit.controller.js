@@ -67,12 +67,13 @@ const getSalesCreditDetails = async (req, res) => {
         payment_method: true,
         CTID: true,
         outstanding_balance: true,
+        manager_id: true,
         image: true,
         createdAt: true,
       },
     });
 
-    if (salesTransactions.length === 0) {
+    if (salesCreditTransactions.length === 0) {
       return res
         .status(404)
         .json({ status: false, error: "Sales credit detail not found" });
@@ -80,7 +81,7 @@ const getSalesCreditDetails = async (req, res) => {
 
     // Extract unique user IDs (manager + casher)
     const userIds = Array.from(
-      new Set(salesTransactions.flatMap((item) => [item.manager_id, item.casher_id]))
+      new Set(salesTransactions.flatMap((item) => [item.manager_id]))
     ).filter(Boolean);
 
     // Fetch names for these user IDs
@@ -95,7 +96,6 @@ const getSalesCreditDetails = async (req, res) => {
     const salesTransactionsWithNames = salesTransactions.map((item) => ({
       ...item,
       manager_name: userMap[item.manager_id] || null,
-      casher_name: userMap[item.casher_id] || null,
     }));
 
     return res.status(200).json({
@@ -170,6 +170,7 @@ const salesCreditReportForRepay = async (req, res) => {
   }
 };
 
+// repay sales credit 
 const repaySalesCredit = async (req, res) => {
   const {
     amount_payed,
@@ -216,7 +217,7 @@ const repaySalesCredit = async (req, res) => {
     await prisma.$transaction(async (tx) => {
       let cashTransactionId = null;
 
-      //  Handle CASH
+      // Handle CASH
       if (payment_method === "CASH") {
         const cashData = {
           in: parseFloat(amount_payed),
@@ -226,7 +227,6 @@ const repaySalesCredit = async (req, res) => {
         };
 
         if (role === "ADMIN") cashData.manager_id = userId;
-        if (role === "CASHER") cashData.casher_id = userId;
 
         const newCash = await tx.cash_transaction.create({ data: cashData });
         cashTransactionId = newCash.id;
@@ -287,7 +287,10 @@ const repaySalesCredit = async (req, res) => {
         });
       }
 
-      //  Credit Transaction
+      // Extract manager ID if role is ADMIN
+      const managerId = role === "ADMIN" ? userId : null;
+
+      // Credit Transaction
       await tx.sales_credit_transaction.create({
         data: {
           transaction_id,
@@ -295,6 +298,7 @@ const repaySalesCredit = async (req, res) => {
           payment_method,
           bank_id: bankId ?? null,
           cash_id: cashTransactionId,
+          manager_id: managerId,
           CTID: generateSalesCreditTransactionId(),
           outstanding_balance: parseFloat(outstanding_balance),
           image: req.file?.fullPath || "",
@@ -338,13 +342,14 @@ const repaySalesCredit = async (req, res) => {
 };
 
 
+
 // Buy repay credit
 
 const getBuyCreditDetails = async (req, res) => {
   const transaction_id = req.params.id;
 
   try {
-    // Fetch buy transactions
+    //  Get Buy Transactions
     const buyTransactions = await prisma.buy_transaction.findMany({
       where: {
         transaction_id: transaction_id,
@@ -364,8 +369,8 @@ const getBuyCreditDetails = async (req, res) => {
       },
     });
 
-    // Fetch buy credit transactions
-    const BuyCreditTransactions = await prisma.buy_credit_transaction.findMany({
+    // Get Buy Credit Transactions
+    const BuyCreditTransactionsRaw = await prisma.buy_credit_transaction.findMany({
       where: {
         transaction_id: transaction_id,
       },
@@ -374,12 +379,31 @@ const getBuyCreditDetails = async (req, res) => {
         amount_payed: true,
         payment_method: true,
         CTID: true,
+        manager_id: true,
         outstanding_balance: true,
         image: true,
         createdAt: true,
       },
     });
 
+    //  Extract unique manager_ids
+    const managerIds = [...new Set(BuyCreditTransactionsRaw.map(item => item.manager_id).filter(Boolean))];
+
+    // Step 4: Fetch users by those manager_ids
+    const users = await prisma.user.findMany({
+      where: { id: { in: managerIds } },
+      select: { id: true, name: true },
+    });
+
+    const userMap = Object.fromEntries(users.map(user => [user.id, user.name]));
+
+    //  Attach manager_name to each transaction
+    const BuyCreditTransactions = BuyCreditTransactionsRaw.map(tx => ({
+      ...tx,
+      manager_name: userMap[tx.manager_id] || null,
+    }));
+
+    // Step 6: Return combined result
     if (buyTransactions.length === 0) {
       return res
         .status(404)
@@ -402,6 +426,7 @@ const getBuyCreditDetails = async (req, res) => {
   }
 };
 
+// buy credit report for repay
 const buyCreditReportForRepay = async (req, res) => {
   try {
     const getBuyCreditReport = await prisma.buy_credit.findMany({
@@ -488,8 +513,10 @@ const repayBuyCredit = async (req, res) => {
 
   try {
     await prisma.$transaction(async (tx) => {
-      let cashTransactionId = null;
       const CTID = generateSalesCreditTransactionId();
+
+      // Get current manager id based on role
+      const managerId = role === "ADMIN" ? userId : null;
 
       // Handle CASH
       if (payment_method === "CASH") {
@@ -498,13 +525,10 @@ const repayBuyCredit = async (req, res) => {
           out: parseFloat(amount_payed),
           balance: parseFloat(amount_payed),
           transaction_id: CTID,
+          manager_id: managerId,
         };
 
-        if (role === "ADMIN") cashData.manager_id = userId;
-        if (role === "CASHER") cashData.casher_id = userId;
-
-        const newCash = await tx.cash_transaction.create({ data: cashData });
-        cashTransactionId = newCash.id;
+        await tx.cash_transaction.create({ data: cashData });
 
         const latestCashBalance = await tx.cash_balance.findFirst({
           where: { isActive: true },
@@ -555,13 +579,14 @@ const repayBuyCredit = async (req, res) => {
             in: 0,
             out: parseFloat(amount_payed),
             balance: parseFloat(amount_payed),
-            transaction_id,
+            transaction_id: CTID,
             receipt_image: req.file?.fullPath || null,
             bank_id: bankId,
           },
         });
       }
 
+      // Save the buy credit repayment
       await tx.buy_credit_transaction.create({
         data: {
           transaction_id,
@@ -569,6 +594,7 @@ const repayBuyCredit = async (req, res) => {
           payment_method,
           Bank_id: bankId ?? null,
           CTID,
+          manager_id: managerId,
           outstanding_balance: parseFloat(outstanding_balance),
           image: req.file?.fullPath || "",
         },
@@ -613,6 +639,7 @@ const repayBuyCredit = async (req, res) => {
       .json({ status: false, error: "Internal server error" });
   }
 };
+
 
 
 // get cash balance

@@ -118,6 +118,8 @@ model Buy_transaction {
   total_money        Float
   supplier_name      String
   transaction_id     String
+  manager_id         Int?
+  casher_id          Int?
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
   type_id            Int
@@ -192,6 +194,7 @@ model Buy_credit_transaction {
   amount_payed        Float
   outstanding_balance Float
   CTID                String?
+  manager_id          Int?
   image               String
   payment_method      payment_method
   isActive            Boolean        @default(true)
@@ -288,6 +291,7 @@ model Sales_credit_transaction {
   bank_id             Int?
   cash_id             Int?
   outstanding_balance Float
+  manager_id          Int?
   image               String
   CTID                String?
   isActive            Boolean              @default(true)

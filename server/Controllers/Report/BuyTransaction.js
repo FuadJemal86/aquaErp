@@ -159,6 +159,8 @@ const getBuyDetails = async (req, res) => {
         if (!transaction_id) {
             return res.status(400).json({ message: "Transaction ID is required" });
         }
+
+        // Step 1: Fetch buy transactions
         const buy = await prisma.buy_transaction.findMany({
             where: {
                 transaction_id: transaction_id,
@@ -172,8 +174,9 @@ const getBuyDetails = async (req, res) => {
                 type_id: true,
                 bank_id: true,
                 supplier_name: true,
+                manager_id: true,
+                casher_id: true,
                 transaction_id: true,
-
                 updatedAt: true,
                 Product_type: {
                     select: {
@@ -189,11 +192,39 @@ const getBuyDetails = async (req, res) => {
                 },
             },
         });
+
+        // Step 2: Extract unique user IDs
+        const userIds = Array.from(
+            new Set(buy.flatMap((item) => [item.manager_id, item.casher_id]))
+        ).filter(Boolean);
+
+        // Step 3: Fetch user names
+        const users = await prisma.user.findMany({
+            where: {
+                id: { in: userIds },
+            },
+            select: {
+                id: true,
+                name: true,
+            },
+        });
+
+        const userMap = Object.fromEntries(users.map((u) => [u.id, u.name]));
+
+        // Step 4: Inject names directly into `buy` array
+        buy.forEach((item) => {
+            item.manager_name = userMap[item.manager_id] || null;
+            item.casher_name = userMap[item.casher_id] || null;
+        });
+
+        // ✅ Final response in original style
         res.status(200).json({ buy });
     } catch (error) {
+        console.error("Error in getBuyDetails:", error);
         res.status(500).json({ message: error.message });
     }
 };
+
 
 
 module.exports = {

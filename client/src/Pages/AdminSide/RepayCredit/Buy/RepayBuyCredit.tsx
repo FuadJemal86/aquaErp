@@ -89,6 +89,7 @@ interface BuyCreditTransactions {
   amount_payed: number;
   payment_method: string;
   CTID: string;
+  manager_name: string
   outstanding_balance: number;
 }
 
@@ -200,6 +201,7 @@ function RepayBuyCredit() {
               amount_payed: detail.amount_payed,
               payment_method: detail.payment_method,
               CTID: detail.CTID,
+              manager_name: detail.manager_name,
               outstanding_balance: detail.outstanding_balance,
             })
           );
@@ -320,8 +322,8 @@ function RepayBuyCredit() {
       console.error("Error processing repayment:", err);
       setRepaymentError(
         err.response?.data?.error ||
-          err.message ||
-          "Failed to process repayment"
+        err.message ||
+        "Failed to process repayment"
       );
     } finally {
       setRepaymentLoading(false);
@@ -475,9 +477,8 @@ function RepayBuyCredit() {
               <div className="mt-3 text-sm text-muted-foreground">
                 {filteredCredits.length === 0
                   ? `No credits found for "${searchTerm}"`
-                  : `Found ${filteredCredits.length} credit${
-                      filteredCredits.length === 1 ? "" : "s"
-                    } for "${searchTerm}"`}
+                  : `Found ${filteredCredits.length} credit${filteredCredits.length === 1 ? "" : "s"
+                  } for "${searchTerm}"`}
               </div>
             )}
           </CardContent>
@@ -525,11 +526,10 @@ function RepayBuyCredit() {
           {filteredCredits.map((credit) => (
             <Card
               key={credit.id}
-              className={`transition-all duration-200 hover:shadow-lg ${
-                credit.status === "OVERDUE"
+              className={`transition-all duration-200 hover:shadow-lg ${credit.status === "OVERDUE"
                   ? "border-destructive/50 bg-destructive/5"
                   : ""
-              }`}
+                }`}
             >
               <CardHeader className="">
                 <div className="flex items-start justify-between">
@@ -541,13 +541,12 @@ function RepayBuyCredit() {
                   </div>
                   <div className="relative">
                     <Badge
-                      className={`text-white relative z-10 ${
-                        credit.status === "ACCEPTED"
+                      className={`text-white relative z-10 ${credit.status === "ACCEPTED"
                           ? "bg-blue-500"
                           : credit.status === "PAYED"
-                          ? "bg-green-500"
-                          : "bg-red-500"
-                      }`}
+                            ? "bg-green-500"
+                            : "bg-red-500"
+                        }`}
                     >
                       {credit.status}
                     </Badge>
@@ -639,11 +638,10 @@ function RepayBuyCredit() {
                       Return Date
                     </div>
                     <div
-                      className={`text-sm ${
-                        isOverdue(credit.return_date)
+                      className={`text-sm ${isOverdue(credit.return_date)
                           ? "text-destructive font-medium"
                           : ""
-                      }`}
+                        }`}
                     >
                       {formatDate(credit.return_date)}
                       {isOverdue(credit.return_date) && (
@@ -659,19 +657,18 @@ function RepayBuyCredit() {
                       Remaining Days
                     </div>
                     <div
-                      className={`text-sm font-medium ${
-                        calculateRemainingDays(credit.return_date) < 0
+                      className={`text-sm font-medium ${calculateRemainingDays(credit.return_date) < 0
                           ? "text-destructive"
                           : "text-green-600 dark:text-green-400"
-                      }`}
+                        }`}
                     >
                       {calculateRemainingDays(credit.return_date) < 0
                         ? `${Math.abs(
-                            calculateRemainingDays(credit.return_date)
-                          )} days overdue`
+                          calculateRemainingDays(credit.return_date)
+                        )} days overdue`
                         : `${calculateRemainingDays(
-                            credit.return_date
-                          )} days left`}
+                          credit.return_date
+                        )} days left`}
                     </div>
                   </div>
                 </div>

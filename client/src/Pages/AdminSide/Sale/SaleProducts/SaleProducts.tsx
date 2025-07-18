@@ -43,18 +43,47 @@ function SaleProducts() {
 
   // Add a new cart to the list
   const handleAddCart = (cart: any) => {
-    if (!customerType) setCustomerType(cart.customer_type);
-    if (!paymentMethod) setPaymentMethod(cart.payment_method);
-    if (!selectedCustomer && cart.customer_id) {
-      const customer = customers.find((c) => c.id === cart.customer_id);
-      setSelectedCustomer(customer);
-    }
+    try {
+      // Update customer type if not already set
+      if (!customerType) {
+        setCustomerType(cart.customer_type);
+      }
 
-    setCartList((prev) => [
-      ...prev,
-      { ...cart, id: Date.now() + Math.random() },
-    ]);
-    setTotalAmount((prev) => prev + cart.total_money);
+      // Update payment method if not already set
+      if (!paymentMethod) {
+        setPaymentMethod(cart.payment_method);
+      }
+
+      // Update selected customer if not already set and customer_id exists
+      if (!selectedCustomer && cart.customer_id) {
+        // Safely find customer with null checks
+        const customer = Array.isArray(customers)
+          ? customers.find((c) => c?.id === cart.customer_id)
+          : null;
+
+        if (customer) {
+          setSelectedCustomer(customer);
+        }
+      }
+
+      // Add to cart list with a unique ID
+      setCartList((prev) => [
+        ...prev,
+        {
+          ...cart,
+          id: Date.now() + Math.random().toString(36).substring(2, 9)
+        },
+      ]);
+
+      // Update total amount
+      if (typeof cart.total_money === 'number') {
+        setTotalAmount((prev) => prev + cart.total_money);
+      }
+    } catch (error) {
+      console.error("Error in handleAddCart:", error);
+      // Optionally show error to user
+      toast.error("Failed to add item to cart");
+    }
   };
 
   // Handle sell action (for now, just remove from list)

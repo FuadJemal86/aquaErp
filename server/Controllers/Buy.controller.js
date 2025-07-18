@@ -1,7 +1,7 @@
 const { Buy_product } = require("../Model/Validation");
 const { generateTransactionId } = require("../Utils/GenerateTransactionId");
 const prisma = require("../prisma/prisma");
-
+const jwt = require('jsonwebtoken')
 // buy product
 const buyProduct = async (req, res) => {
   try {
@@ -14,11 +14,26 @@ const buyProduct = async (req, res) => {
       description,
     } = req.body;
 
+    // Validate request body
     const validate = Buy_product.validate(req.body);
     if (validate.error) {
-      return res
-        .status(400)
-        .json({ message: validate.error.details[0].message });
+      return res.status(400).json({ message: validate.error.details[0].message });
+    }
+
+    // Get user info from JWT in cookies
+    const token = req.cookies?.token;
+    if (!token) {
+      return res.status(401).json({ message: "Unauthorized access" });
+    }
+
+    let userId = null;
+    let role = null;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.userId;
+      role = decoded.role;
+    } catch (err) {
+      return res.status(401).json({ message: "Invalid token" });
     }
 
     const transaction_id = generateTransactionId();
@@ -29,6 +44,10 @@ const buyProduct = async (req, res) => {
 
     const result = await prisma.$transaction(async (tx) => {
       const buyTransactions = [];
+
+      //  Move inside transaction scope
+      const managerId = role === "ADMIN" ? userId : null;
+      const casherId = role === "CASHER" ? userId : null;
 
       for (const item of cart_list) {
         let formattedReturnDate = null;
@@ -57,9 +76,7 @@ const buyProduct = async (req, res) => {
         const newAmountMoney = newQuantity * productStock.price_per_quantity;
 
         await tx.product_stock.update({
-          where: {
-            id: productStock.id,
-          },
+          where: { id: productStock.id },
           data: {
             quantity: newQuantity,
             amount_money: newAmountMoney,
@@ -73,6 +90,8 @@ const buyProduct = async (req, res) => {
             payment_method,
             total_money: item.price_per_quantity * item.quantity,
             supplier_name,
+            manager_id: managerId,
+            casher_id: casherId,
             transaction_id,
             type_id: item.product_type_id,
             bank_id: payment_method === "BANK" ? bank_id : null,
@@ -83,7 +102,6 @@ const buyProduct = async (req, res) => {
 
         buyTransactions.push(buyTransaction);
 
-        // ✅ Track product inflow in product_transaction
         await tx.product_transaction.create({
           data: {
             transaction_id,
@@ -105,10 +123,7 @@ const buyProduct = async (req, res) => {
               formattedCreditReturnDate = dateObj.toISOString();
             }
           } catch (error) {
-            console.error(
-              "Invalid return_date format for Buy_credit:",
-              return_date
-            );
+            console.error("Invalid return_date format for Buy_credit:", return_date);
           }
         }
 
@@ -124,9 +139,7 @@ const buyProduct = async (req, res) => {
         });
       } else if (payment_method === "BANK") {
         const check_bank_balance = await tx.bank_balance.findFirst({
-          where: {
-            bank_id: bank_id,
-          },
+          where: { bank_id },
         });
 
         if (!check_bank_balance) {
@@ -148,22 +161,41 @@ const buyProduct = async (req, res) => {
         });
 
         await tx.bank_balance.update({
-          where: {
-            id: check_bank_balance.id,
-          },
+          where: { id: check_bank_balance.id },
           data: {
             balance: check_bank_balance.balance - total_money,
           },
         });
       } else if (payment_method === "CASH") {
+        let currentCashBalance = 0;
+
+        const check_cash_balance = await tx.cash_balance.findFirst({
+          where: { id: 1 },
+        });
+
+        if (check_cash_balance) {
+          currentCashBalance = check_cash_balance.balance;
+        }
+
         await tx.cash_transaction.create({
           data: {
             out: total_money,
             in: 0,
-            balance: 0, // optional: fetch & update actual cash balance
+            balance: currentCashBalance - total_money,
             transaction_id,
-            manager_id: 1,
-            casher_id: 1,
+            manager_id: managerId,
+            casher_id: casherId,
+          },
+        });
+
+        await tx.cash_balance.upsert({
+          where: { id: 1 },
+          update: {
+            balance: currentCashBalance - total_money,
+          },
+          create: {
+            id: 1,
+            balance: currentCashBalance - total_money,
           },
         });
       } else {
@@ -187,34 +219,26 @@ const buyProduct = async (req, res) => {
         return res.status(400).json({ message: "Bank balance not found" });
       }
       if (error.message.includes("Bank balance not enough")) {
-        return res
-          .status(400)
-          .json({ message: "Insufficient bank balance for this transaction" });
+        return res.status(400).json({ message: "Insufficient bank balance for this transaction" });
       }
       if (error.message.includes("Invalid payment method")) {
-        return res
-          .status(400)
-          .json({ message: "Invalid payment method provided" });
+        return res.status(400).json({ message: "Invalid payment method provided" });
       }
-
       if (error.message.includes("validation")) {
         return res.status(400).json({ message: error.message });
       }
-
       if (error.code === "P1008") {
-        return res
-          .status(408)
-          .json({ message: "Request timeout. Please try again." });
+        return res.status(408).json({ message: "Request timeout. Please try again." });
       }
 
       return res.status(500).json({ message: error.message });
     }
 
-    res.status(500).json({
-      message: "Network error.",
-    });
+    res.status(500).json({ message: "Network error." });
   }
 };
+
+
 
 // buy credit report
 const buyCreditReport = async (req, res) => {
@@ -352,7 +376,16 @@ const detailBuyCredit = async (req, res) => {
       where: {
         transaction_id: transaction_id,
       },
-      include: {
+      select: {
+        id: true,
+        price_per_quantity: true,
+        quantity: true,
+        payment_method: true,
+        total_money: true,
+        supplier_name: true,
+        transaction_id: true,
+        manager_id: true,
+        casher_id: true,
         Product_type: {
           select: {
             id: true,
@@ -368,6 +401,32 @@ const detailBuyCredit = async (req, res) => {
         .json({ status: false, error: "Buy credit detail not found" });
     }
 
+    // Extract manager and casher IDs from the report
+    const userIds = Array.from(
+      new Set(
+        getDetailBuyCreditReport.flatMap((item) => [
+          item.manager_id,
+          item.casher_id,
+        ])
+      )
+    ).filter(Boolean); // Remove null/undefined values
+
+    // Fetch user names based on manager and casher IDs
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true },
+    });
+
+    // Create a map of user IDs to their names
+    const userMap = Object.fromEntries(users.map((u) => [u.id, u.name]));
+
+    // Add manager and casher names to the buy transaction details
+    getDetailBuyCreditReport.forEach((item) => {
+      item.manager_name = userMap[item.manager_id] || null;
+      item.casher_name = userMap[item.casher_id] || null;
+    });
+
+    // Return the response with the manager and casher names included
     return res
       .status(200)
       .json({ status: true, data: getDetailBuyCreditReport });

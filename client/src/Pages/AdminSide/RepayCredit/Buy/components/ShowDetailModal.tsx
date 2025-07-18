@@ -87,6 +87,7 @@ interface BuyCreditTransactions {
     id: number;
     amount_payed: number;
     payment_method: string;
+    manager_name: string;
     CTID: string;
     outstanding_balance: number;
 }
@@ -274,6 +275,7 @@ function ShowDetailModal({
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead className="w-[120px]">ID</TableHead>
+                                                <TableHead className="w-[120px]">Responsible Person</TableHead>
                                                 <TableHead className="w-[120px]">
                                                     Credit Transaction ID
                                                 </TableHead>
@@ -294,6 +296,9 @@ function ShowDetailModal({
                                                 <TableRow key={detail.id}>
                                                     <TableCell className="font-medium">
                                                         {index + 1}
+                                                    </TableCell>
+                                                    <TableCell className="font-medium">
+                                                        {detail?.manager_name}
                                                     </TableCell>
                                                     <TableCell>
                                                         <div className="flex items-center gap-2">
