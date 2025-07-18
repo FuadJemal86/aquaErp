@@ -184,7 +184,7 @@ function ShowDetailModal({
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[120px]">ID</TableHead>
-                        <TableHead className="w-[120px]">Responsible Person</TableHead>
+
                         <TableHead className="w-[180px]">
                           Product Type
                         </TableHead>
@@ -199,9 +199,7 @@ function ShowDetailModal({
                           <TableCell className="font-medium">
                             {index + 1}
                           </TableCell>
-                          <TableCell className="font-medium">
-                            {detail?.manager_name}
-                          </TableCell>
+
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Package className="h-4 w-4 text-muted-foreground" />
@@ -273,6 +271,7 @@ function ShowDetailModal({
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[120px]">ID</TableHead>
+                        <TableHead className="w-[120px]">Responsible Person</TableHead>
                         <TableHead className="w-[120px]">
                           Credit Transaction ID
                         </TableHead>
@@ -293,6 +292,9 @@ function ShowDetailModal({
                         <TableRow key={detail.id}>
                           <TableCell className="font-medium">
                             {index + 1}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {detail?.manager_name}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">

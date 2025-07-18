@@ -242,10 +242,12 @@ function AddCart({
     }
   };
 
+  // Fetch customers
   const fetchCustomers = async () => {
     try {
-      const response = await api.get("/admin/get-all-customer");
-      setCustomers(response.data);
+      const response = await api.get("/admin/get-all-customer-for-sale");
+      const customersData = response.data?.customers;
+      setCustomers(Array.isArray(customersData) ? customersData : []);
     } catch (error) {
       console.error("Error fetching customers:", error);
       setCustomers([]);
@@ -361,7 +363,7 @@ function AddCart({
   const onSubmit = async (data: SalesCartFormData) => {
     setIsSubmitting(true);
     try {
-      // Validate quantity first
+      // Validate quantity against available stock
       const quantityValidation = validateQuantity(
         data.quantity,
         data.product_type_id
@@ -372,39 +374,41 @@ function AddCart({
         return;
       }
 
-      // Prepare customer_id - convert to number only if it exists and is REGULAR
-      const customerId = data.customer_type === "REGULAR" && data.customer_id
-        ? parseInt(data.customer_id)
-        : null;
-
       const cartData = {
         customer_type: data.customer_type,
-        customer_id: customerId,
+        customer_id:
+          data.customer_type === "REGULAR" && data.customer_id
+            ? parseInt(data.customer_id)
+            : null,
         type_id: parseInt(data.product_type_id),
         quantity: parseInt(data.quantity),
         price: parseFloat(data.price),
         payment_method: data.payment_method,
-        bank_id: data.payment_method === "BANK" && data.bank_id
-          ? parseInt(data.bank_id)
-          : null,
-        return_date: data.payment_method === "CREDIT"
-          ? data.return_date
-          : null,
-        description: data.payment_method === "CREDIT"
-          ? data.description
-          : null,
+        bank_id:
+          data.payment_method === "BANK" ? parseInt(data.bank_id!) : null,
+        return_date: data.payment_method === "CREDIT" ? data.return_date : null,
+        description: data.payment_method === "CREDIT" ? data.description : null,
         total_money: parseInt(data.quantity) * parseFloat(data.price),
       };
 
-      console.log("Submitting cart data:", cartData); // Debug log
       onAddCart(cartData);
-
-      // Reset form
-      if (presetCustomerType || presetPaymentMethod || presetDescription || presetReturnDate || selectedBankId) {
+      // When resetting, preserve customer_type, payment_method, and other preset values
+      if (
+        presetCustomerType ||
+        presetPaymentMethod ||
+        presetDescription ||
+        presetReturnDate ||
+        selectedBankId
+      ) {
         reset({
-          customer_type: (presetCustomerType || data.customer_type) as "WALKER" | "REGULAR",
+          customer_type: (presetCustomerType || data.customer_type) as
+            | "WALKER"
+            | "REGULAR",
           customer_id: selectedCustomerId || "",
-          payment_method: (presetPaymentMethod || data.payment_method) as "CREDIT" | "CASH" | "BANK",
+          payment_method: (presetPaymentMethod || data.payment_method) as
+            | "CREDIT"
+            | "CASH"
+            | "BANK",
           product_category_id: "",
           product_type_id: "",
           quantity: "",
@@ -419,7 +423,9 @@ function AddCart({
       toast.success("Product added to cart successfully!");
     } catch (error: any) {
       console.error("Error adding to cart:", error);
-      toast.error(error.response?.data?.error || "Failed to add to cart");
+      const errorMessage =
+        error.response?.data?.error || "Failed to add to cart";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -518,28 +524,24 @@ function AddCart({
             <div className="space-y-2">
               <Label htmlFor="customer_id">Select Customer *</Label>
               <Select
-                value={selectedCustomerId || watch("customer_id") || ""}
+                value={selectedCustomerId || watch("customer_id")}
                 onValueChange={handleCustomerChange}
                 disabled={!!selectedCustomerId}
               >
-                <SelectTrigger className={errors.customer_id ? "border-red-500" : ""}>
+                <SelectTrigger
+                  className={errors.customer_id ? "border-red-500" : ""}
+                >
                   <SelectValue placeholder="Choose a customer" />
                 </SelectTrigger>
                 <SelectContent>
-                  {customers && customers.length > 0 ? (
-                    customers.map((customer) => (
-                      <SelectItem
-                        key={customer.id}
-                        value={customer.id.toString()} // Ensure string value
-                      >
-                        {customer.full_name} - {customer.phone}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="" disabled>
-                      No customers found
+                  {customers.map((customer) => (
+                    <SelectItem
+                      key={customer.id}
+                      value={customer.id.toString()}
+                    >
+                      {customer.full_name} - {customer.phone}
                     </SelectItem>
-                  )}
+                  ))}
                 </SelectContent>
               </Select>
               {errors.customer_id && (

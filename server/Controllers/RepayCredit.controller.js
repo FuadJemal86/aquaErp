@@ -44,7 +44,7 @@ const getSalesCreditDetails = async (req, res) => {
         price_per_quantity: true,
         payment_method: true,
         manager_id: true,
-        casher_id: true, // Corrected from customer_id
+        casher_id: true,
         customer_type: true,
         status: true,
         quantity: true,
@@ -72,27 +72,21 @@ const getSalesCreditDetails = async (req, res) => {
       },
     });
 
-    if (salesCreditTransactions.length === 0) {
-      return res
-        .status(404)
-        .json({ status: false, error: "Sales credit detail not found" });
-    }
-
-    // Extract unique user IDs (manager + casher)
-    const userIds = Array.from(
-      new Set(salesTransactions.flatMap((item) => [item.manager_id]))
+    // Extract unique manager_ids only from salesCreditTransactions
+    const managerIds = Array.from(
+      new Set(salesCreditTransactions.map((item) => item.manager_id))
     ).filter(Boolean);
 
-    // Fetch names for these user IDs
+    // Get manager names from user table
     const users = await prisma.user.findMany({
-      where: { id: { in: userIds } },
+      where: { id: { in: managerIds } },
       select: { id: true, name: true },
     });
 
     const userMap = Object.fromEntries(users.map((u) => [u.id, u.name]));
 
-    // Enrich sales transactions with names
-    const salesTransactionsWithNames = salesTransactions.map((item) => ({
+    // Add manager_name to each credit transaction
+    const salesCreditTransactionsWithNames = salesCreditTransactions.map((item) => ({
       ...item,
       manager_name: userMap[item.manager_id] || null,
     }));
@@ -100,8 +94,8 @@ const getSalesCreditDetails = async (req, res) => {
     return res.status(200).json({
       status: true,
       data: {
-        salesTransactions: salesTransactionsWithNames,
-        salesCreditTransactions,
+        salesTransactions,
+        salesCreditTransactions: salesCreditTransactionsWithNames,
       },
     });
   } catch (err) {
@@ -112,6 +106,7 @@ const getSalesCreditDetails = async (req, res) => {
     });
   }
 };
+
 
 const salesCreditReportForRepay = async (req, res) => {
   try {

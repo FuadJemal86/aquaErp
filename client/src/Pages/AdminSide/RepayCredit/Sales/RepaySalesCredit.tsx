@@ -197,7 +197,7 @@ function RepaySalesCredit() {
               amount_payed: detail.amount_payed,
               payment_method: detail.payment_method,
               CTID: detail.CTID,
-              manager_name: detail.maneger_name,
+              manager_name: detail.manager_name,
               outstanding_balance: detail.outstanding_balance,
             })
           );

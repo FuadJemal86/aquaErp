@@ -88,12 +88,12 @@ const Sales_product = Joi.object({
     .valid("WALKER", "REGULAR")
     .required(),
 
-  customer_id: Joi.alternatives()
-    .conditional("customer_type", {
-      is: "REGULAR",
-      then: Joi.alternatives().try(Joi.number(), Joi.string()).required(),
-      otherwise: Joi.alternatives().try(Joi.number(), Joi.string(), Joi.valid(null)).optional(),
-    }),
+  customer_id: Joi.alternatives().conditional("customer_type", {
+    is: "REGULAR",
+    then: Joi.number().required(),
+    otherwise: Joi.number().optional().allow(null),
+  }),
+
 
   bank_id: Joi.when("payment_method", {
     is: "BANK",
