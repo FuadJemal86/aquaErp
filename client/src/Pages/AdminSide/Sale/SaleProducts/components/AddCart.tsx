@@ -622,13 +622,13 @@ function AddCart({
           )}
 
           {/* Product Category and Type in one row */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="product_category_id">Product Category *</Label>
               <ReactSelect
                 options={categoryOptions}
                 onChange={handleCategoryChange}
-                placeholder="Search and select category..."
+                placeholder="Select category"
                 value={categoryOptions.find(
                   (option) => option.value.toString() === selectedCategory
                 )}
@@ -661,7 +661,7 @@ function AddCart({
               <ReactSelect
                 options={filteredProductTypeOptions}
                 onChange={handleProductTypeChange}
-                placeholder="Search and select product type..."
+                placeholder="Select product type"
                 isDisabled={!selectedCategory}
                 value={filteredProductTypeOptions.find(
                   (option) =>
