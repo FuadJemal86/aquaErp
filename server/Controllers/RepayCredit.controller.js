@@ -5,6 +5,7 @@ const { deleteFileIfExists } = require("../Utils/fileUtils");
 const {
   generateSalesCreditTransactionId,
 } = require("../Utils/GenerateTransactionId");
+const jwt = require('jsonwebtoken')
 
 // const getSalesCreditDetailTransaction = async (req, res) => {
 //   const transaction_id = req.params.id;
@@ -32,22 +33,19 @@ const {
 //       .json({ status: false, error: "Internal server error" });
 //   }
 // };
-
 const getSalesCreditDetails = async (req, res) => {
   const transaction_id = req.params.id;
 
   try {
-    // Fetch sales transactions
+    // Fetch related sales transactions
     const salesTransactions = await prisma.sales_transaction.findMany({
-      where: {
-        transaction_id: transaction_id,
-      },
+      where: { transaction_id },
       select: {
         id: true,
         price_per_quantity: true,
         payment_method: true,
         manager_id: true,
-        customer_id: true,
+        casher_id: true, // Corrected from customer_id
         customer_type: true,
         status: true,
         quantity: true,
@@ -60,22 +58,19 @@ const getSalesCreditDetails = async (req, res) => {
       },
     });
 
-    // Fetch sales credit transactions
-    const salesCreditTransactions =
-      await prisma.sales_credit_transaction.findMany({
-        where: {
-          transaction_id: transaction_id,
-        },
-        select: {
-          id: true,
-          amount_payed: true,
-          payment_method: true,
-          CTID: true,
-          outstanding_balance: true,
-          image: true,
-          createdAt: true,
-        },
-      });
+    // Fetch related sales credit repayments
+    const salesCreditTransactions = await prisma.sales_credit_transaction.findMany({
+      where: { transaction_id },
+      select: {
+        id: true,
+        amount_payed: true,
+        payment_method: true,
+        CTID: true,
+        outstanding_balance: true,
+        image: true,
+        createdAt: true,
+      },
+    });
 
     if (salesTransactions.length === 0) {
       return res
@@ -83,14 +78,12 @@ const getSalesCreditDetails = async (req, res) => {
         .json({ status: false, error: "Sales credit detail not found" });
     }
 
-    // Get user IDs for manager and customer names
+    // Extract unique user IDs (manager + casher)
     const userIds = Array.from(
-      new Set(
-        salesTransactions.flatMap((item) => [item.manager_id, item.customer_id])
-      )
+      new Set(salesTransactions.flatMap((item) => [item.manager_id, item.casher_id]))
     ).filter(Boolean);
 
-    // Fetch users
+    // Fetch names for these user IDs
     const users = await prisma.user.findMany({
       where: { id: { in: userIds } },
       select: { id: true, name: true },
@@ -98,29 +91,29 @@ const getSalesCreditDetails = async (req, res) => {
 
     const userMap = Object.fromEntries(users.map((u) => [u.id, u.name]));
 
-    // Add manager and cashier names to sales transactions
+    // Enrich sales transactions with names
     const salesTransactionsWithNames = salesTransactions.map((item) => ({
       ...item,
       manager_name: userMap[item.manager_id] || null,
-      cashier_name: userMap[item.customer_id] || null,
+      casher_name: userMap[item.casher_id] || null,
     }));
 
-    // Return unified response
     return res.status(200).json({
       status: true,
       data: {
         salesTransactions: salesTransactionsWithNames,
-        salesCreditTransactions: salesCreditTransactions,
+        salesCreditTransactions,
       },
     });
   } catch (err) {
-    console.error(err);
+    console.error("Error in getSalesCreditDetails:", err);
     return res.status(500).json({
       status: false,
       error: "Internal server error",
     });
   }
 };
+
 
 const salesCreditReportForRepay = async (req, res) => {
   try {
@@ -188,6 +181,24 @@ const repaySalesCredit = async (req, res) => {
 
   const bankId = bank_id ? parseInt(bank_id) : null;
 
+  // Get user info from JWT in cookies
+  const token = req.cookies?.token;
+  if (!token) {
+    return res.status(401).json({ status: false, error: "Unauthorized access" });
+  }
+
+  let userId = null;
+  let role = null;
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    userId = decoded.userId;
+    role = decoded.role;
+  } catch (err) {
+    return res.status(401).json({ status: false, error: "Invalid token" });
+  }
+
+  // Image required for BANK
   if (payment_method === "BANK" && !req.file?.fullPath) {
     return res
       .status(400)
@@ -205,16 +216,19 @@ const repaySalesCredit = async (req, res) => {
     await prisma.$transaction(async (tx) => {
       let cashTransactionId = null;
 
-      // Handle CASH
+      //  Handle CASH
       if (payment_method === "CASH") {
-        const newCash = await tx.cash_transaction.create({
-          data: {
-            in: parseFloat(amount_payed),
-            out: 0,
-            balance: parseFloat(amount_payed),
-            transaction_id,
-          },
-        });
+        const cashData = {
+          in: parseFloat(amount_payed),
+          out: 0,
+          balance: parseFloat(amount_payed),
+          transaction_id,
+        };
+
+        if (role === "ADMIN") cashData.manager_id = userId;
+        if (role === "CASHER") cashData.casher_id = userId;
+
+        const newCash = await tx.cash_transaction.create({ data: cashData });
         cashTransactionId = newCash.id;
 
         const latestCashBalance = await tx.cash_balance.findFirst({
@@ -273,7 +287,7 @@ const repaySalesCredit = async (req, res) => {
         });
       }
 
-      // Credit transaction
+      //  Credit Transaction
       await tx.sales_credit_transaction.create({
         data: {
           transaction_id,
@@ -298,9 +312,7 @@ const repaySalesCredit = async (req, res) => {
       if (updatedTotal <= 0) {
         await tx.sales_credit.update({
           where: { id: credit.id },
-          data: {
-            status: "PAYED",
-          },
+          data: { status: "PAYED" },
         });
       } else {
         await tx.sales_credit.update({
@@ -324,6 +336,7 @@ const repaySalesCredit = async (req, res) => {
       .json({ status: false, error: "Internal server error" });
   }
 };
+
 
 // Buy repay credit
 
@@ -430,6 +443,7 @@ const buyCreditReportForRepay = async (req, res) => {
   }
 };
 
+// repay buy credit
 const repayBuyCredit = async (req, res) => {
   const {
     amount_payed,
@@ -440,6 +454,23 @@ const repayBuyCredit = async (req, res) => {
   } = req.body;
 
   const bankId = bank_id ? parseInt(bank_id) : null;
+
+  // Extract user info from JWT token in cookies
+  const token = req.cookies?.token;
+  if (!token) {
+    return res.status(401).json({ status: false, error: "Unauthorized access" });
+  }
+
+  let userId = null;
+  let role = null;
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    userId = decoded.userId;
+    role = decoded.role;
+  } catch (err) {
+    return res.status(401).json({ status: false, error: "Invalid token" });
+  }
 
   // Require image only for BANK payments
   if (payment_method === "BANK" && !req.file?.fullPath) {
@@ -462,14 +493,17 @@ const repayBuyCredit = async (req, res) => {
 
       // Handle CASH
       if (payment_method === "CASH") {
-        const newCash = await tx.cash_transaction.create({
-          data: {
-            in: 0,
-            out: parseFloat(amount_payed),
-            balance: parseFloat(amount_payed),
-            transaction_id: CTID,
-          },
-        });
+        const cashData = {
+          in: 0,
+          out: parseFloat(amount_payed),
+          balance: parseFloat(amount_payed),
+          transaction_id: CTID,
+        };
+
+        if (role === "ADMIN") cashData.manager_id = userId;
+        if (role === "CASHER") cashData.casher_id = userId;
+
+        const newCash = await tx.cash_transaction.create({ data: cashData });
         cashTransactionId = newCash.id;
 
         const latestCashBalance = await tx.cash_balance.findFirst({
@@ -579,6 +613,7 @@ const repayBuyCredit = async (req, res) => {
       .json({ status: false, error: "Internal server error" });
   }
 };
+
 
 // get cash balance
 

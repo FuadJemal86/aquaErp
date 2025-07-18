@@ -4,8 +4,8 @@ const {
   generateWalkingId,
 } = require("../Utils/GenerateTransactionId");
 const prisma = require("../prisma/prisma");
+const jwt = require("jsonwebtoken");
 
-// sell product
 const sellProduct = async (req, res) => {
   try {
     const {
@@ -26,13 +26,28 @@ const sellProduct = async (req, res) => {
         .json({ message: validate.error.details[0].message });
     }
 
+    //  Get user info from JWT in cookies
+    const token = req.cookies?.token;
+    if (!token) {
+      return res.status(401).json({ message: "Unauthorized access" });
+    }
+
+    let userId = null;
+    let role = null;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.userId;
+      role = decoded.role;
+    } catch (err) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+
     const transaction_id = generateTransactionId();
     const total_money = cart_list.reduce(
       (acc, item) => acc + item.price * item.quantity,
       0
     );
 
-    // Check for duplicate product types in cart list
     const typeIds = cart_list.map((item) => item.type_id);
     const uniqueTypeIds = [...new Set(typeIds)];
     if (typeIds.length !== uniqueTypeIds.length) {
@@ -58,7 +73,6 @@ const sellProduct = async (req, res) => {
           }
         }
 
-        // Fetch product stock
         const productStock = await tx.product_stock.findFirst({
           where: {
             product_type_id: item.type_id,
@@ -78,7 +92,6 @@ const sellProduct = async (req, res) => {
         const newQuantity = productStock.quantity - item.quantity;
         const newAmountMoney = newQuantity * productStock.price_per_quantity;
 
-        // Update stock
         await tx.product_stock.update({
           where: { id: productStock.id },
           data: {
@@ -87,7 +100,6 @@ const sellProduct = async (req, res) => {
           },
         });
 
-        // Create sales transaction
         const salesTransaction = await tx.sales_transaction.create({
           data: {
             price_per_quantity: item.price,
@@ -100,12 +112,13 @@ const sellProduct = async (req, res) => {
             customer_id: customer_type === "REGULAR" ? customer_id : null,
             walker_id: customer_type === "WALKER" ? generateWalkingId() : null,
             bank_id: payment_method === "BANK" ? bank_id : null,
+            manager_id: role === "ADMIN" ? userId : undefined,
+            casher_id: role === "CASHER" ? userId : undefined,
           },
         });
 
         salesTransactions.push(salesTransaction);
 
-        // Create product transaction (OUT)
         await tx.product_transaction.create({
           data: {
             transaction_id,
@@ -118,7 +131,6 @@ const sellProduct = async (req, res) => {
         });
       }
 
-      // Handle CREDIT payment
       if (payment_method === "CREDIT") {
         let formattedCreditReturnDate = null;
         if (return_date) {
@@ -128,10 +140,7 @@ const sellProduct = async (req, res) => {
               formattedCreditReturnDate = dateObj.toISOString();
             }
           } catch (error) {
-            console.error(
-              "Invalid return_date format for Sales_credit:",
-              return_date
-            );
+            console.error("Invalid return_date format for Sales_credit:", return_date);
           }
         }
 
@@ -148,10 +157,7 @@ const sellProduct = async (req, res) => {
             },
           });
         }
-      }
-
-      // Handle BANK payment
-      else if (payment_method === "BANK") {
+      } else if (payment_method === "BANK") {
         const check_bank_balance = await tx.bank_balance.findFirst({
           where: { bank_id },
         });
@@ -176,22 +182,15 @@ const sellProduct = async (req, res) => {
             balance: check_bank_balance.balance + total_money,
           },
         });
-      }
-
-      // Handle CASH payment
-      else if (payment_method === "CASH") {
+      } else if (payment_method === "CASH") {
         let currentCashBalance = 0;
 
-        try {
-          const check_cash_balance = await tx.cash_balance.findFirst({
-            where: { id: 1 },
-          });
+        const check_cash_balance = await tx.cash_balance.findFirst({
+          where: { id: 1 },
+        });
 
-          if (check_cash_balance) {
-            currentCashBalance = check_cash_balance.balance;
-          }
-        } catch (error) {
-          console.log("Cash balance not found, starting with 0");
+        if (check_cash_balance) {
+          currentCashBalance = check_cash_balance.balance;
         }
 
         await tx.cash_transaction.create({
@@ -200,8 +199,8 @@ const sellProduct = async (req, res) => {
             out: 0,
             balance: total_money + currentCashBalance,
             transaction_id,
-            manager_id: 1,
-            casher_id: 1,
+            manager_id: role === "ADMIN" ? userId : undefined,
+            casher_id: role === "CASHER" ? userId : undefined,
           },
         });
 
@@ -236,9 +235,7 @@ const sellProduct = async (req, res) => {
         return res.status(400).json({ message: "Bank balance not found" });
       }
       if (error.message.includes("Invalid payment method")) {
-        return res
-          .status(400)
-          .json({ message: "Invalid payment method provided" });
+        return res.status(400).json({ message: "Invalid payment method provided" });
       }
       if (error.message.includes("Insufficient stock")) {
         return res.status(400).json({ message: error.message });
@@ -247,9 +244,7 @@ const sellProduct = async (req, res) => {
         return res.status(400).json({ message: "Product stock not found" });
       }
       if (error.code === "P1008") {
-        return res
-          .status(408)
-          .json({ message: "Request timeout. Please try again." });
+        return res.status(408).json({ message: "Request timeout. Please try again." });
       }
       return res.status(500).json({ message: error.message });
     }
@@ -257,6 +252,7 @@ const sellProduct = async (req, res) => {
     res.status(500).json({ message: "Network error." });
   }
 };
+
 
 // sales credit report
 const salesCreditReport = async (req, res) => {
@@ -415,6 +411,7 @@ const detailSalesCredit = async (req, res) => {
         price_per_quantity: true,
         payment_method: true,
         manager_id: true,
+        casher_id: true,
         customer_id: true,
         customer_type: true,
         status: true,

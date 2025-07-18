@@ -165,7 +165,6 @@ const getSalesReport = async (req, res) => {
 };
 
 // Get Sales Details
-
 const getSalesDetails = async (req, res) => {
   try {
     const { transaction_id } = req.params;
@@ -173,23 +172,23 @@ const getSalesDetails = async (req, res) => {
     if (!transaction_id) {
       return res.status(400).json({ message: "Transaction ID is required" });
     }
+
     const sales = await prisma.sales_transaction.findMany({
-      where: {
-        transaction_id: transaction_id,
-      },
+      where: { transaction_id },
       select: {
         id: true,
         price_per_quantity: true,
         quantity: true,
         payment_method: true,
         createdAt: true,
+        updatedAt: true,
+        transaction_id: true,
         type_id: true,
+        manager_id: true,
+        casher_id: true,
         bank_id: true,
         customer_id: true,
         walker_id: true,
-        transaction_id: true,
-
-        updatedAt: true,
         Product_type: {
           select: {
             id: true,
@@ -210,11 +209,38 @@ const getSalesDetails = async (req, res) => {
         },
       },
     });
-    res.status(200).json({ sales });
+
+    // Collect all manager and casher user IDs (no duplicates, no nulls)
+    const userIds = Array.from(
+      new Set(
+        sales.flatMap((item) => [item.manager_id, item.casher_id])
+      )
+    ).filter(Boolean); // remove null or undefined
+
+    // Fetch names of users involved
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true },
+    });
+
+    // Create a map of userId => name
+    const userMap = Object.fromEntries(users.map((u) => [u.id, u.name]));
+
+    // Add readable names to each sale entry
+    const enrichedSales = sales.map((item) => ({
+      ...item,
+      manager_name: userMap[item.manager_id] || null,
+      casher_name: userMap[item.casher_id] || null,
+    }));
+
+    return res.status(200).json({ sales: enrichedSales });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error in getSalesDetails:", error);
+    return res.status(500).json({ message: error.message });
   }
 };
+
+
 
 
 module.exports = {

@@ -32,6 +32,8 @@ interface SalesDetail {
   walker_id: string | null;
   transaction_id: string;
   updatedAt: string;
+  manager_name: String,
+  casher_name: string,
   Product_type: {
     id: number;
     name: string;
@@ -245,6 +247,7 @@ function ShowDetails({ transactionId, isOpen, onClose }: ShowDetailsProps) {
                       <TableHeader>
                         <TableRow>
                           <TableHead>#</TableHead>
+                          <TableHead>Responsible Person</TableHead>
                           <TableHead>Product</TableHead>
                           <TableHead>Quantity</TableHead>
                           <TableHead>Price per Unit</TableHead>
@@ -255,6 +258,11 @@ function ShowDetails({ transactionId, isOpen, onClose }: ShowDetailsProps) {
                         {salesDetails.map((detail, index) => (
                           <TableRow key={detail.id}>
                             <TableCell>{index + 1}</TableCell>
+                            <TableCell className="font-medium">
+                              <TableCell className="font-medium">
+                                {detail?.manager_name ?? detail?.casher_name}
+                              </TableCell>
+                            </TableCell>
                             <TableCell className="font-medium">
                               {detail.Product_type.name}
                             </TableCell>
