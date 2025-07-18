@@ -58,7 +58,6 @@ const getSalesCreditDetails = async (req, res) => {
     });
 
     // Fetch related sales credit repayments
-<<<<<<< HEAD
     const salesCreditTransactions = await prisma.sales_credit_transaction.findMany({
       where: { transaction_id },
       select: {
@@ -72,21 +71,6 @@ const getSalesCreditDetails = async (req, res) => {
         createdAt: true,
       },
     });
-=======
-    const salesCreditTransactions =
-      await prisma.sales_credit_transaction.findMany({
-        where: { transaction_id },
-        select: {
-          id: true,
-          amount_payed: true,
-          payment_method: true,
-          CTID: true,
-          outstanding_balance: true,
-          image: true,
-          createdAt: true,
-        },
-      });
->>>>>>> 2a7282eebaed02dd02a77cfec6bb396e53b6c41d
 
     if (salesCreditTransactions.length === 0) {
       return res
@@ -96,13 +80,7 @@ const getSalesCreditDetails = async (req, res) => {
 
     // Extract unique user IDs (manager + casher)
     const userIds = Array.from(
-<<<<<<< HEAD
       new Set(salesTransactions.flatMap((item) => [item.manager_id]))
-=======
-      new Set(
-        salesTransactions.flatMap((item) => [item.manager_id, item.casher_id])
-      )
->>>>>>> 2a7282eebaed02dd02a77cfec6bb396e53b6c41d
     ).filter(Boolean);
 
     // Fetch names for these user IDs
@@ -348,11 +326,8 @@ const repaySalesCredit = async (req, res) => {
   }
 };
 
-<<<<<<< HEAD
 
 
-=======
->>>>>>> 2a7282eebaed02dd02a77cfec6bb396e53b6c41d
 // Buy repay credit
 
 const getBuyCreditDetails = async (req, res) => {
@@ -637,11 +612,8 @@ const repayBuyCredit = async (req, res) => {
   }
 };
 
-<<<<<<< HEAD
 
 
-=======
->>>>>>> 2a7282eebaed02dd02a77cfec6bb396e53b6c41d
 // get cash balance
 
 const cashBalance = async (req, res) => {
