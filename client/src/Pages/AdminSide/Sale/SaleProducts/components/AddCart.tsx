@@ -245,7 +245,7 @@ function AddCart({
   const fetchCustomers = async () => {
     try {
       const response = await api.get("/admin/get-all-customer");
-      setCustomers(Array.isArray(response.data?.data) ? response.data.data : []);
+      setCustomers(response.data);
     } catch (error) {
       console.error("Error fetching customers:", error);
       setCustomers([]);

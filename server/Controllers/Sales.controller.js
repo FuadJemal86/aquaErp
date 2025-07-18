@@ -4,7 +4,6 @@ const {
   generateWalkingId,
 } = require("../Utils/GenerateTransactionId");
 const prisma = require("../prisma/prisma");
-const jwt = require("jsonwebtoken");
 
 const sellProduct = async (req, res) => {
   try {
@@ -29,21 +28,9 @@ const sellProduct = async (req, res) => {
         .json({ message: validate.error.details[0].message });
     }
 
-    //  Get user info from JWT in cookies
-    const token = req.cookies?.token;
-    if (!token) {
-      return res.status(401).json({ message: "Unauthorized access" });
-    }
-
-    let userId = null;
-    let role = null;
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      userId = decoded.userId;
-      role = decoded.role;
-    } catch (err) {
-      return res.status(401).json({ message: "Invalid token" });
-    }
+    // Get user info from middleware
+    const userId = req.userId;
+    const role = req.role;
 
     const transaction_id = generateTransactionId();
     const total_money = cart_list.reduce(
@@ -143,7 +130,10 @@ const sellProduct = async (req, res) => {
               formattedCreditReturnDate = dateObj.toISOString();
             }
           } catch (error) {
-            console.error("Invalid return_date format for Sales_credit:", return_date);
+            console.error(
+              "Invalid return_date format for Sales_credit:",
+              return_date
+            );
           }
         }
 
@@ -238,7 +228,9 @@ const sellProduct = async (req, res) => {
         return res.status(400).json({ message: "Bank balance not found" });
       }
       if (error.message.includes("Invalid payment method")) {
-        return res.status(400).json({ message: "Invalid payment method provided" });
+        return res
+          .status(400)
+          .json({ message: "Invalid payment method provided" });
       }
       if (error.message.includes("Insufficient stock")) {
         return res.status(400).json({ message: error.message });
@@ -247,7 +239,9 @@ const sellProduct = async (req, res) => {
         return res.status(400).json({ message: "Product stock not found" });
       }
       if (error.code === "P1008") {
-        return res.status(408).json({ message: "Request timeout. Please try again." });
+        return res
+          .status(408)
+          .json({ message: "Request timeout. Please try again." });
       }
       return res.status(500).json({ message: error.message });
     }
@@ -255,7 +249,6 @@ const sellProduct = async (req, res) => {
     res.status(500).json({ message: "Network error." });
   }
 };
-
 
 // sales credit report
 const salesCreditReport = async (req, res) => {
@@ -468,6 +461,27 @@ const detailSalesCredit = async (req, res) => {
   }
 };
 
+// get all customer for sale
+const getAllCustomerForSale = async (req, res) => {
+  const customers = await prisma.customer.findMany({
+    where: {
+      isActive: true,
+    },
+    select: {
+      id: true,
+      full_name: true,
+      phone: true,
+      address: true,
+    },
+  });
+  return res.status(200).json({ status: true, customers: customers });
+};
+
 // List of credit
 
-module.exports = { sellProduct, salesCreditReport, detailSalesCredit };
+module.exports = {
+  sellProduct,
+  salesCreditReport,
+  detailSalesCredit,
+  getAllCustomerForSale,
+};

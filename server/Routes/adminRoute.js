@@ -33,6 +33,7 @@ const {
   sellProduct,
   detailSalesCredit,
   salesCreditReport,
+  getAllCustomerForSale,
 } = require("../Controllers/Sales.controller");
 const {
   addBankDeposit,
@@ -65,6 +66,7 @@ const {
 const {
   productTransactions,
 } = require("../Controllers/Report/productTransaction");
+const getId = require("../middlewear/getId");
 
 router.post("/add-product-category", addProductCategory);
 router.post("/add-product-type", addProductType);
@@ -102,7 +104,8 @@ router.get("/get-all-buy-credits", buyCreditReport);
 router.get("/get-buy-transaction-details/:id", detailBuyCredit);
 
 // Sales Routes
-router.post("/sell-product", sellProduct);
+router.post("/sell-product", getId, sellProduct);
+router.get("/get-all-customer-for-sale", getAllCustomerForSale);
 
 router.get("/get-sales-transaction-details/:transaction_id", detailSalesCredit);
 
@@ -110,6 +113,7 @@ router.get("/get-sales-transaction-details/:transaction_id", detailSalesCredit);
 router.post(
   "/repay-credit-sales",
   uploadSalesCreditReceiptMiddleware,
+  getId,
   repaySalesCredit
 );
 
@@ -148,6 +152,7 @@ router.get("/get-buy-credit-details/:id", getBuyCreditDetails);
 router.post(
   "/repay-credit-buy",
   uploadSalesCreditReceiptMiddleware,
+  getId,
   repayBuyCredit
 );
 
