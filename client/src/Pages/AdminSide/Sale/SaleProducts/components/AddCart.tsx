@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -789,76 +788,76 @@ function AddCart({
             {/* Conditional field based on payment method */}
             {(selectedPaymentMethod === "BANK" ||
               presetPaymentMethod === "BANK") && (
-              <div className="space-y-2">
-                <Label htmlFor="bank_id">Select Bank *</Label>
-                <Select
-                  value={selectedBankId || watch("bank_id")}
-                  onValueChange={handleBankChange}
-                  disabled={!!selectedBankId}
-                >
-                  <SelectTrigger
-                    className={errors.bank_id ? "border-red-500" : " w-full"}
+                <div className="space-y-2">
+                  <Label htmlFor="bank_id">Select Bank *</Label>
+                  <Select
+                    value={selectedBankId || watch("bank_id")}
+                    onValueChange={handleBankChange}
+                    disabled={!!selectedBankId}
                   >
-                    <SelectValue placeholder="Choose a bank account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bankList.map((bank) => (
-                      <SelectItem key={bank.id} value={bank.id.toString()}>
-                        {bank.branch} - {bank.account_number} ({bank.owner})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.bank_id && (
-                  <p className="text-sm text-red-500">
-                    {errors.bank_id.message}
-                  </p>
-                )}
-              </div>
-            )}
+                    <SelectTrigger
+                      className={errors.bank_id ? "border-red-500" : " w-full"}
+                    >
+                      <SelectValue placeholder="Choose a bank account" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bankList.map((bank) => (
+                        <SelectItem key={bank.id} value={bank.id.toString()}>
+                          {bank.branch} - {bank.account_number} ({bank.owner})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.bank_id && (
+                    <p className="text-sm text-red-500">
+                      {errors.bank_id.message}
+                    </p>
+                  )}
+                </div>
+              )}
 
             {(selectedPaymentMethod === "CREDIT" ||
               presetPaymentMethod === "CREDIT") && (
-              <div className="space-y-2">
-                <Label htmlFor="return_date">Return Date *</Label>
-                <Input
-                  id="return_date"
-                  type="date"
-                  {...register("return_date")}
-                  className={errors.return_date ? "border-red-500" : ""}
-                  min={new Date().toISOString().split("T")[0]} // Set minimum date to today
-                  disabled={!!presetReturnDate}
-                  value={presetReturnDate || undefined}
-                />
-                {errors.return_date && (
-                  <p className="text-sm text-red-500">
-                    {errors.return_date.message}
-                  </p>
-                )}
-              </div>
-            )}
+                <div className="space-y-2">
+                  <Label htmlFor="return_date">Return Date *</Label>
+                  <Input
+                    id="return_date"
+                    type="date"
+                    {...register("return_date")}
+                    className={errors.return_date ? "border-red-500" : ""}
+                    min={new Date().toISOString().split("T")[0]} // Set minimum date to today
+                    disabled={!!presetReturnDate}
+                    value={presetReturnDate || undefined}
+                  />
+                  {errors.return_date && (
+                    <p className="text-sm text-red-500">
+                      {errors.return_date.message}
+                    </p>
+                  )}
+                </div>
+              )}
           </div>
 
           {/* Description field for CREDIT payment */}
           {(selectedPaymentMethod === "CREDIT" ||
             presetPaymentMethod === "CREDIT") && (
-            <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
-              <Input
-                id="description"
-                placeholder="Enter description for credit payment"
-                {...register("description")}
-                className={errors.description ? "border-red-500" : ""}
-                disabled={!!presetDescription}
-                value={presetDescription || undefined}
-              />
-              {errors.description && (
-                <p className="text-sm text-red-500">
-                  {errors.description.message}
-                </p>
-              )}
-            </div>
-          )}
+              <div className="space-y-2">
+                <Label htmlFor="description">Description *</Label>
+                <Input
+                  id="description"
+                  placeholder="Enter description for credit payment"
+                  {...register("description")}
+                  className={errors.description ? "border-red-500" : ""}
+                  disabled={!!presetDescription}
+                  value={presetDescription || undefined}
+                />
+                {errors.description && (
+                  <p className="text-sm text-red-500">
+                    {errors.description.message}
+                  </p>
+                )}
+              </div>
+            )}
 
           {/* Total Calculation */}
           {watch("quantity") && watch("price") && (
