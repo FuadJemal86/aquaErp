@@ -1,15 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -18,16 +11,23 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import api from "@/services/api";
+import {
     ChevronLeft,
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
+    X,
 } from "lucide-react";
-import { X } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
-import api from "@/services/api";
 import ProductTransactionSummary from "./component/ProductTransactionSummary";
 
 interface ProductStock {
@@ -63,6 +63,8 @@ interface ProductTransactionData {
     quantity: number;
     price_per_quantity: number;
     method: "IN" | "OUT";
+    manager_name: true,
+    casher_name: true,
     isActive: boolean;
     createdAt: string;
     updatedAt: string;
@@ -364,6 +366,7 @@ function ProductTransaction() {
                                 <TableRow>
                                     <TableHead>#</TableHead>
                                     <TableHead>Transaction ID</TableHead>
+                                    <TableHead>Responsible Person</TableHead>
                                     <TableHead>Product Name</TableHead>
                                     <TableHead>Category</TableHead>
                                     <TableHead>Type</TableHead>
@@ -401,6 +404,9 @@ function ProductTransaction() {
                                             </TableCell>
                                             <TableCell className="font-mono text-sm">
                                                 {transaction.transaction_id}
+                                            </TableCell>
+                                            <TableCell className="font-medium">
+                                                {transaction?.manager_name ?? transaction?.casher_name}
                                             </TableCell>
                                             <TableCell className="font-medium">
                                                 {transaction.Product_type.name}

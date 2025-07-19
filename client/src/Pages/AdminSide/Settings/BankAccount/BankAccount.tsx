@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -6,23 +6,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { Edit, Trash2, Plus, Building2, CreditCard } from "lucide-react";
 import api from "@/services/api";
+import { Building2, CreditCard, Edit, Plus, Trash2 } from "lucide-react";
 import { z } from "zod";
 
 interface BankAccount {

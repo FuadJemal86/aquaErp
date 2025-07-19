@@ -1,19 +1,17 @@
-import React, { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Building2,
-  DollarSign,
-  TrendingUp,
-  BanknoteIcon,
-  AlertCircle,
-  CheckCircle2,
-  XCircle,
-} from "lucide-react";
-import { toast } from "sonner";
 import api from "@/services/api";
+import {
+  AlertCircle,
+  BanknoteIcon,
+  Building2,
+  CheckCircle2,
+  XCircle
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface BankBalanceData {
   id: number;

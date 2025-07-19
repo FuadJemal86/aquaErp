@@ -1,15 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -18,17 +11,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  EyeIcon,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import api from "@/services/api";
+import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  EyeIcon,
+  X,
 } from "lucide-react";
-import { Filter, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
-import api from "@/services/api";
 import { LoadingTableSkeleton } from "./SalesReportSkeleton";
 
 interface BankAccount {
@@ -292,14 +292,12 @@ function SalesReportTable({
           {/* Toggle button for all devices */}
           <button
             onClick={() => setIsFilterEnabled(!isFilterEnabled)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-              isFilterEnabled ? "bg-primary" : "bg-input"
-            }`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${isFilterEnabled ? "bg-primary" : "bg-input"
+              }`}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
-                isFilterEnabled ? "translate-x-6" : "translate-x-1"
-              }`}
+              className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${isFilterEnabled ? "translate-x-6" : "translate-x-1"
+                }`}
             />
           </button>
           {/* Clear filters button */}

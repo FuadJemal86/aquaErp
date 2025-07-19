@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -6,8 +7,29 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -16,53 +38,31 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import api from "@/services/api";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Edit,
-  Trash2,
-  Search,
-  Users,
-  Download,
-  MoreHorizontal,
-  FileText,
-  Calendar,
-  Phone,
-  MapPin,
-  Upload,
-  X,
-  Image as ImageIcon,
-  File,
   AlertCircle,
-  RefreshCw,
+  Calendar,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Download,
+  Edit,
+  File,
+  FileText,
+  Image as ImageIcon,
+  MapPin,
+  MoreHorizontal,
+  Phone,
+  RefreshCw,
+  Search,
+  Trash2,
+  Upload,
+  Users,
+  X,
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
-import api from "@/services/api";
+import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 interface Customer {
@@ -502,14 +502,12 @@ function ListCustomers() {
             <span className="hidden md:inline text-sm font-medium">Filter</span>
             <button
               onClick={() => setIsFilterEnabled(!isFilterEnabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                isFilterEnabled ? "bg-primary" : "bg-input"
-              }`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${isFilterEnabled ? "bg-primary" : "bg-input"
+                }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
-                  isFilterEnabled ? "translate-x-6" : "translate-x-1"
-                }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${isFilterEnabled ? "translate-x-6" : "translate-x-1"
+                  }`}
               />
             </button>
             {hasActiveFilters && (
@@ -844,11 +842,10 @@ function ListCustomers() {
                       onChange={(e) =>
                         handleInputChange("full_name", e.target.value)
                       }
-                      className={`${
-                        validationErrors.full_name
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                          : ""
-                      }`}
+                      className={`${validationErrors.full_name
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : ""
+                        }`}
                       placeholder="Enter full name"
                     />
                     {validationErrors.full_name && (
@@ -876,11 +873,10 @@ function ListCustomers() {
                       onChange={(e) =>
                         handleInputChange("phone", e.target.value)
                       }
-                      className={`${
-                        validationErrors.phone
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                          : ""
-                      }`}
+                      className={`${validationErrors.phone
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : ""
+                        }`}
                       placeholder="Enter phone number"
                     />
                     {validationErrors.phone && (
@@ -908,11 +904,10 @@ function ListCustomers() {
                       onChange={(e) =>
                         handleInputChange("address", e.target.value)
                       }
-                      className={`${
-                        validationErrors.address
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                          : ""
-                      }`}
+                      className={`${validationErrors.address
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : ""
+                        }`}
                       placeholder="Enter address"
                       rows={3}
                     />

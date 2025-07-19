@@ -1,4 +1,5 @@
-import React, { useState, useContext } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -6,14 +7,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Lock, Mail, Phone, Shield } from "lucide-react";
 import { AuthContext } from "@/Context/AuthContext";
-import { toast } from "sonner";
 import api from "@/services/api";
+import { Lock, Mail, Phone, Shield, User } from "lucide-react";
+import { useContext, useState } from "react";
+import { toast } from "sonner";
 
 function MyProfile() {
   const { user, setUser, logout } = useContext(AuthContext)!;

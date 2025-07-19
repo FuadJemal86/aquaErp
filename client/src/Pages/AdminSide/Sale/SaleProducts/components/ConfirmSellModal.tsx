@@ -1,15 +1,7 @@
-import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from "@/components/ui/table";
-import { ReceiptText, XCircle, Loader2, User, Users } from "lucide-react";
 import api from "@/services/api";
+import { Loader2, ReceiptText, User, Users, XCircle } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import NotificationModal from "./NotificationModal";
 

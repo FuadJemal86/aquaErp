@@ -1,4 +1,3 @@
-import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, DollarSign, TrendingUp } from "lucide-react";
 
@@ -8,6 +7,8 @@ interface CashTransactionData {
   out: number;
   balance: number;
   transaction_id: string;
+  manager_name: string;
+  casher_name: string;
   manager_id: number | null;
   casher_id: number | null;
   updatedAt: string;

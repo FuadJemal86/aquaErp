@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
+import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle, XCircle } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface NotificationModalProps {
   open: boolean;

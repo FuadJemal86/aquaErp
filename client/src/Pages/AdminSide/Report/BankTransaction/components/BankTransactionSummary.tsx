@@ -1,6 +1,5 @@
-import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, DollarSign, TrendingUp, Building2 } from "lucide-react";
+import { BarChart3, Building2, DollarSign, TrendingUp } from "lucide-react";
 
 interface BankTransactionData {
   id: number;

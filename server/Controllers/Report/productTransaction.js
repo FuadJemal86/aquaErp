@@ -17,10 +17,7 @@ const productTransactions = async (req, res) => {
         const pageSize = parseInt(limit);
         const skip = (pageNumber - 1) * pageSize;
 
-        // Build where clause for filtering product_transaction
-        const whereClause = {
-            isActive: true,
-        };
+        const whereClause = { isActive: true };
 
         if (transactionId) {
             whereClause.transaction_id = {
@@ -38,20 +35,26 @@ const productTransactions = async (req, res) => {
             }
         }
 
-        // Get all matching product transactions
-        const [totalCount, productTransactions] = await Promise.all([
-            prisma.product_transaction.count({
-                where: whereClause,
-            }),
+        const [totalCount, rawTransactions] = await Promise.all([
+            prisma.product_transaction.count({ where: whereClause }),
 
             prisma.product_transaction.findMany({
                 where: whereClause,
-                orderBy: {
-                    updatedAt: "desc",
-                },
+                orderBy: { updatedAt: "desc" },
                 skip,
                 take: pageSize,
-                include: {
+                select: {
+                    id: true,
+                    transaction_id: true,
+                    manager_id: true,
+                    casher_id: true,
+                    type_id: true,
+                    quantity: true,
+                    price_per_quantity: true,
+                    method: true,
+                    isActive: true,
+                    createdAt: true,
+                    updatedAt: true,
                     Product_type: {
                         select: {
                             id: true,
@@ -72,8 +75,8 @@ const productTransactions = async (req, res) => {
             }),
         ]);
 
-        // Optional filtering by categoryName or productName after join
-        const filtered = productTransactions.filter((tx) => {
+        // Filter by category and product name
+        const filtered = rawTransactions.filter((tx) => {
             const categoryMatch = categoryName
                 ? tx.Product_type?.Product_category?.name
                     ?.toLowerCase()
@@ -89,9 +92,29 @@ const productTransactions = async (req, res) => {
             return categoryMatch && productMatch;
         });
 
+        // Extract manager_id and casher_id for name mapping
+        const userIds = [
+            ...new Set(
+                filtered.flatMap((tx) => [tx.manager_id, tx.casher_id]).filter(Boolean)
+            ),
+        ];
+
+        const users = await prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, name: true },
+        });
+
+        const userMap = Object.fromEntries(users.map((u) => [u.id, u.name]));
+
+        // Inject names into each transaction object if needed (not changing structure)
+        filtered.forEach((tx) => {
+            tx.manager_name = tx.manager_id ? userMap[tx.manager_id] || null : null;
+            tx.casher_name = tx.casher_id ? userMap[tx.casher_id] || null : null;
+        });
+
         const totalPages = Math.ceil(totalCount / pageSize);
 
-        res.status(200).json({
+        return res.status(200).json({
             productTransactions: filtered,
             pagination: {
                 currentPage: pageNumber,
@@ -104,7 +127,7 @@ const productTransactions = async (req, res) => {
         });
     } catch (error) {
         console.error("Error in productTransactions:", error);
-        res.status(500).json({ message: "Server error" });
+        return res.status(500).json({ message: "Server error" });
     }
 };
 
