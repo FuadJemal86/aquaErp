@@ -20,6 +20,9 @@ app.use(
 app.use(cookieParser());
 app.use(express.json());
 
+app.use("/", (req, res) => {
+  res.send("Welcome to Aqua ERP");
+});
 app.use("/api/admin", adminRouter);
 app.use("/api/auth", authRouter);
 
