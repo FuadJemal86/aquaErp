@@ -11,10 +11,13 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://aqua-erp.vercel.app"],
+    origin: [
+      "http://localhost:5173",
+      "https://aqua-erp.vercel.app",
+      "https://aqua.selamdca.org",
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "UPDATE"],
     credentials: true,
-    // /
   })
 );
 app.use(cookieParser());
