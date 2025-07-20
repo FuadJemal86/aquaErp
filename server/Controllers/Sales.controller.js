@@ -36,9 +36,8 @@ const sellProduct = async (req, res) => {
       role === "ADMIN"
         ? { manager_id: userId }
         : role === "CASHER"
-          ? { casher_id: userId }
-          : {};
-
+        ? { casher_id: userId }
+        : {};
 
     const transaction_id = generateTransactionId();
     const total_money = cart_list.reduce(
@@ -102,6 +101,7 @@ const sellProduct = async (req, res) => {
           data: {
             price_per_quantity: item.price,
             quantity: item.quantity,
+            total_money: item.price * item.quantity,
             payment_method,
             customer_type,
             status: "DONE",
@@ -110,8 +110,7 @@ const sellProduct = async (req, res) => {
             customer_id: customer_type === "REGULAR" ? customer_id : null,
             walker_id: customer_type === "WALKER" ? generateWalkingId() : null,
             bank_id: payment_method === "BANK" ? bank_id : null,
-            ...responsibleField
-
+            ...responsibleField,
           },
         });
 

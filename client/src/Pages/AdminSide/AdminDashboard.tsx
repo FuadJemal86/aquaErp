@@ -51,11 +51,11 @@ import {
   EyeOff,
   Calendar as CalendarIcon,
   Filter,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-// import api from "@/services/api";
-// import { toast } from "sonner";
+import api from "@/services/api";
 
 // Register Chart.js components
 ChartJS.register(
@@ -74,11 +74,9 @@ interface DashboardData {
     totalSales: number;
     totalSalesAmount: number;
     totalSalesQuantity: number;
-    customerCount: number;
     profit: number;
-    totalIncome: number;
+    creditPending: number;
     totalBuy: number;
-    totalBuyQuantity: number;
   };
   balances: {
     cashBalance: number;
@@ -102,10 +100,6 @@ interface DashboardData {
       buy: number;
     }>;
   };
-  recentTransactions: {
-    sales: any[];
-    buy: any[];
-  };
 }
 
 const COLORS = [
@@ -119,115 +113,6 @@ const COLORS = [
   "#FF6B6B",
 ];
 
-// Dummy data
-const dummyDashboardData: DashboardData = {
-  summary: {
-    totalSales: 1250,
-    totalSalesAmount: 45000,
-    totalSalesQuantity: 3200,
-    customerCount: 85,
-    profit: 12500,
-    totalIncome: 75000,
-    totalBuy: 890,
-    totalBuyQuantity: 2800,
-  },
-  balances: {
-    cashBalance: 25000,
-    totalBankBalance: 50000,
-    bankBranches: [
-      {
-        branch: "Commercial Bank of Ethiopia",
-        accountNumber: "1000123456789",
-        owner: "AquaERP Business",
-        balance: 30000,
-      },
-      {
-        branch: "Bank of Abyssinia",
-        accountNumber: "2000987654321",
-        owner: "AquaERP Business",
-        balance: 20000,
-      },
-    ],
-  },
-  charts: {
-    stockData: [
-      { name: "Water Bottles", quantity: 500, category: "Beverages" },
-      { name: "Soft Drinks", quantity: 300, category: "Beverages" },
-      { name: "Juices", quantity: 200, category: "Beverages" },
-      { name: "Energy Drinks", quantity: 150, category: "Beverages" },
-      { name: "Mineral Water", quantity: 400, category: "Water" },
-    ],
-    monthlyProgress: [
-      { month: "Jan", sales: 12000, buy: 8000 },
-      { month: "Feb", sales: 15000, buy: 10000 },
-      { month: "Mar", sales: 18000, buy: 12000 },
-      { month: "Apr", sales: 22000, buy: 15000 },
-      { month: "May", sales: 25000, buy: 18000 },
-      { month: "Jun", sales: 28000, buy: 20000 },
-      { month: "Jul", sales: 32000, buy: 22000 },
-      { month: "Aug", sales: 35000, buy: 25000 },
-      { month: "Sep", sales: 38000, buy: 28000 },
-      { month: "Oct", sales: 42000, buy: 30000 },
-      { month: "Nov", sales: 45000, buy: 32000 },
-      { month: "Dec", sales: 48000, buy: 35000 },
-    ],
-  },
-  recentTransactions: {
-    sales: [
-      {
-        Product_type: { name: "Water Bottles" },
-        Customer: { full_name: "John Doe" },
-        price_per_quantity: 25,
-        quantity: 10,
-      },
-      {
-        Product_type: { name: "Soft Drinks" },
-        Customer: { full_name: "Jane Smith" },
-        price_per_quantity: 30,
-        quantity: 5,
-      },
-      {
-        Product_type: { name: "Energy Drinks" },
-        Customer: { full_name: "Mike Johnson" },
-        price_per_quantity: 40,
-        quantity: 8,
-      },
-      {
-        Product_type: { name: "Mineral Water" },
-        Customer: { full_name: "Sarah Wilson" },
-        price_per_quantity: 20,
-        quantity: 15,
-      },
-    ],
-    buy: [
-      {
-        Product_type: { name: "Water Bottles" },
-        supplier_name: "Aqua Suppliers Ltd",
-        total_money: 2000,
-        quantity: 100,
-      },
-      {
-        Product_type: { name: "Soft Drinks" },
-        supplier_name: "Beverage Corp",
-        total_money: 1500,
-        quantity: 50,
-      },
-      {
-        Product_type: { name: "Energy Drinks" },
-        supplier_name: "Energy Plus Inc",
-        total_money: 3200,
-        quantity: 80,
-      },
-      {
-        Product_type: { name: "Mineral Water" },
-        supplier_name: "Pure Water Co",
-        total_money: 1800,
-        quantity: 90,
-      },
-    ],
-  },
-};
-
 function AdminDashboard() {
   const [hiddenStates, setHiddenStates] = useState({
     profit: false,
@@ -239,6 +124,13 @@ function AdminDashboard() {
   // Filter states
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedFilter, setSelectedFilter] = useState<string>("all-time");
+
+  // API states
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(
+    null
+  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const toggleVisibility = (cardType: keyof typeof hiddenStates) => {
     setHiddenStates((prev) => ({
@@ -254,8 +146,130 @@ function AdminDashboard() {
     return value.toLocaleString();
   };
 
-  const dashboardData = dummyDashboardData;
-  const { summary, balances, charts, recentTransactions } = dashboardData;
+  // Function to build query parameters
+  const buildQueryParams = () => {
+    const params = new URLSearchParams();
+
+    if (selectedFilter !== "all-time") {
+      params.append("filter", selectedFilter);
+    }
+
+    if (selectedDate) {
+      const startDate = new Date(selectedDate);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(selectedDate);
+      endDate.setHours(23, 59, 59, 999);
+
+      params.append("startDate", startDate.toISOString());
+      params.append("endDate", endDate.toISOString());
+    }
+
+    return params.toString();
+  };
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const queryParams = buildQueryParams();
+        const url = queryParams
+          ? `/admin/dashboard?${queryParams}`
+          : "/admin/dashboard";
+
+        const response = await api.get(url);
+        setDashboardData(response.data);
+      } catch (err: any) {
+        console.error("Error fetching dashboard data:", err);
+        setError(err.response?.data?.error || "Failed to load dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [selectedFilter, selectedDate]); // Re-fetch when filters change
+
+  // Handle filter changes
+  const handleFilterChange = (value: string) => {
+    setSelectedFilter(value);
+    if (value !== "custom") {
+      setSelectedDate(undefined); // Clear custom date when using preset filters
+    }
+  };
+
+  // Handle date selection
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date) {
+      setSelectedFilter("custom"); // Set filter to custom when date is selected
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-center h-96">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <p className="text-lg text-muted-foreground">
+              Loading dashboard data...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-center h-96">
+          <div className="flex flex-col items-center gap-4">
+            <div className="text-red-500 text-lg font-semibold">Error</div>
+            <p className="text-muted-foreground">{error}</p>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-center h-96">
+          <p className="text-muted-foreground">No data available</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { summary, balances, charts } = dashboardData;
+
+  // Get filter display text
+  const getFilterDisplayText = () => {
+    if (selectedDate) {
+      return format(selectedDate, "PPP");
+    }
+    switch (selectedFilter) {
+      case "today":
+        return "Today";
+      case "yesterday":
+        return "Yesterday";
+      case "this-week":
+        return "This Week";
+      case "last-week":
+        return "Last Week";
+      case "this-month":
+        return "This Month";
+      case "last-month":
+        return "Last Month";
+      default:
+        return "All Time";
+    }
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -299,7 +313,7 @@ function AdminDashboard() {
                 <Calendar
                   mode="single"
                   selected={selectedDate}
-                  onSelect={setSelectedDate}
+                  onSelect={handleDateSelect}
                   initialFocus
                 />
               </PopoverContent>
@@ -314,7 +328,7 @@ function AdminDashboard() {
             >
               Filter:
             </Label>
-            <Select value={selectedFilter} onValueChange={setSelectedFilter}>
+            <Select value={selectedFilter} onValueChange={handleFilterChange}>
               <SelectTrigger className="w-[120px] sm:w-[160px]">
                 <SelectValue placeholder="Select filter" />
               </SelectTrigger>
@@ -415,7 +429,7 @@ function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${summary.totalIncome.toLocaleString()}
+              ${summary.creditPending.toLocaleString()}
             </div>
             <div className="flex items-center text-xs text-muted-foreground">
               <TrendingUp className="h-3 w-3 mr-1 text-green-500" />

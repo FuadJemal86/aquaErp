@@ -247,6 +247,7 @@ model Sales_transaction {
   transaction_id     String
   price_per_quantity Float
   quantity           Int
+  total_money        Float?
   payment_method     payment_method
   customer_type      customer_type
   status             sales_status
