@@ -18,7 +18,7 @@ jobs:
 
       - name: Validate secrets
         run: |
-          if [ -z "${{ secrets.FTP_HOST }}" ]; then
+          if [ -z "${{ secrets.FTP_SERVER }}" ]; then
             echo "❌ Error: FTP_HOST secret is not set"
             exit 1
           fi

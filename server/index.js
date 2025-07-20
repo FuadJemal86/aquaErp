@@ -14,6 +14,7 @@ app.use(
     origin: ["http://localhost:5173", "https://aqua-erp.vercel.app"],
     methods: ["GET", "POST", "PUT", "DELETE", "UPDATE"],
     credentials: true,
+    // /
   })
 );
 app.use(cookieParser());
