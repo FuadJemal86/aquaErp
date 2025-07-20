@@ -1,0 +1,26 @@
+name: Deploy Backend to Plesk via FTP
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "server/**"
+
+jobs:
+  ftp-deploy:
+    name: Upload to FTP Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4 # ✅ Use a valid tag
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./server/
+          server-dir: ${{ secrets.FTP_REMOTE_DIR }}/
