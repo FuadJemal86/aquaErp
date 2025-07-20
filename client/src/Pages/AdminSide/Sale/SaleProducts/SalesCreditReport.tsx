@@ -61,8 +61,8 @@ interface SalesTransaction {
   quantity: number;
   payment_method: string;
   customer_type: string;
-  manager_name: string,
-  casher_name: string,
+  manager_name: string;
+  casher_name: string;
   status: string;
   total_money: number;
   createdAt: string;
@@ -341,20 +341,6 @@ const SalesCreditReport: React.FC = () => {
     }
   };
 
-  // Get badge variant for sales status
-  const getSalesStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case "COMPLETED":
-        return "default";
-      case "PENDING":
-        return "secondary";
-      case "CANCELLED":
-        return "destructive";
-      default:
-        return "outline";
-    }
-  };
-
   // Filter active credits with safety check
   const activeCredits = Array.isArray(credits)
     ? credits.filter((credit) => credit.isActive)
@@ -438,12 +424,14 @@ const SalesCreditReport: React.FC = () => {
             <span className="hidden md:inline text-sm font-medium">Filter</span>
             <button
               onClick={() => setIsFilterEnabled(!isFilterEnabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${isFilterEnabled ? "bg-primary" : "bg-input"
-                }`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                isFilterEnabled ? "bg-primary" : "bg-input"
+              }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${isFilterEnabled ? "translate-x-6" : "translate-x-1"
-                  }`}
+                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
+                  isFilterEnabled ? "translate-x-6" : "translate-x-1"
+                }`}
               />
             </button>
             {hasActiveFilters && (
@@ -861,7 +849,8 @@ const SalesCreditReport: React.FC = () => {
                               {creditDetails.map((detail) => (
                                 <TableRow key={detail.id}>
                                   <TableCell className="font-medium">
-                                    {detail?.manager_name ?? detail?.casher_name}
+                                    {detail?.manager_name ??
+                                      detail?.casher_name}
                                   </TableCell>
                                   <TableCell className="font-medium">
                                     {detail.Product_type.name}
@@ -877,7 +866,7 @@ const SalesCreditReport: React.FC = () => {
                                   <TableCell className="font-semibold">
                                     {formatCurrency(
                                       detail.price_per_quantity *
-                                      detail.quantity
+                                        detail.quantity
                                     )}
                                   </TableCell>
                                   <TableCell>

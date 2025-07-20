@@ -75,15 +75,6 @@ type BankAccount = {
   }[];
 };
 
-interface RepaymentForm {
-  amount_payed: number;
-  payment_method: "CASH" | "BANK";
-  bank_id?: number;
-  image?: File | null;
-  imagePreview?: string;
-  outstanding_balance: number;
-}
-
 interface SalesCreditTransactions {
   id: number;
   amount_payed: number;
@@ -271,7 +262,9 @@ function ShowDetailModal({
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[120px]">ID</TableHead>
-                        <TableHead className="w-[120px]">Responsible Person</TableHead>
+                        <TableHead className="w-[120px]">
+                          Responsible Person
+                        </TableHead>
                         <TableHead className="w-[120px]">
                           Credit Transaction ID
                         </TableHead>

@@ -8,7 +8,6 @@ import NotificationModal from "./NotificationModal";
 function ConfirmSellModal({
   open,
   onClose,
-  onConfirm,
   cartList,
   customerType,
   paymentMethod,
@@ -20,7 +19,6 @@ function ConfirmSellModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onConfirm: () => void;
   cartList: any[];
   customerType: string;
   paymentMethod: string;

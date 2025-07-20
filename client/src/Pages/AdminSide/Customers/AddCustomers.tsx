@@ -96,7 +96,7 @@ function AddCustomers() {
         formData.append("id_card", selectedFile);
       }
 
-      const response = await api.post("/admin/add-customer", formData, {
+      await api.post("/admin/add-customer", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

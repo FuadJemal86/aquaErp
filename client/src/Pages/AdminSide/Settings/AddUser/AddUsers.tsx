@@ -95,7 +95,7 @@ function AddUsers() {
 
       setIsCreatingUser(true);
 
-      const response = await api.post("/admin/add-user", validatedUser);
+      await api.post("/admin/add-user", validatedUser);
 
       toast.success("User added successfully");
 
@@ -165,12 +165,12 @@ function AddUsers() {
           usersList.map((user) =>
             user.id === editingId
               ? {
-                ...user,
-                name: name.trim(),
-                email: email.trim(),
-                phone: phone.trim(),
-                role: role as "ADMIN" | "CASHIER",
-              }
+                  ...user,
+                  name: name.trim(),
+                  email: email.trim(),
+                  phone: phone.trim(),
+                  role: role as "ADMIN" | "CASHIER",
+                }
               : user
           )
         );
@@ -205,7 +205,6 @@ function AddUsers() {
 
   const handleDelete = async (id: string) => {
     try {
-
       // await api.delete(`/admin/delete-user/${id}`);
 
       setUsers((usersList) => usersList.filter((user) => user.id !== id));
@@ -317,7 +316,9 @@ function AddUsers() {
                 value={role}
                 onValueChange={(value) => setRole(value as "ADMIN" | "CASHIER")}
               >
-                <SelectTrigger className={userErrors.role ? "border-red-500" : ""}>
+                <SelectTrigger
+                  className={userErrors.role ? "border-red-500" : ""}
+                >
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>

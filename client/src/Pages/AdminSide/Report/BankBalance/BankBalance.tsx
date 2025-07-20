@@ -3,13 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/services/api";
-import {
-  AlertCircle,
-  BanknoteIcon,
-  Building2,
-  CheckCircle2,
-  XCircle
-} from "lucide-react";
+import { Building2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -51,49 +45,6 @@ function BankBalance() {
   useEffect(() => {
     fetchBankBalances();
   }, []);
-
-  const getTotalBalance = () => {
-    return bankBalances.reduce((total, bank) => total + bank.balance, 0);
-  };
-
-  const getAverageBalance = () => {
-    if (bankBalances.length === 0) return 0;
-    return getTotalBalance() / bankBalances.length;
-  };
-
-  const getBalanceStatus = (balance: number) => {
-    if (balance > 100000) return "high";
-    if (balance > 50000) return "medium";
-    return "low";
-  };
-
-  const getBalanceColor = (balance: number) => {
-    const status = getBalanceStatus(balance);
-    switch (status) {
-      case "high":
-        return "text-green-600 bg-green-50 border-green-200";
-      case "medium":
-        return "text-yellow-600 bg-yellow-50 border-yellow-200";
-      case "low":
-        return "text-red-600 bg-red-50 border-red-200";
-      default:
-        return "text-gray-600 bg-gray-50 border-gray-200";
-    }
-  };
-
-  const getBalanceIcon = (balance: number) => {
-    const status = getBalanceStatus(balance);
-    switch (status) {
-      case "high":
-        return <CheckCircle2 className="h-5 w-5 text-green-600" />;
-      case "medium":
-        return <AlertCircle className="h-5 w-5 text-yellow-600" />;
-      case "low":
-        return <XCircle className="h-5 w-5 text-red-600" />;
-      default:
-        return <BanknoteIcon className="h-5 w-5 text-gray-600" />;
-    }
-  };
 
   if (error) {
     return (

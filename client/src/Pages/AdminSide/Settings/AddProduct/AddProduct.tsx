@@ -223,10 +223,7 @@ function AddProduct() {
       const validatedData = ProductCategorySchema.parse(categoryFormData);
 
       setIsCreatingCategory(true);
-      const response = await api.post(
-        "/admin/add-product-category",
-        validatedData
-      );
+      await api.post("/admin/add-product-category", validatedData);
 
       toast.success("Category created successfully");
       resetCategoryForm();
@@ -263,7 +260,7 @@ function AddProduct() {
       });
 
       setIsCreatingProductType(true);
-      const response = await api.post("/admin/add-product-type", validatedData);
+      await api.post("/admin/add-product-type", validatedData);
 
       toast.success("Product type created successfully");
       resetProductTypeForm();
@@ -301,7 +298,7 @@ function AddProduct() {
       });
 
       setIsCreatingStock(true);
-      const response = await api.post("/admin/initialize-stock", validatedData);
+      await api.post("/admin/initialize-stock", validatedData);
 
       toast.success("Stock initialized successfully");
       resetStockForm();
@@ -324,16 +321,6 @@ function AddProduct() {
     } finally {
       setIsCreatingStock(false);
     }
-  };
-
-  const getCategoryName = (categoryId: number) => {
-    return categories.find((cat) => cat.id === categoryId)?.name || "Unknown";
-  };
-
-  const getProductTypeName = (productTypeId: number) => {
-    return (
-      productTypes.find((type) => type.id === productTypeId)?.name || "Unknown"
-    );
   };
 
   // Initial data fetch

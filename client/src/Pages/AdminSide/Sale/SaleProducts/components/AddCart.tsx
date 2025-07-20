@@ -105,13 +105,8 @@ const salesCartSchema = z
     }
   )
   .refine(
-    (data) => {
-      // Validate quantity against available stock
-      const quantity = parseInt(data.quantity);
-      const productTypeId = parseInt(data.product_type_id);
-
-      // This will be validated in the component with actual product data
-      return true; // We'll handle this validation in the component
+    () => {
+      return true;
     },
     {
       message: "Quantity validation will be handled in component",
@@ -173,7 +168,7 @@ function AddCart({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isLoadingProductTypes, setIsLoadingProductTypes] = useState(false);
-  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  // const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [categoryOptions, setCategoryOptions] = useState<
     { value: number; label: string }[]
   >([]);
@@ -182,7 +177,7 @@ function AddCart({
     { value: number; label: string }[]
   >([]);
   const [bankList, setBankList] = useState<BankList[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  // const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerOptions, setCustomerOptions] = useState<
     { value: number; label: string }[]
   >([]);
@@ -220,7 +215,7 @@ function AddCart({
     setIsLoadingCategories(true);
     try {
       const response = await api.get("/admin/get-product-category");
-      setCategories(response.data);
+      // setCategories(response.data);
 
       // Create options for react-select
       const options = response.data.map((category: ProductCategory) => ({
@@ -272,7 +267,7 @@ function AddCart({
     try {
       const response = await api.get("/admin/get-all-customer-for-sale");
       const customersData = response.data?.customers;
-      setCustomers(Array.isArray(customersData) ? customersData : []);
+      // setCustomers(Array.isArray(customersData) ? customersData : []);
 
       // Create options for react-select
       const options = (Array.isArray(customersData) ? customersData : []).map(
@@ -284,7 +279,7 @@ function AddCart({
       setCustomerOptions(options);
     } catch (error) {
       console.error("Error fetching customers:", error);
-      setCustomers([]);
+      // setCustomers([]);
       setCustomerOptions([]);
     }
   };
@@ -600,7 +595,7 @@ function AddCart({
                 className={errors.customer_id ? "border-red-500" : ""}
                 classNamePrefix="react-select"
                 styles={{
-                  control: (provided, state) => ({
+                  control: (provided) => ({
                     ...provided,
                     borderColor: errors.customer_id
                       ? "#ef4444"
@@ -636,7 +631,7 @@ function AddCart({
                 classNamePrefix="react-select"
                 isLoading={isLoadingCategories}
                 styles={{
-                  control: (provided, state) => ({
+                  control: (provided) => ({
                     ...provided,
                     borderColor: errors.product_category_id
                       ? "#ef4444"
@@ -671,7 +666,7 @@ function AddCart({
                 classNamePrefix="react-select"
                 isLoading={isLoadingProductTypes}
                 styles={{
-                  control: (provided, state) => ({
+                  control: (provided) => ({
                     ...provided,
                     borderColor: errors.product_type_id
                       ? "#ef4444"

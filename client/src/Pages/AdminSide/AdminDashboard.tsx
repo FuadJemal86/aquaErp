@@ -1,16 +1,5 @@
-import React, { useState, useEffect } from "react";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-} from "chart.js";
-import { Doughnut, Line } from "react-chartjs-2";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -18,10 +7,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -29,33 +20,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  TrendingUp,
-  TrendingDown,
-  Users,
-  ShoppingCart,
-  DollarSign,
-  Package,
-  Building2,
-  Wallet,
-  BarChart3,
-  PieChart as PieChartIcon,
-  Activity,
-  Eye,
-  EyeOff,
-  Calendar as CalendarIcon,
-  Filter,
-  Loader2,
-} from "lucide-react";
-import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import api from "@/services/api";
+import {
+  ArcElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Legend,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+} from "chart.js";
+import { format } from "date-fns";
+import {
+  Activity,
+  Building2,
+  Calendar as CalendarIcon,
+  DollarSign,
+  Eye,
+  EyeOff,
+  Loader2,
+  PieChart as PieChartIcon,
+  ShoppingCart,
+  TrendingUp,
+  Users,
+  Wallet,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Doughnut, Line } from "react-chartjs-2";
 
 // Register Chart.js components
 ChartJS.register(
@@ -101,17 +95,6 @@ interface DashboardData {
     }>;
   };
 }
-
-const COLORS = [
-  "#0088FE",
-  "#00C49F",
-  "#FFBB28",
-  "#FF8042",
-  "#8884D8",
-  "#82CA9D",
-  "#FFC658",
-  "#FF6B6B",
-];
 
 function AdminDashboard() {
   const [hiddenStates, setHiddenStates] = useState({
@@ -247,29 +230,6 @@ function AdminDashboard() {
   }
 
   const { summary, balances, charts } = dashboardData;
-
-  // Get filter display text
-  const getFilterDisplayText = () => {
-    if (selectedDate) {
-      return format(selectedDate, "PPP");
-    }
-    switch (selectedFilter) {
-      case "today":
-        return "Today";
-      case "yesterday":
-        return "Yesterday";
-      case "this-week":
-        return "This Week";
-      case "last-week":
-        return "Last Week";
-      case "this-month":
-        return "This Month";
-      case "last-month":
-        return "Last Month";
-      default:
-        return "All Time";
-    }
-  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">

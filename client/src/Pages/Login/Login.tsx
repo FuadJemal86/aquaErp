@@ -38,7 +38,6 @@ import {
   Mail,
   Package,
   Shield,
-  Truck,
   User,
   Users,
 } from "lucide-react";
@@ -124,15 +123,6 @@ export default function Login() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const roleIcons = {
-    admin: Shield,
-    manager: BarChart3,
-    cashier: Users,
-    sales: Truck,
-    delivery: Package,
-    inventory: Package,
   };
 
   const features = [

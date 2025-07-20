@@ -31,8 +31,8 @@ interface SalesDetail {
   walker_id: string | null;
   transaction_id: string;
   updatedAt: string;
-  manager_name: String,
-  casher_name: string,
+  manager_name: string;
+  casher_name: string;
   Product_type: {
     id: number;
     name: string;
@@ -108,12 +108,6 @@ function ShowDetails({ transactionId, isOpen, onClose }: ShowDetailsProps) {
       <Badge className={color[method as keyof typeof color] || "default"}>
         {method}
       </Badge>
-    );
-  };
-
-  const getCustomerTypeBadge = (type: string) => {
-    return (
-      <Badge variant={type === "REGULAR" ? "default" : "outline"}>{type}</Badge>
     );
   };
 

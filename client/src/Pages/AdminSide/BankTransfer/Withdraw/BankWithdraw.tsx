@@ -149,7 +149,7 @@ function BankWithdraw() {
         formData.append("receipt_image", selectedFile);
       }
 
-      const response = await api.post("/admin/add-bank-withdrawal", formData, {
+      await api.post("/admin/add-bank-withdrawal", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

@@ -20,12 +20,6 @@ function NotificationModal({
   const isSuccess = type === "success";
   const Icon = isSuccess ? CheckCircle : XCircle;
   const iconColor = isSuccess ? "text-green-500" : "text-red-500";
-  const bgColor = isSuccess
-    ? "bg-green-50 dark:bg-green-900/20"
-    : "bg-red-50 dark:bg-red-900/20";
-  const borderColor = isSuccess
-    ? "border-green-200 dark:border-green-800"
-    : "border-red-200 dark:border-red-800";
 
   return (
     <AnimatePresence>

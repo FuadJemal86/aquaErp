@@ -109,7 +109,6 @@ function ProcessRepayment({
     watch,
     setValue,
     formState: { errors, isValid },
-    reset,
   } = useForm<RepaymentFormData>({
     resolver: zodResolver(repaymentFormSchema),
     defaultValues: {

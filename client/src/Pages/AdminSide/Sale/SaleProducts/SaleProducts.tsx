@@ -96,46 +96,46 @@ function SaleProducts() {
   };
 
   // Handle sell all action
-  const handleSellAll = async () => {
-    const cartListData = cartList.map((cart) => ({
-      type_id: cart.type_id,
-      quantity: cart.quantity,
-      price: cart.price,
-    }));
+  // const handleSellAll = async () => {
+  //   const cartListData = cartList.map((cart) => ({
+  //     type_id: cart.type_id,
+  //     quantity: cart.quantity,
+  //     price: cart.price,
+  //   }));
 
-    const sendData = {
-      customer_type: customerType,
-      customer_id: selectedCustomer?.id || null,
-      payment_method: paymentMethod,
-      bank_id: cartList.find((cart) => cart.bank_id)?.bank_id || null,
-      return_date:
-        cartList.find((cart) => cart.return_date)?.return_date || null,
-      description:
-        cartList.find((cart) => cart.description)?.description || null,
-      cart_list: cartListData,
-    };
+  //   const sendData = {
+  //     customer_type: customerType,
+  //     customer_id: selectedCustomer?.id || null,
+  //     payment_method: paymentMethod,
+  //     bank_id: cartList.find((cart) => cart.bank_id)?.bank_id || null,
+  //     return_date:
+  //       cartList.find((cart) => cart.return_date)?.return_date || null,
+  //     description:
+  //       cartList.find((cart) => cart.description)?.description || null,
+  //     cart_list: cartListData,
+  //   };
 
-    console.log(sendData);
+  //   console.log(sendData);
 
-    try {
-      const res = await api.post("/admin/sell-product", sendData);
-      if (res.status === 200) {
-        toast.success("Sale completed successfully");
-        setCartList([]);
-        setTotalAmount(0);
-        setCustomerType("");
-        setPaymentMethod("");
-        setSelectedCustomer(null);
-      } else {
-        toast.error(res.data.message);
-      }
-    } catch (error: any) {
-      console.error("Error completing sale:", error);
-      const errorMessage =
-        error.response?.data?.error || "Failed to complete sale";
-      toast.error(errorMessage);
-    }
-  };
+  //   try {
+  //     const res = await api.post("/admin/sell-product", sendData);
+  //     if (res.status === 200) {
+  //       toast.success("Sale completed successfully");
+  //       setCartList([]);
+  //       setTotalAmount(0);
+  //       setCustomerType("");
+  //       setPaymentMethod("");
+  //       setSelectedCustomer(null);
+  //     } else {
+  //       toast.error(res.data.message);
+  //     }
+  //   } catch (error: any) {
+  //     console.error("Error completing sale:", error);
+  //     const errorMessage =
+  //       error.response?.data?.error || "Failed to complete sale";
+  //     toast.error(errorMessage);
+  //   }
+  // };
 
   return (
     <div className="container mx-auto p-1">
@@ -167,13 +167,11 @@ function SaleProducts() {
             onSellCart={handleSellCart}
             categories={categories}
             productTypes={productTypes}
-            onSellAll={handleSellAll}
             customerType={customerType}
             paymentMethod={paymentMethod}
             selectedCustomer={selectedCustomer}
             totalAmount={totalAmount}
             bankList={bankList}
-            customers={customers}
           />
         </div>
       </div>

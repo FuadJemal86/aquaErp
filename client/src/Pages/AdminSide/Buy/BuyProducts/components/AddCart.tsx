@@ -25,7 +25,6 @@ import ReactSelect from "react-select";
 import type { SingleValue } from "react-select";
 import { z } from "zod";
 
-
 // Zod schema for cart validation
 const cartSchema = z
   .object({
@@ -68,21 +67,6 @@ const cartSchema = z
 
 type CartFormData = z.infer<typeof cartSchema>;
 
-// TypeScript types
-type ProductCategory = {
-  id: number;
-  name: string;
-  description?: string;
-};
-
-type ProductType = {
-  id: number;
-  name: string;
-  measurement: string;
-  product_category_id: number;
-  Product_category: ProductCategory;
-};
-
 type BankList = {
   id: number;
   branch: string;
@@ -106,8 +90,7 @@ function AddCart({
   productTypes: any[];
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
-  const [isLoadingProductTypes, setIsLoadingProductTypes] = useState(false);
+
   const [bankList, setBankList] = useState<BankList[]>([]);
   const [categoryOptions, setCategoryOptions] = useState<
     { value: number; label: string }[]
@@ -152,11 +135,6 @@ function AddCart({
       console.error("Error fetching bank list:", error);
     }
   };
-
-  // Filter product types based on selected category
-  const filteredProductTypes = productTypes.filter(
-    (type) => type.product_category_id === parseInt(selectedCategory)
-  );
 
   // Filter product type options based on selected category
   const filteredProductTypeOptions = productTypeOptions.filter((option) => {
@@ -329,9 +307,8 @@ function AddCart({
                 )}
                 className={errors.product_category_id ? "border-red-500" : ""}
                 classNamePrefix="react-select"
-                isLoading={isLoadingCategories}
                 styles={{
-                  control: (provided, state) => ({
+                  control: (provided) => ({
                     ...provided,
                     borderColor: errors.product_category_id
                       ? "#ef4444"
@@ -364,9 +341,8 @@ function AddCart({
                 )}
                 className={errors.product_type_id ? "border-red-500" : ""}
                 classNamePrefix="react-select"
-                isLoading={isLoadingProductTypes}
                 styles={{
-                  control: (provided, state) => ({
+                  control: (provided) => ({
                     ...provided,
                     borderColor: errors.product_type_id
                       ? "#ef4444"

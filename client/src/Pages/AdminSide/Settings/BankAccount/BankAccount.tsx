@@ -13,7 +13,6 @@ import { toast } from "sonner";
 
 import api from "@/services/api";
 import { Building2, CreditCard, Edit, Plus, Trash2 } from "lucide-react";
-import { z } from "zod";
 
 interface BankAccount {
   id: number;
@@ -23,18 +22,6 @@ interface BankAccount {
   createdAt: string;
   updatedAt: string;
 }
-
-const bankAccountSchema = z.object({
-  branch: z.string().min(1, "Branch name is required"),
-  account_number: z.string().min(1, "Account number is required"),
-  owner: z.string().min(1, "Owner name is required"),
-  balance: z
-    .string()
-    .min(1, "Balance is required")
-    .refine((val) => !isNaN(Number(val)) && Number(val) >= 0, {
-      message: "Balance must be a valid positive number",
-    }),
-});
 
 function BankAccount() {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);

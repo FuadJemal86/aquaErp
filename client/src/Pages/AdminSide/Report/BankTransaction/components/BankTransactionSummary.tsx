@@ -38,18 +38,6 @@ function BankTransactionSummary({ summaryData }: BankTransactionSummaryProps) {
     return getTotalBankMoney() / summaryData.length;
   };
 
-  const getTotalBankIn = () => {
-    return summaryData.reduce((total, transaction) => {
-      return total + transaction.in;
-    }, 0);
-  };
-
-  const getTotalBankOut = () => {
-    return summaryData.reduce((total, transaction) => {
-      return total + transaction.out;
-    }, 0);
-  };
-
   const getUniqueBanks = () => {
     const uniqueBanks = new Set(
       summaryData.map((transaction) => transaction.Bank_list.branch)

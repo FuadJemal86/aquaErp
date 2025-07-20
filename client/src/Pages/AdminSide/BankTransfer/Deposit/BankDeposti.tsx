@@ -185,7 +185,7 @@ function BankDeposti() {
         formData.append("receipt_image", selectedFile);
       }
 
-      const response = await api.post("/admin/add-bank-deposit", formData, {
+      await api.post("/admin/add-bank-deposit", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -346,9 +346,9 @@ function BankDeposti() {
                     {...register("amount")}
                     className={
                       errors.amount ||
-                        (selectedDepositMethod === "cash_to_bank" &&
-                          cashBalance !== null &&
-                          amountNumber > cashBalance)
+                      (selectedDepositMethod === "cash_to_bank" &&
+                        cashBalance !== null &&
+                        amountNumber > cashBalance)
                         ? "border-red-500"
                         : ""
                     }

@@ -30,25 +30,21 @@ function CartList({
   onSellCart,
   categories,
   productTypes,
-  onSellAll,
   customerType,
   paymentMethod,
   selectedCustomer,
   totalAmount,
   bankList,
-  customers,
 }: {
   cartList: any[];
   onSellCart: (id: any) => void;
   categories: any[];
   productTypes: any[];
-  onSellAll: () => void;
   customerType: string;
   paymentMethod: string;
   selectedCustomer: any;
   totalAmount: number;
   bankList: any[];
-  customers: any[];
 }) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   if (!cartList.length) {
@@ -237,10 +233,6 @@ function CartList({
       <ConfirmSellModal
         open={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}
-        onConfirm={() => {
-          onSellAll();
-          setShowConfirmModal(false);
-        }}
         cartList={cartList}
         customerType={customerType}
         paymentMethod={paymentMethod}
