@@ -40,7 +40,7 @@ import {
   Shield,
   Truck,
   User,
-  Users
+  Users,
 } from "lucide-react";
 import { useContext, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -113,7 +113,7 @@ export default function Login() {
         if (response.data.user.role === "ADMIN") {
           navigate("/admin");
         } else if (response.data.user.role === "CASHIER") {
-          navigate("/admin/dashboard"); // You can change this to a different route for cashiers
+          navigate("/cashier/dashboard"); // You can change this to a different route for cashiers
         }
       }
     } catch (error: any) {

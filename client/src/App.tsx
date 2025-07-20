@@ -6,6 +6,7 @@ import { LoadingSpinner } from "./components/ui/loading-spinner";
 import NotFound from "./Pages/NotFound";
 import { adminRoutes } from "./routes/adminRoutes";
 import Login from "./Pages/Login/Login";
+import { cashierRoutes } from "./routes/cashierRoutes";
 function App() {
   return (
     <>
@@ -24,6 +25,7 @@ function App() {
             }
           >
             {adminRoutes}
+            {cashierRoutes}
           </Route>
 
           {/* 404 Route */}
