@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import api from "@/services/api";
 
 export function NavUser({
   user,
@@ -21,6 +22,15 @@ export function NavUser({
     avatar: string;
   };
 }) {
+
+  const handleLogout = async () => {
+    try {
+      const result = await api.post('/auth/logout')
+      window.location.href = '/login';
+    } catch (err) {
+      console.log(err)
+    }
+  }
   return (
     <div className="w-full">
       <DropdownMenu>
@@ -71,7 +81,7 @@ export function NavUser({
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => console.log("logout")}>
+          <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
             Log out
           </DropdownMenuItem>
