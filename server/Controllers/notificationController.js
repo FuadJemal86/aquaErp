@@ -1,0 +1,63 @@
+const prisma = require("../prisma/prisma");
+
+const checkShortagesAndOverdueCredits = async (req, res) => {
+    try {
+        const now = new Date();
+        const messages = [];
+
+        // 1. Product stock < 10
+        const lowStockProducts = await prisma.product_stock.findMany({
+            where: { quantity: { lt: 10 }, isActive: true },
+            include: { Product_type: true },
+        });
+
+        for (const stock of lowStockProducts) {
+            messages.push(`Low stock: "${stock.Product_type.name}" has only ${stock.quantity} left.`);
+        }
+
+        //  Overdue Sales Credits
+        const overdueSales = await prisma.sales_credit.findMany({
+            where: {
+                return_date: { lt: now },
+                status: 'OVERDUE',
+                isActive: true,
+            },
+            include: { Customer: true },
+        });
+
+        for (const credit of overdueSales) {
+            messages.push(`Sales credit overdue: Customer "${credit.Customer.full_name}" owes ${credit.total_money}.`);
+
+        }
+
+        //  Overdue Buy Credits
+        const overdueBuys = await prisma.buy_credit.findMany({
+            where: {
+                return_date: { lt: now },
+                status: 'OVERDUE',
+                isActive: true,
+            },
+        });
+
+        for (const credit of overdueBuys) {
+            const transaction = await prisma.buy_transaction.findFirst({
+                where: { transaction_id: credit.transaction_id },
+            });
+
+            const supplierName = transaction?.supplier_name || 'Unknown Supplier';
+
+            messages.push(`Buy credit overdue: Supplier "${supplierName}" is owed ${credit.total_money}.`);
+        }
+
+        if (messages.length === 0) {
+            return res.json({ status: true, message: 'No alerts. Everything is up to date.' });
+        }
+
+        return res.json({ status: true, notifications: messages });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+module.exports = { checkShortagesAndOverdueCredits };

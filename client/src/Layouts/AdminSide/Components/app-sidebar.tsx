@@ -1,13 +1,12 @@
 import {
-  Bell,
+  Banknote,
   CreditCard,
   FileText,
   LayoutDashboardIcon,
   Package,
   Settings,
   ShoppingCart,
-  Banknote,
-  UserPlus,
+  UserPlus
 } from "lucide-react";
 import type * as React from "react";
 
@@ -21,11 +20,11 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
+import { AuthContext } from "@/Context/AuthContext";
+import { useContext } from "react";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
 import { ThemeToggle } from "./theme-toggle";
-import { AuthContext } from "@/Context/AuthContext";
-import { useContext } from "react";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useContext(AuthContext)!;
@@ -93,13 +92,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               url: "/cashier/customers",
             },
           ],
-        },
-        {
-          title: "Notifications",
-          url: "/cashier/notifications",
-          icon: Bell,
-          badgeCount: 0,
-        },
+        }
       ];
     } else {
       // Admin menu - full access
@@ -237,13 +230,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               url: "/admin/settings/bank-account",
             },
           ],
-        },
-        {
-          title: "Notifications",
-          url: "/admin/notifications",
-          icon: Bell,
-          badgeCount: 0,
-        },
+        }
       ];
     }
   };

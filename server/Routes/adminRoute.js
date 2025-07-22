@@ -69,6 +69,7 @@ const {
 const {
   productTransactions,
 } = require("../Controllers/Report/productTransaction");
+const notificationController = require('../controllers/notificationController');
 const getId = require("../middlewear/getId");
 
 router.post("/add-product-category", addProductCategory);
@@ -180,5 +181,9 @@ router.get("/get-product-transaction", productTransactions);
 
 // Dashboard
 router.get("/dashboard", getDashboardData);
+
+
+// notification
+router.get('/notifications', notificationController.checkShortagesAndOverdueCredits);
 
 module.exports = router;

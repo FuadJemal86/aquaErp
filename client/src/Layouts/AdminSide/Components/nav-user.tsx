@@ -1,4 +1,4 @@
-import { Bell, ChevronsUpDown, Cog, LogOut } from "lucide-react";
+import { ChevronsUpDown, Cog, LogOut } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -73,11 +73,6 @@ export function NavUser({
             <DropdownMenuItem>
               <Cog className="mr-2 h-4 w-4" />
               System Settings
-            </DropdownMenuItem>
-
-            <DropdownMenuItem>
-              <Bell className="mr-2 h-4 w-4" />
-              Notifications
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
