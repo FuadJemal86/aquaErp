@@ -13,6 +13,7 @@ const {
   addAccount,
   deleteAccount,
   editBankList,
+  deleteUser,
 } = require("../Controllers/Setting.controller");
 const {
   addCustomer,
@@ -78,6 +79,8 @@ router.post("/add-user", addUser);
 router.post("/add-bank-list", addAccount);
 router.post("/add-user", addUser);
 router.get("/get-user", getUsers);
+router.put("/delete-user/:id", deleteUser);
+
 
 router.get("/get-product-category", getProductCategory);
 router.get("/get-product-type", getProductType);

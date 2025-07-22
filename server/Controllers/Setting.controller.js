@@ -261,6 +261,7 @@ const getUsers = async (req, res) => {
     const allUsers = await prisma.user.findMany({
       where: { isActive: true },
       select: {
+        id: true,
         name: true,
         email: true,
         phone: true,
@@ -275,6 +276,46 @@ const getUsers = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// delete (soft delete) customer
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = parseInt(id);
+
+
+    //  if the user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({
+        status: false,
+        error: "User not found",
+      });
+    }
+
+    //  Delete(soft delete) the user
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        isActive: false,
+      },
+    });
+
+    return res.status(200).json({
+      status: true,
+      message: "User deleted successfully",
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      status: false,
+      error: "Internal server error",
+    });
   }
 };
 
@@ -461,6 +502,7 @@ module.exports = {
   getBankList,
   addUser,
   getUsers,
+  deleteUser,
   addAccount,
   getAccounts,
   editBankList,

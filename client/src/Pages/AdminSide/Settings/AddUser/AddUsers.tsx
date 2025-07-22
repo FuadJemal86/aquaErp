@@ -165,12 +165,12 @@ function AddUsers() {
           usersList.map((user) =>
             user.id === editingId
               ? {
-                  ...user,
-                  name: name.trim(),
-                  email: email.trim(),
-                  phone: phone.trim(),
-                  role: role as "ADMIN" | "CASHIER",
-                }
+                ...user,
+                name: name.trim(),
+                email: email.trim(),
+                phone: phone.trim(),
+                role: role as "ADMIN" | "CASHIER",
+              }
               : user
           )
         );
@@ -204,8 +204,9 @@ function AddUsers() {
   };
 
   const handleDelete = async (id: string) => {
+    console.log(id)
     try {
-      // await api.delete(`/admin/delete-user/${id}`);
+      await api.put(`/admin/delete-user/${id}`);
 
       setUsers((usersList) => usersList.filter((user) => user.id !== id));
       toast.success("User deleted successfully");

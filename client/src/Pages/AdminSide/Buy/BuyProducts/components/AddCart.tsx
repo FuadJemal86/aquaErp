@@ -72,6 +72,17 @@ type BankList = {
   branch: string;
   account_number: string;
   owner: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  bank_balance: {
+    balance: number;
+  }[];
+};
+
+type CashBalance = {
+  id: number;
+  balance: number;
 };
 
 function AddCart({
@@ -95,6 +106,8 @@ function AddCart({
   const [categoryOptions, setCategoryOptions] = useState<
     { value: number; label: string }[]
   >([]);
+  const [cashBalance, setCashBalance] = useState<CashBalance | null>(null);
+
   const [productTypeOptions, setProductTypeOptions] = useState<
     { value: number; label: string }[]
   >([]);
@@ -106,6 +119,8 @@ function AddCart({
     reset,
     setValue,
     watch,
+    setError,
+    clearErrors,
   } = useForm<CartFormData>({
     resolver: zodResolver(cartSchema),
     defaultValues: {
@@ -123,8 +138,45 @@ function AddCart({
 
   const selectedCategory = watch("product_category_id");
   const selectedPaymentMethod = watch("payment_method");
+  const selectedBankId = watch("bank_id");
+  const quantity = watch("quantity");
+  const pricePerQuantity = watch("price_per_quantity");
 
-  // Remove fetching categories and productTypes, use props instead
+  // Calculate total amount
+  const totalAmount = parseFloat(quantity || "0") * parseFloat(pricePerQuantity || "0");
+
+  // Get available balance based on payment method
+  const getAvailableBalance = () => {
+    if (selectedPaymentMethod === "CASH") {
+      return cashBalance ? cashBalance.balance : 0;
+    } else if (selectedPaymentMethod === "BANK" && selectedBankId) {
+      const selectedBank = bankList.find(bank => bank.id.toString() === selectedBankId);
+      return selectedBank && selectedBank.bank_balance.length > 0 ? selectedBank.bank_balance[0].balance : 0;
+    }
+    return 0;
+  };
+
+  const availableBalance = getAvailableBalance();
+
+  // Validate balance whenever total amount or payment method changes
+  useEffect(() => {
+    if (selectedPaymentMethod === "CREDIT") {
+      // Credit doesn't require balance validation
+      clearErrors("quantity");
+      clearErrors("price_per_quantity");
+      return;
+    }
+
+    if (totalAmount > 0 && availableBalance > 0 && totalAmount > availableBalance) {
+      setError("quantity", {
+        type: "manual",
+        message: `Insufficient balance. Available: $${availableBalance.toFixed(2)}, Required: $${totalAmount.toFixed(2)}`
+      });
+    } else {
+      clearErrors("quantity");
+      clearErrors("price_per_quantity");
+    }
+  }, [totalAmount, availableBalance, selectedPaymentMethod, setError, clearErrors]);
 
   // fetch Bank list
   const fetchBankList = async () => {
@@ -144,6 +196,15 @@ function AddCart({
       productType.product_category_id === parseInt(selectedCategory)
     );
   });
+
+  const fetchCashBalance = async () => {
+    try {
+      const response = await api.get("/admin/get-cash-balance");
+      setCashBalance(response.data);
+    } catch (error) {
+      console.error("Error fetching cash balance:", error);
+    }
+  };
 
   // Handle category change
   const handleCategoryChange = (
@@ -186,6 +247,21 @@ function AddCart({
   };
 
   const onSubmit = async (data: CartFormData) => {
+    // Final balance check before submission (for non-credit payments)
+    if (data.payment_method !== "CREDIT") {
+      const finalTotalAmount = parseInt(data.quantity) * parseFloat(data.price_per_quantity);
+      const finalAvailableBalance = data.payment_method === "CASH"
+        ? (cashBalance ? cashBalance.balance : 0)
+        : (data.payment_method === "BANK" && data.bank_id
+          ? (bankList.find(bank => bank.id.toString() === data.bank_id)?.bank_balance[0]?.balance || 0)
+          : 0);
+
+      if (finalTotalAmount > finalAvailableBalance) {
+        toast.error(`Insufficient balance. Available: $${finalAvailableBalance.toFixed(2)}, Required: $${finalTotalAmount.toFixed(2)}`);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const cartData = {
@@ -231,6 +307,7 @@ function AddCart({
 
   useEffect(() => {
     fetchBankList();
+    fetchCashBalance();
     if (supplierName) {
       setValue("supplier_name", supplierName);
     }
@@ -262,6 +339,14 @@ function AddCart({
       setProductTypeOptions(options);
     }
   }, [productTypes]);
+
+  // Check if form is valid for submission
+  const isFormValid = () => {
+    if (selectedPaymentMethod === "CREDIT") {
+      return true; // Credit doesn't require balance validation
+    }
+    return totalAmount <= availableBalance;
+  };
 
   return (
     <Card>
@@ -416,7 +501,9 @@ function AddCart({
                   <SelectValue placeholder="Choose payment method" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="CASH">Cash</SelectItem>
+                  <SelectItem value="CASH">
+                    Cash {cashBalance && `(${cashBalance.balance.toFixed(2)})`}
+                  </SelectItem>
                   <SelectItem value="CREDIT">Credit</SelectItem>
                   <SelectItem value="BANK">Bank</SelectItem>
                 </SelectContent>
@@ -444,7 +531,12 @@ function AddCart({
                   <SelectContent>
                     {bankList.map((bank) => (
                       <SelectItem key={bank.id} value={bank.id.toString()}>
-                        {bank.branch} - {bank.account_number} ({bank.owner})
+                        <div className="flex justify-between items-center w-full">
+                          <span>{bank.branch} - {bank.account_number} ({bank.owner})</span>
+                          <span className="text-sm text-green-600 font-medium ml-4">
+                            ${bank.bank_balance.length > 0 ? bank.bank_balance[0].balance.toFixed(2) : '0.00'}
+                          </span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -496,20 +588,40 @@ function AddCart({
             </div>
           )}
 
-          {/* Total Calculation */}
-          {watch("quantity") && watch("price_per_quantity") && (
-            <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <p className="text-sm font-medium">
-                Total: $
-                {(
-                  parseFloat(watch("quantity") || "0") *
-                  parseFloat(watch("price_per_quantity") || "0")
-                ).toFixed(2)}
+          {/* Balance and Total Information */}
+          {selectedPaymentMethod !== "CREDIT" && availableBalance > 0 && (
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                Available Balance: ${availableBalance.toFixed(2)}
               </p>
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {/* Total Calculation */}
+          {quantity && pricePerQuantity && (
+            <div className={`p-3 rounded-lg ${selectedPaymentMethod !== "CREDIT" && totalAmount > availableBalance
+                ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                : "bg-gray-50 dark:bg-gray-800"
+              }`}>
+              <p className={`text-sm font-medium ${selectedPaymentMethod !== "CREDIT" && totalAmount > availableBalance
+                  ? "text-red-800 dark:text-red-200"
+                  : ""
+                }`}>
+                Total: ${totalAmount.toFixed(2)}
+                {selectedPaymentMethod !== "CREDIT" && totalAmount > availableBalance && (
+                  <span className="block text-xs mt-1">
+                    Exceeds available balance by ${(totalAmount - availableBalance).toFixed(2)}
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isSubmitting || (selectedPaymentMethod !== "CREDIT" && !isFormValid())}
+          >
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
