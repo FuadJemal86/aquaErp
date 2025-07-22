@@ -355,19 +355,25 @@ function ProcessRepayment({
                   <SelectTrigger>
                     <SelectValue placeholder="Select bank account" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {bankAccounts.map((bank) => (
-                      <SelectItem key={bank.id} value={bank.id.toString()}>
-                        {bank.branch} - {bank.account_number} ({bank.owner})
-                        {bank.bank_balance?.[0] && (
-                          <span className="text-xs text-gray-500 ml-2">
-                            - Balance:{" "}
-                            {formatCurrency(bank.bank_balance[0].balance)}
-                          </span>
-                        )}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
+                  <div className="w-full sm:w-auto">
+                    <SelectContent>
+                      {bankAccounts.map((bank) => (
+                        <SelectItem key={bank.id} value={bank.id.toString()}>
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                            <span>
+                              {bank.branch} - {bank.account_number} ({bank.owner})
+                            </span>
+                            {bank.bank_balance?.[0] && (
+                              <span className="text-xs text-gray-500 ml-0 sm:ml-2">
+                                Balance: {formatCurrency(bank.bank_balance[0].balance)}
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </div>
+
                 </Select>
                 {errors.bank_id && (
                   <p className="text-xs text-red-500">
