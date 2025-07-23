@@ -22,15 +22,14 @@ export function NavUser({
     avatar: string;
   };
 }) {
-
   const handleLogout = async () => {
     try {
-      const result = await api.post('/auth/logout')
-      window.location.href = '/login';
+      await api.post("/auth/logout");
+      window.location.href = "/login";
     } catch (err) {
-      console.log(err)
+      console.log(err);
     }
-  }
+  };
   return (
     <div className="w-full">
       <DropdownMenu>
