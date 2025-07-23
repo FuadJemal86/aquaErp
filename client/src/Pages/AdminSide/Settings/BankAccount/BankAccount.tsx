@@ -402,7 +402,7 @@ function BankAccount() {
                 No bank accounts found. Add your first account using the form.
               </div>
             ) : (
-              <div className="border rounded-lg overflow-hidden">
+              <div className="border rounded-lg overflow-auto">
                 <table className="w-full">
                   <thead className="bg-muted">
                     <tr>
