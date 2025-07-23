@@ -69,7 +69,7 @@ const {
 const {
   productTransactions,
 } = require("../Controllers/Report/productTransaction");
-const notificationController = require('../controllers/notificationController');
+const notificationController = require("../Controllers/notificationController");
 const getId = require("../middlewear/getId");
 
 router.post("/add-product-category", addProductCategory);
@@ -81,7 +81,6 @@ router.post("/add-bank-list", addAccount);
 router.post("/add-user", addUser);
 router.get("/get-user", getUsers);
 router.put("/delete-user/:id", deleteUser);
-
 
 router.get("/get-product-category", getProductCategory);
 router.get("/get-product-type", getProductType);
@@ -182,8 +181,10 @@ router.get("/get-product-transaction", productTransactions);
 // Dashboard
 router.get("/dashboard", getDashboardData);
 
-
 // notification
-router.get('/notifications', notificationController.checkShortagesAndOverdueCredits);
+router.get(
+  "/notifications",
+  notificationController.checkShortagesAndOverdueCredits
+);
 
 module.exports = router;
