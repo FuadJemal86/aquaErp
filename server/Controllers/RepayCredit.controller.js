@@ -125,6 +125,42 @@ const salesCreditReportForRepay = async (req, res) => {
         .json({ status: false, error: "Sales credit report not found" });
     }
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // filtering if the return date is today with there id
+    const creditsToUpdate = await prisma.sales_credit.findMany({
+      where: {
+        status: {
+          not: "OVERDUE",
+        },
+        return_date: {
+          lt: today,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    //  Extract the IDs to update
+    const overdueIds = creditsToUpdate.map((c) => c.id);
+
+    // Update only if there are any
+    if (overdueIds.length > 0) {
+      await prisma.sales_credit.updateMany({
+        where: {
+          id: {
+            in: overdueIds,
+          },
+        },
+        data: {
+          status: "OVERDUE",
+        },
+      });
+    }
+
+
     // Extract all unique customer_ids
     const customerIds = [
       ...new Set(getSalesCreditReport.map((item) => item.customer_id)),
@@ -421,6 +457,41 @@ const buyCreditReportForRepay = async (req, res) => {
       return res.status(404).json({
         status: false,
         error: "Buy credit report not found",
+      });
+    }
+
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const creditsToUpdate = await prisma.buy_credit.findMany({
+      where: {
+        status: {
+          not: "OVERDUE",
+        },
+        return_date: {
+          lt: today,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    //  Extract the IDs to update
+    const overdueIds = creditsToUpdate.map((c) => c.id);
+
+    // Update only if there are any
+    if (overdueIds.length > 0) {
+      await prisma.buy_credit.updateMany({
+        where: {
+          id: {
+            in: overdueIds,
+          },
+        },
+        data: {
+          status: "OVERDUE",
+        },
       });
     }
 
