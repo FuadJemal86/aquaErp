@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import api from "@/services/api";
+import { nPoint } from "@/services/api";
 import {
   ChevronLeft,
   ChevronRight,
@@ -410,9 +411,24 @@ function BankTransaction() {
                         {formatDate(transaction.createdAt)}
                       </TableCell>
                       <TableCell>
-                        <Button variant="outline" size="sm">
-                          <DownloadIcon className="h-4 w-4" />
-                        </Button>
+                        {transaction.receipt_image ? (
+                          <Button variant="outline" size="sm" asChild>
+                            <a
+                              href={`${nPoint}public-download?path=${encodeURIComponent(
+                                transaction.receipt_image
+                              )}`}
+                              download
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <DownloadIcon className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            No file
+                          </span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
