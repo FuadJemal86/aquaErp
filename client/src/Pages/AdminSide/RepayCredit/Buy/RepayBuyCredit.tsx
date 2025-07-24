@@ -91,6 +91,7 @@ interface BuyCreditTransactions {
   CTID: string;
   manager_name: string
   outstanding_balance: number;
+  image: string
 }
 
 function RepayBuyCredit() {
@@ -203,6 +204,7 @@ function RepayBuyCredit() {
               CTID: detail.CTID,
               manager_name: detail.manager_name,
               outstanding_balance: detail.outstanding_balance,
+              image: detail.image
             })
           );
           setBuyCreditTransaction(mappedCreditDetails);

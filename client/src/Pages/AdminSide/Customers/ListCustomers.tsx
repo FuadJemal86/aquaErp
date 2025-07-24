@@ -20,6 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { nPoint } from "@/services/api";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -48,6 +49,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Download,
+  DownloadIcon,
   Edit,
   File,
   FileText,
@@ -665,24 +667,22 @@ function ListCustomers() {
                       </TableCell>
                       <TableCell>
                         {customer.id_card ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              handleDownloadIdCard(
-                                customer.id_card!,
-                                customer.full_name
-                              )
-                            }
-                            className="flex items-center gap-2"
-                          >
-                            <Download className="h-3 w-3" />
-                            <span className="text-xs">Download</span>
+                          <Button variant="outline" size="sm" asChild>
+                            <a
+                              href={`${nPoint}public-download?path=${encodeURIComponent(
+                                customer.id_card
+                              )}`}
+                              download
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <DownloadIcon className="h-4 w-4" />
+                            </a>
                           </Button>
                         ) : (
-                          <Badge variant="secondary" className="text-xs">
-                            No ID Card
-                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            No file
+                          </span>
                         )}
                       </TableCell>
                       <TableCell>

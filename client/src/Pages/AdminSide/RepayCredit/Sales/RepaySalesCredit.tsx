@@ -86,6 +86,7 @@ interface SalesCreditTransactions {
   CTID: string;
   manager_name: string;
   outstanding_balance: number;
+  image: string;
 }
 
 function RepaySalesCredit() {
@@ -199,6 +200,7 @@ function RepaySalesCredit() {
               CTID: detail.CTID,
               manager_name: detail.manager_name,
               outstanding_balance: detail.outstanding_balance,
+              image: detail.image
             })
           );
           setSalesCreditTransaction(mappedCreditDetails);

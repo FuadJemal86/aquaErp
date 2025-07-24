@@ -15,11 +15,13 @@ import {
   Banknote,
   Building2,
   CreditCard,
+  DownloadIcon,
   Image as ImageIcon,
   Package,
   X,
 } from "lucide-react";
 import ProcessRepayment from "./ProcessRepayment";
+import { nPoint } from "@/services/api";
 
 // Type definitions
 interface SalesCredit {
@@ -82,6 +84,7 @@ interface SalesCreditTransactions {
   CTID: string;
   manager_name: string;
   outstanding_balance: number;
+  image: string
 }
 
 interface ShowDetailModalProps {
@@ -326,16 +329,24 @@ function ShowDetailModal({
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-2">
-                              {detail.payment_method === "BANK" ? (
-                                <div className="flex items-center gap-2">
-                                  <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                                  <Button variant="outline">Download</Button>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2">-</div>
-                              )}
-                            </div>
+                            {detail.image ? (
+                              <Button variant="outline" size="sm" asChild>
+                                <a
+                                  href={`${nPoint}public-download?path=${encodeURIComponent(
+                                    detail.image
+                                  )}`}
+                                  download
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <DownloadIcon className="h-4 w-4" />
+                                </a>
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                No file
+                              </span>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
