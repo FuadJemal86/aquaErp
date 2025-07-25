@@ -4,7 +4,7 @@ const checkShortagesAndOverdueCredits = async (req, res) => {
     try {
         const messages = [];
 
-        // 1. Product stock < 10
+        //  Product stock < 10
         const lowStockProducts = await prisma.product_stock.findMany({
             where: { quantity: { lt: 10 }, isActive: true },
             include: { Product_type: true },
@@ -15,6 +15,40 @@ const checkShortagesAndOverdueCredits = async (req, res) => {
         }
 
         //  Overdue Sales Credits
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // filtering if the return date is today with there id
+        const creditsToUpdate = await prisma.sales_credit.findMany({
+            where: {
+                status: {
+                    not: "OVERDUE",
+                },
+                return_date: {
+                    lt: today,
+                },
+            },
+            select: {
+                id: true,
+            },
+        });
+
+        //  Extract the IDs to update
+        const overdueIds = creditsToUpdate.map((c) => c.id);
+
+        // Update only if there are any
+        if (overdueIds.length > 0) {
+            await prisma.sales_credit.updateMany({
+                where: {
+                    id: {
+                        in: overdueIds,
+                    },
+                },
+                data: {
+                    status: "OVERDUE",
+                },
+            });
+        }
         const overdueSales = await prisma.sales_credit.findMany({
             where: {
                 status: 'OVERDUE',
@@ -29,6 +63,39 @@ const checkShortagesAndOverdueCredits = async (req, res) => {
         }
 
         //  Overdue Buy Credits
+        today.setHours(0, 0, 0, 0);
+
+        const buyCreditsToUpdate = await prisma.buy_credit.findMany({
+            where: {
+                status: {
+                    not: "OVERDUE",
+                },
+                return_date: {
+                    lt: today,
+                },
+            },
+            select: {
+                id: true,
+            },
+        });
+
+        //  Extract the IDs to update
+        const buyOverdueIds = buyCreditsToUpdate.map((c) => c.id);
+
+        // Update only if there are any
+        if (buyOverdueIds.length > 0) {
+            await prisma.buy_credit.updateMany({
+                where: {
+                    id: {
+                        in: buyOverdueIds,
+                    },
+                },
+                data: {
+                    status: "OVERDUE",
+                },
+            });
+        }
+
         const overdueBuys = await prisma.buy_credit.findMany({
             where: {
                 status: 'OVERDUE',
