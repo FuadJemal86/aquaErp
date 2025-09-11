@@ -25,7 +25,7 @@ export function NavUser({
   const handleLogout = async () => {
     try {
       await api.post("/auth/logout");
-      window.location.href = "/login";
+      window.location.reload()
     } catch (err) {
       console.log(err);
     }

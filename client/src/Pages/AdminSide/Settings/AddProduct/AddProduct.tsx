@@ -18,7 +18,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import api from "@/services/api";
-import { Loader2, Package, Tag, Warehouse } from "lucide-react";
+import { Loader2, Package, Tag, Warehouse, Edit3, X, Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -38,6 +38,10 @@ const ProductTypeSchema = z.object({
 const InitializeStockSchema = z.object({
   product_type_id: z.number().min(1, "Product type is required"),
   quantity: z.number().min(1, "Quantity must be at least 1"),
+  price_per_quantity: z.number().min(0.01, "Price must be greater than 0"),
+});
+
+const EditPriceSchema = z.object({
   price_per_quantity: z.number().min(0.01, "Price must be greater than 0"),
 });
 
@@ -94,6 +98,12 @@ function AddProduct() {
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [isCreatingProductType, setIsCreatingProductType] = useState(false);
   const [isCreatingStock, setIsCreatingStock] = useState(false);
+
+  // Edit price states
+  const [editingStockId, setEditingStockId] = useState<number | null>(null);
+  const [editPrice, setEditPrice] = useState("");
+  const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
+  const [editPriceError, setEditPriceError] = useState("");
 
   // Form data states
   const [categoryFormData, setCategoryFormData] = useState<CategoryFormData>({
@@ -187,6 +197,61 @@ function AddProduct() {
     // Clear error when user starts typing
     if (stockErrors[field]) {
       setStockErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  // Edit price handlers
+  const handleEditPriceClick = (stock: Stock) => {
+    setEditingStockId(stock.id);
+    setEditPrice(stock.price_per_quantity.toString());
+    setEditPriceError("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingStockId(null);
+    setEditPrice("");
+    setEditPriceError("");
+  };
+
+  const handleEditPriceChange = (value: string) => {
+    setEditPrice(value);
+    if (editPriceError) {
+      setEditPriceError("");
+    }
+  };
+
+  const handleUpdatePrice = async (stockId: number) => {
+    try {
+      setEditPriceError("");
+
+      // Validate with Zod
+      const validatedData = EditPriceSchema.parse({
+        price_per_quantity: parseFloat(editPrice),
+      });
+
+      setIsUpdatingPrice(true);
+      await api.put(`/admin/edit-price`, {
+        stock_id: stockId,
+        price_per_quantity: validatedData.price_per_quantity,
+      });
+
+      toast.success("Price updated successfully");
+      setEditingStockId(null);
+      setEditPrice("");
+
+      // Refresh stocks
+      await fetchStocks();
+    } catch (error: any) {
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else if (error.errors) {
+        // Zod validation errors
+        setEditPriceError(error.errors[0]?.message || "Invalid price");
+      } else {
+        toast.error("Failed to update price");
+      }
+    } finally {
+      setIsUpdatingPrice(false);
     }
   };
 
@@ -673,13 +738,70 @@ function AddProduct() {
               <div className="space-y-2">
                 {stocks.map((stock) => (
                   <div key={stock.id} className="p-3 border rounded-lg">
-                    <h4 className="font-medium">
-                      {stock.Product_type?.name || "Unknown"}
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Price/Qty: ${stock.price_per_quantity} | Qty:{" "}
-                      {stock.quantity} | Total: ${stock.amount_money}
-                    </p>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-medium">
+                          {stock.Product_type?.name || "Unknown"}
+                        </h4>
+                        <div className="text-sm text-muted-foreground">
+                          {editingStockId === stock.id ? (
+                            <div className="space-y-2 mt-2">
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={editPrice}
+                                  onChange={(e) => handleEditPriceChange(e.target.value)}
+                                  className={`w-24 h-8 ${editPriceError ? "border-destructive" : ""}`}
+                                  placeholder="0.00"
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleUpdatePrice(stock.id)}
+                                  disabled={isUpdatingPrice}
+                                  className="h-8 px-2"
+                                >
+                                  {isUpdatingPrice ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <Check className="h-3 w-3" />
+                                  )}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={handleCancelEdit}
+                                  disabled={isUpdatingPrice}
+                                  className="h-8 px-2"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                              {editPriceError && (
+                                <p className="text-xs text-destructive">
+                                  {editPriceError}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <>
+                              Price/Qty: ${stock.price_per_quantity} | Qty:{" "}
+                              {stock.quantity} | Total: ${stock.amount_money}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      {editingStockId !== stock.id && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditPriceClick(stock)}
+                          className="ml-2 h-8 px-2"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

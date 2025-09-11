@@ -14,6 +14,7 @@ const {
   deleteAccount,
   editBankList,
   deleteUser,
+  editProductPrice,
 } = require("../Controllers/Setting.controller");
 const {
   addCustomer,
@@ -107,6 +108,7 @@ router.put(
 router.post("/buy-product", getId, buyProduct);
 router.get("/get-all-buy-credits", buyCreditReport);
 router.get("/get-buy-transaction-details/:id", detailBuyCredit);
+router.put('/edit-price', editProductPrice)
 
 // Sales Routes
 router.post("/sell-product", getId, sellProduct);

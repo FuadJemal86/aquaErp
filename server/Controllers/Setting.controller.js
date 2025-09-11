@@ -10,6 +10,7 @@ const {
   Edit_account,
 } = require("../Model/Validation");
 const bcrypt = require("bcrypt");
+const { date } = require("joi");
 
 // Add Product  catagory
 const addProductCategory = async (req, res) => {
@@ -187,6 +188,34 @@ const getProductStock = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// edit product price
+
+const editProductPrice = async (req, res) => {
+  const id = req.body.stock_id
+  const newPrice = req.body.price_per_quantity
+
+  try {
+    const isExist = await prisma.product_stock.findFirst({
+      where: { id: Number(id) }
+    })
+
+    if (!isExist) {
+      return res.status(404).json({ message: 'product price not found' })
+    }
+    await prisma.product_stock.update({
+      where: { id: Number(id) },
+      data: {
+        price_per_quantity: newPrice
+      }
+    })
+
+    return res.status(200).json({ message: 'price edit succussesfuly' })
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
 
 // Get Bank list
 const getBankList = async (req, res) => {
@@ -499,6 +528,7 @@ module.exports = {
   getProductCategory,
   getProductType,
   getProductStock,
+  editProductPrice,
   getBankList,
   addUser,
   getUsers,
