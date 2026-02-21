@@ -4,7 +4,7 @@ const isDevelopment = process.env.NODE_ENV === "development";
 const api = axios.create({
   baseURL: isDevelopment
     ? "http://localhost:4000/api"
-    : "https://shieradevelopers.com/aquaErp",
+    : "https://shieradevelopers.com/api",
   withCredentials: true,
 });
 

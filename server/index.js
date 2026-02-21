@@ -28,6 +28,10 @@ app.use("/api/admin", adminRouter);
 app.use("/api/auth", authRouter);
 app.use("/public", express.static(path.join(__dirname, "upload")));
 
+app.get("/aquaErp", (req, res) => {
+  res.send("The server is running");
+});
+
 // Public download route using query parameter
 app.get("/public-download", (req, res) => {
   let encodedFilePath = req.query.path;
