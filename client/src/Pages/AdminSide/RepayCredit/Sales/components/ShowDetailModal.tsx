@@ -16,7 +16,7 @@ import {
   Building2,
   CreditCard,
   DownloadIcon,
-  Image as ImageIcon,
+  // Image as ImageIcon,
   Package,
   X,
 } from "lucide-react";
