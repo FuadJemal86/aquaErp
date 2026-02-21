@@ -1,0 +1,381 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String
+  image     String?
+  role      role     @default(ADMIN)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user")
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  full_name String
+  phone     String
+  address   String
+  id_card   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sales_credit      Sales_credit[]
+  Sales_transaction Sales_transaction[]
+
+  @@map("customer")
+}
+
+model Product_category {
+  id           Int            @id @default(autoincrement())
+  name         String
+  description  String?
+  productTypes Product_type[]
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@map("product_category")
+}
+
+model Product_type {
+  id          Int      @id @default(autoincrement())
+  name        String
+  measurement String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  product_Stock     Product_stock[]
+  bank_transaction  Buy_transaction[]
+  sales_transaction Sales_transaction[]
+
+  product_category_id Int
+  Product_category    Product_category      @relation(fields: [product_category_id], references: [id])
+  Product_transaction Product_transaction[]
+
+  @@map("product_type")
+}
+
+model Product_stock {
+  id                 Int      @id @default(autoincrement())
+  amount_money       Float
+  price_per_quantity Float
+  quantity           Int
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  product_type_id Int
+  Product_type    Product_type @relation(fields: [product_type_id], references: [id])
+
+  @@map("product_stock")
+}
+
+model Bank_list {
+  id             Int      @id @default(autoincrement())
+  branch         String
+  account_number String
+  owner          String
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  buy_transaction          Buy_transaction[]
+  bank_transaction         Bank_transaction[]
+  bank_balance             Bank_balance[]
+  buy_credit_transaction   Buy_credit_transaction[]
+  sales_transaction        Sales_transaction[]
+  Sales_credit_transaction Sales_credit_transaction[]
+
+  @@map("bank_list")
+}
+
+model Buy_transaction {
+  id                 Int            @id @default(autoincrement())
+  price_per_quantity Float
+  quantity           Int
+  payment_method     payment_method
+  total_money        Float
+  supplier_name      String
+  transaction_id     String
+  manager_id         Int?
+  casher_id          Int?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  type_id            Int
+  bank_id            Int?
+  return_date        DateTime?
+
+  Product_type Product_type @relation(fields: [type_id], references: [id])
+  Bank_list    Bank_list?   @relation(fields: [bank_id], references: [id])
+
+  @@index([price_per_quantity, transaction_id])
+  @@map("buy_transaction")
+}
+
+model Buy_credit {
+  id             Int      @id @default(autoincrement())
+  transaction_id String
+  total_money    Float
+  description    String?
+  issued_date    DateTime @default(now())
+  return_date    DateTime
+  status         credit
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([transaction_id])
+  @@map("buy_credit")
+}
+
+enum credit {
+  ACCEPTED
+  OVERDUE
+  PAYED
+}
+
+model Bank_balance {
+  id        Int      @id @default(autoincrement())
+  balance   Float
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bank_id   Int
+  Bank_list Bank_list @relation(fields: [bank_id], references: [id])
+
+  @@map("bank_balance")
+}
+
+model Bank_transaction {
+  id             Int      @id @default(autoincrement())
+  in             Float
+  out            Float
+  balance        Float
+  transaction_id String
+  manager_id     Int?
+  casher_id      Int?
+  description    String?
+  receipt_image  String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  bank_id   Int
+  Bank_list Bank_list @relation(fields: [bank_id], references: [id])
+
+  @@index([transaction_id])
+  @@map("bank_transaction")
+}
+
+model Buy_credit_transaction {
+  id                  Int            @id @default(autoincrement())
+  Bank_id             Int?
+  transaction_id      String
+  amount_payed        Float
+  outstanding_balance Float
+  CTID                String?
+  manager_id          Int?
+  image               String
+  payment_method      payment_method
+  isActive            Boolean        @default(true)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  bank_list Bank_list? @relation(fields: [Bank_id], references: [id])
+
+  @@index([transaction_id])
+  @@map("buy_credit_transaction")
+}
+
+model Cash_balance {
+  id      Int   @id @default(autoincrement())
+  balance Float
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("cash_balance")
+}
+
+model Cash_transaction {
+  id                       Int                        @id @default(autoincrement())
+  in                       Float
+  out                      Float
+  balance                  Float
+  transaction_id           String
+  manager_id               Int?
+  casher_id                Int?
+  isActive                 Boolean                    @default(true)
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
+  Sales_credit_transaction Sales_credit_transaction[]
+
+  @@index([transaction_id])
+  @@map("cash_transaction")
+}
+
+model Sales_transaction {
+  id                 Int            @id @default(autoincrement())
+  type_id            Int
+  customer_id        Int?
+  walker_id          String?
+  manager_id         Int?
+  casher_id          Int?
+  transaction_id     String
+  price_per_quantity Float
+  quantity           Int
+  total_money        Float?
+  payment_method     payment_method
+  customer_type      customer_type
+  status             sales_status
+  isActive           Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  bank_id Int?
+
+  Customer       Customer?     @relation(fields: [customer_id], references: [id])
+  Product_type   Product_type  @relation(fields: [type_id], references: [id])
+  Bank_list      Bank_list?    @relation(fields: [bank_id], references: [id])
+  Sales_credit   Sales_credit? @relation(fields: [sales_creditId], references: [id])
+  sales_creditId Int?
+
+  @@index([transaction_id, price_per_quantity, quantity, payment_method, customer_type, status])
+  @@map("sale_transaction")
+}
+
+model Sales_credit {
+  id             Int      @id @default(autoincrement())
+  customer_id    Int
+  transaction_id String
+  total_money    Float
+  return_date    DateTime
+  issued_date    DateTime
+  description    String?
+  status         credit
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  Customer          Customer            @relation(fields: [customer_id], references: [id])
+  Sales_transaction Sales_transaction[]
+
+  @@index([transaction_id, customer_id, total_money, return_date, issued_date, status])
+  @@map("sales_credit")
+}
+
+model Sales_credit_transaction {
+  id                  Int                  @id @default(autoincrement())
+  transaction_id      String
+  amount_payed        Float
+  payment_method      payment_sales_method
+  bank_id             Int?
+  cash_id             Int?
+  outstanding_balance Float
+  manager_id          Int?
+  image               String
+  CTID                String?
+  isActive            Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  Bank_list        Bank_list?        @relation(fields: [bank_id], references: [id])
+  Cash_transaction Cash_transaction? @relation(fields: [cash_id], references: [id])
+
+  @@index([transaction_id, amount_payed, payment_method, outstanding_balance, image])
+  @@map("sales_credit_transaction")
+}
+
+model Product_transaction {
+  id                 Int      @id @default(autoincrement())
+  transaction_id     String
+  type_id            Int
+  quantity           Int
+  price_per_quantity Float
+  method             Method
+  manager_id         Int?
+  casher_id          Int?
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  Product_type Product_type @relation(fields: [type_id], references: [id])
+
+  @@index([transaction_id, type_id, quantity, price_per_quantity, method])
+  @@map("product_transaction")
+}
+
+model Notification {
+  id                Int              @id @default(autoincrement())
+  message           String           @db.LongText
+  receiver          ReceiverRole
+  notification_type NotificationType
+  is_read           Boolean          @default(false)
+  isActive          Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+enum ReceiverRole {
+  ADMIN
+  CASHIER
+}
+
+enum NotificationType {
+  CREDIT_OVERDUE
+  SHORTAGE_PRODUCT
+}
+
+enum Method {
+  IN
+  OUT
+}
+
+enum role {
+  ADMIN
+  CASHIER
+}
+
+enum payment_method {
+  CASH
+  BANK
+  CREDIT
+}
+
+enum customer_type {
+  WALKER
+  REGULAR
+}
+
+enum sales_status {
+  DONE
+  CANCEL
+}
+
+enum payment_sales_method {
+  CASH
+  BANK
+}
